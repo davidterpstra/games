@@ -84,6 +84,14 @@ h1, h2, h3, h4, b { font-family: var(--font-d); font-weight: 600; }
 .clock > div { display: flex; flex-direction: column; line-height: 1.1; }
 .clock b { font-size: 16px; font-variant-numeric: tabular-nums; }
 .clock small { font-size: 11px; opacity: 0.8; }
+.speed { display: flex; gap: 2px; background: var(--glass); border: 1px solid var(--glass-edge); border-radius: 999px; padding: 3px; backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px); }
+.speed button { border: 0; background: transparent; color: var(--glass-ink); font-family: var(--font-d); font-weight: 600; font-size: 13px; min-width: 32px; height: 26px; border-radius: 99px; padding: 0 6px; font-variant-numeric: tabular-nums; }
+.speed button:hover { background: rgba(255, 255, 255, 0.15); }
+.speed button.on { background: var(--honey); color: #3b2508; }
+#paused { position: absolute; left: 50%; top: 42%; transform: translate(-50%, -50%); display: flex; flex-direction: column; align-items: center; gap: 4px; background: var(--glass-2); color: var(--glass-ink); border: 1px solid var(--glass-edge); border-radius: 20px; padding: 14px 26px; backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px); animation: drop 0.3s; }
+#paused b { font-size: 24px; }
+#paused small { opacity: 0.85; }
+body.is-paused #game { filter: saturate(0.6) brightness(0.9); }
 .iconbtn { width: 34px; height: 34px; border-radius: 50%; border: 1px solid var(--glass-edge); background: rgba(255, 255, 255, 0.12); color: var(--glass-ink); font-size: 18px; display: grid; place-items: center; transition: transform 0.2s; }
 .iconbtn:hover { transform: rotate(40deg); }
 #minimap { width: 150px; height: 150px; border-radius: 50%; border: 3px solid rgba(255, 248, 234, 0.85); box-shadow: 0 6px 20px rgba(0, 0, 0, 0.25); cursor: pointer; background: #3f8fbf; }
@@ -400,7 +408,10 @@ body.touch #mobile-ctl { display: block; }
   body.placing #mobile-ctl { display: none; }
   .tracker { position: absolute; top: calc(84px + env(safe-area-inset-top, 0px)); left: 0; width: calc(100vw - 124px); }
   .hud-tr { right: 10px; }
-  #minimap { width: 88px; height: 88px; margin-top: 34px; }
+  #minimap { width: 88px; height: 88px; margin-top: 34px; order: 1; }
+  .speed { order: 2; }
+  .saved { order: 3; }
+  .speed button { min-width: 28px; height: 24px; font-size: 12px; padding: 0 4px; }
   .clock { padding-left: 9px; }
   .clock b { font-size: 14px; }
   #toasts { top: auto; bottom: calc(96px + env(safe-area-inset-bottom, 0px)); right: 10px; width: min(290px, calc(100% - 20px)); }

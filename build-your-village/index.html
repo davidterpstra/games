@@ -95,6 +95,14 @@ h1, h2, h3, h4, b { font-family: var(--font-d); font-weight: 600; }
 .clock > div { display: flex; flex-direction: column; line-height: 1.1; }
 .clock b { font-size: 16px; font-variant-numeric: tabular-nums; }
 .clock small { font-size: 11px; opacity: 0.8; }
+.speed { display: flex; gap: 2px; background: var(--glass); border: 1px solid var(--glass-edge); border-radius: 999px; padding: 3px; backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px); }
+.speed button { border: 0; background: transparent; color: var(--glass-ink); font-family: var(--font-d); font-weight: 600; font-size: 13px; min-width: 32px; height: 26px; border-radius: 99px; padding: 0 6px; font-variant-numeric: tabular-nums; }
+.speed button:hover { background: rgba(255, 255, 255, 0.15); }
+.speed button.on { background: var(--honey); color: #3b2508; }
+#paused { position: absolute; left: 50%; top: 42%; transform: translate(-50%, -50%); display: flex; flex-direction: column; align-items: center; gap: 4px; background: var(--glass-2); color: var(--glass-ink); border: 1px solid var(--glass-edge); border-radius: 20px; padding: 14px 26px; backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px); animation: drop 0.3s; }
+#paused b { font-size: 24px; }
+#paused small { opacity: 0.85; }
+body.is-paused #game { filter: saturate(0.6) brightness(0.9); }
 .iconbtn { width: 34px; height: 34px; border-radius: 50%; border: 1px solid var(--glass-edge); background: rgba(255, 255, 255, 0.12); color: var(--glass-ink); font-size: 18px; display: grid; place-items: center; transition: transform 0.2s; }
 .iconbtn:hover { transform: rotate(40deg); }
 #minimap { width: 150px; height: 150px; border-radius: 50%; border: 3px solid rgba(255, 248, 234, 0.85); box-shadow: 0 6px 20px rgba(0, 0, 0, 0.25); cursor: pointer; background: #3f8fbf; }
@@ -411,7 +419,10 @@ body.touch #mobile-ctl { display: block; }
   body.placing #mobile-ctl { display: none; }
   .tracker { position: absolute; top: calc(84px + env(safe-area-inset-top, 0px)); left: 0; width: calc(100vw - 124px); }
   .hud-tr { right: 10px; }
-  #minimap { width: 88px; height: 88px; margin-top: 34px; }
+  #minimap { width: 88px; height: 88px; margin-top: 34px; order: 1; }
+  .speed { order: 2; }
+  .saved { order: 3; }
+  .speed button { min-width: 28px; height: 24px; font-size: 12px; padding: 0 4px; }
   .clock { padding-left: 9px; }
   .clock b { font-size: 14px; }
   #toasts { top: auto; bottom: calc(96px + env(safe-area-inset-bottom, 0px)); right: 10px; width: min(290px, calc(100% - 20px)); }
@@ -466,10 +477,12 @@ body.touch #mobile-ctl { display: block; }
 
     <div class="hud-tr">
       <div class="clock"><span id="clock-ic" class="ic">☀️</span><div><b id="clock-t">07:10</b><small id="clock-d">Day 1</small></div><button id="btn-settings" class="iconbtn" data-open="settings" aria-label="Settings">⚙</button></div>
+      <div id="speed" class="speed" role="group" aria-label="Game speed"><button data-speed="0" title="Pause (P)" aria-label="Pause">⏸</button><button data-speed="1" class="on" title="Normal speed (1)">1×</button><button data-speed="2" title="Speed ×2 (2)">2×</button><button data-speed="3" title="Speed ×3 (3)">3×</button><button data-speed="4" title="Speed ×4 (4)">4×</button></div>
       <canvas id="minimap" width="150" height="150" title="Open the land map"></canvas>
       <span id="saved" class="saved">Saved</span>
     </div>
 
+    <button id="paused" hidden aria-label="Resume the game"><b>⏸ Paused</b><small>Press P or tap to continue</small></button>
     <div id="event-banner" hidden></div>
     <div id="toasts" aria-live="polite"></div>
     <div id="hint" hidden></div>
@@ -5964,6 +5977,8 @@ const UI = {
     $('#pb-ok').addEventListener('click', () => BuildCtl.confirm());
     $('#pb-cancel').addEventListener('click', () => BuildCtl.cancel());
     $('#minimap').addEventListener('click', () => this.open('village', 'land'));
+    $$('#speed button').forEach((b) => b.addEventListener('click', () => Game.setSpeed(+b.dataset.speed)));
+    $('#paused').addEventListener('click', () => Game.togglePause());
     this.bindBus();
     Minimap.init();
   },
@@ -6023,6 +6038,8 @@ const UI = {
     if (k === 'e' && !e.repeat) { if (BuildCtl.active) return; Interact.press(); return; }
     if (k === 'r' && BuildCtl.active) return BuildCtl.rotate();
     if (k === 'q' && BuildCtl.active) return BuildCtl.rotate();
+    if (k === 'p') return Game.togglePause();
+    if (['1', '2', '3', '4'].includes(k)) return Game.setSpeed(+k);
     const map = { b: 'build', i: 'inventory', j: 'quests', v: 'village', t: 'shop', m: 'village' };
     if (map[k]) { this.toggle(map[k], k === 'm' ? 'land' : null); }
   },
@@ -6229,7 +6246,7 @@ const UI = {
       <h3>Sound</h3>${sl('master', 'Master')}${sl('music', 'Music')}${sl('sfx', 'Effects')}${sl('amb', 'Ambience')}
       <h3>Controls</h3>${sl('sens', 'Camera speed')}
       <label class="tg"><input type="checkbox" id="set-names" ${s.names ? 'checked' : ''}> Show villager names</label>
-      <div class="keys"><span><kbd>WASD</kbd> walk</span><span><kbd>Shift</kbd> run</span><span><kbd>Space</kbd> jump</span><span><kbd>E</kbd> interact</span><span><kbd>Drag</kbd> turn camera</span><span><kbd>Wheel</kbd> zoom</span><span><kbd>B</kbd> build</span><span><kbd>R</kbd> rotate</span><span><kbd>I J V T</kbd> menus</span><span><kbd>Esc</kbd> close</span></div>
+      <div class="keys"><span><kbd>WASD</kbd> walk</span><span><kbd>Shift</kbd> run</span><span><kbd>Space</kbd> jump</span><span><kbd>E</kbd> interact</span><span><kbd>Drag</kbd> turn camera</span><span><kbd>Wheel</kbd> zoom</span><span><kbd>B</kbd> build</span><span><kbd>R</kbd> rotate</span><span><kbd>I J V T</kbd> menus</span><span><kbd>P</kbd> pause</span><span><kbd>1–4</kbd> game speed</span><span><kbd>Esc</kbd> close</span></div>
       <h3>Your village</h3>
       <div class="btnrow"><button class="btn" id="set-save">Save now</button><button class="btn alt" id="set-export">Copy save code</button><button class="btn alt" id="set-import">Load save code</button><button class="btn danger" id="set-reset">Start over</button></div>
       <textarea id="set-code" rows="3" placeholder="Paste a save code here, then press Load save code." aria-label="Save code"></textarea>
@@ -6578,7 +6595,7 @@ const Minimap = {
    MAIN — boot, render loop, picking, quality settings
    ===================================================================== */
 const Game = {
-  renderer: null, scene: null, camera: null, state: 'loading', quality: 'medium', raycaster: new THREE.Raycaster(), lodT: 0, skipSave: false, fpsT: 0, frames: 0, slowFor: 0,
+  speed: 1, lastSpeed: 1, renderer: null, scene: null, camera: null, state: 'loading', quality: 'medium', raycaster: new THREE.Raycaster(), lodT: 0, skipSave: false, fpsT: 0, frames: 0, slowFor: 0,
   loading(p, text) { const f = $('#load-fill'); if (f) f.style.width = Math.round(p * 100) + '%'; if (text) $('#load-text').textContent = text; },
   async boot() {
     try {
@@ -6681,6 +6698,17 @@ const Game = {
     }
     DataService.save('start');
   },
+  setSpeed(v) {
+    v = clamp(v | 0, 0, 4);
+    if (v > 0) this.lastSpeed = v;
+    this.speed = v;
+    if (v === 0) { Interact.stopGather(); Player.auto = null; Input.keys.clear(); }
+    $$('#speed button').forEach((b) => b.classList.toggle('on', +b.dataset.speed === v));
+    $('#paused').hidden = v !== 0;
+    document.body.classList.toggle('is-paused', v === 0);
+    Audio.sfx('tick');
+  },
+  togglePause() { this.setSpeed(this.speed === 0 ? this.lastSpeed : 0); },
   resize() {
     const R = this.renderer; if (!R) return;
     R.setSize(innerWidth, innerHeight);
@@ -6778,9 +6806,12 @@ const Game = {
     const tJs = performance.now();
     try {
       if (this.state === 'play') {
-        Server.tick(dt);
-        Player.update(dt);
-        Interact.update(dt);
+        // game speed: 0 = paused, 1..4 = the world runs that many steps per frame (you keep walking at normal speed)
+        if (this.speed > 0) {
+          for (let i = 0; i < this.speed; i++) Server.tick(dt);
+          Player.update(dt);
+          Interact.update(dt);
+        }
         BuildCtl.update(dt);
       } else if (this.state === 'title') {
         NPCService.tick(dt);

@@ -2,7 +2,7 @@
    MAIN — boot, render loop, picking, quality settings
    ===================================================================== */
 const Game = {
-  renderer: null, scene: null, camera: null, state: 'loading', quality: 'medium', raycaster: new THREE.Raycaster(), lodT: 0, skipSave: false, fpsT: 0, frames: 0, slowFor: 0,
+  speed: 1, lastSpeed: 1, renderer: null, scene: null, camera: null, state: 'loading', quality: 'medium', raycaster: new THREE.Raycaster(), lodT: 0, skipSave: false, fpsT: 0, frames: 0, slowFor: 0,
   loading(p, text) { const f = $('#load-fill'); if (f) f.style.width = Math.round(p * 100) + '%'; if (text) $('#load-text').textContent = text; },
   async boot() {
     try {
@@ -105,6 +105,17 @@ const Game = {
     }
     DataService.save('start');
   },
+  setSpeed(v) {
+    v = clamp(v | 0, 0, 4);
+    if (v > 0) this.lastSpeed = v;
+    this.speed = v;
+    if (v === 0) { Interact.stopGather(); Player.auto = null; Input.keys.clear(); }
+    $$('#speed button').forEach((b) => b.classList.toggle('on', +b.dataset.speed === v));
+    $('#paused').hidden = v !== 0;
+    document.body.classList.toggle('is-paused', v === 0);
+    Audio.sfx('tick');
+  },
+  togglePause() { this.setSpeed(this.speed === 0 ? this.lastSpeed : 0); },
   resize() {
     const R = this.renderer; if (!R) return;
     R.setSize(innerWidth, innerHeight);
@@ -202,9 +213,12 @@ const Game = {
     const tJs = performance.now();
     try {
       if (this.state === 'play') {
-        Server.tick(dt);
-        Player.update(dt);
-        Interact.update(dt);
+        // game speed: 0 = paused, 1..4 = the world runs that many steps per frame (you keep walking at normal speed)
+        if (this.speed > 0) {
+          for (let i = 0; i < this.speed; i++) Server.tick(dt);
+          Player.update(dt);
+          Interact.update(dt);
+        }
         BuildCtl.update(dt);
       } else if (this.state === 'title') {
         NPCService.tick(dt);

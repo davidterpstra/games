@@ -17,6 +17,8 @@ const UI = {
     $('#pb-ok').addEventListener('click', () => BuildCtl.confirm());
     $('#pb-cancel').addEventListener('click', () => BuildCtl.cancel());
     $('#minimap').addEventListener('click', () => this.open('village', 'land'));
+    $$('#speed button').forEach((b) => b.addEventListener('click', () => Game.setSpeed(+b.dataset.speed)));
+    $('#paused').addEventListener('click', () => Game.togglePause());
     this.bindBus();
     Minimap.init();
   },
@@ -76,6 +78,8 @@ const UI = {
     if (k === 'e' && !e.repeat) { if (BuildCtl.active) return; Interact.press(); return; }
     if (k === 'r' && BuildCtl.active) return BuildCtl.rotate();
     if (k === 'q' && BuildCtl.active) return BuildCtl.rotate();
+    if (k === 'p') return Game.togglePause();
+    if (['1', '2', '3', '4'].includes(k)) return Game.setSpeed(+k);
     const map = { b: 'build', i: 'inventory', j: 'quests', v: 'village', t: 'shop', m: 'village' };
     if (map[k]) { this.toggle(map[k], k === 'm' ? 'land' : null); }
   },
@@ -282,7 +286,7 @@ const UI = {
       <h3>Sound</h3>${sl('master', 'Master')}${sl('music', 'Music')}${sl('sfx', 'Effects')}${sl('amb', 'Ambience')}
       <h3>Controls</h3>${sl('sens', 'Camera speed')}
       <label class="tg"><input type="checkbox" id="set-names" ${s.names ? 'checked' : ''}> Show villager names</label>
-      <div class="keys"><span><kbd>WASD</kbd> walk</span><span><kbd>Shift</kbd> run</span><span><kbd>Space</kbd> jump</span><span><kbd>E</kbd> interact</span><span><kbd>Drag</kbd> turn camera</span><span><kbd>Wheel</kbd> zoom</span><span><kbd>B</kbd> build</span><span><kbd>R</kbd> rotate</span><span><kbd>I J V T</kbd> menus</span><span><kbd>Esc</kbd> close</span></div>
+      <div class="keys"><span><kbd>WASD</kbd> walk</span><span><kbd>Shift</kbd> run</span><span><kbd>Space</kbd> jump</span><span><kbd>E</kbd> interact</span><span><kbd>Drag</kbd> turn camera</span><span><kbd>Wheel</kbd> zoom</span><span><kbd>B</kbd> build</span><span><kbd>R</kbd> rotate</span><span><kbd>I J V T</kbd> menus</span><span><kbd>P</kbd> pause</span><span><kbd>1–4</kbd> game speed</span><span><kbd>Esc</kbd> close</span></div>
       <h3>Your village</h3>
       <div class="btnrow"><button class="btn" id="set-save">Save now</button><button class="btn alt" id="set-export">Copy save code</button><button class="btn alt" id="set-import">Load save code</button><button class="btn danger" id="set-reset">Start over</button></div>
       <textarea id="set-code" rows="3" placeholder="Paste a save code here, then press Load save code." aria-label="Save code"></textarea>

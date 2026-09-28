@@ -23,10 +23,12 @@
 
     <div class="hud-tr">
       <div class="clock"><span id="clock-ic" class="ic">☀️</span><div><b id="clock-t">07:10</b><small id="clock-d">Day 1</small></div><button id="btn-settings" class="iconbtn" data-open="settings" aria-label="Settings">⚙</button></div>
+      <div id="speed" class="speed" role="group" aria-label="Game speed"><button data-speed="0" title="Pause (P)" aria-label="Pause">⏸</button><button data-speed="1" class="on" title="Normal speed (1)">1×</button><button data-speed="2" title="Speed ×2 (2)">2×</button><button data-speed="3" title="Speed ×3 (3)">3×</button><button data-speed="4" title="Speed ×4 (4)">4×</button></div>
       <canvas id="minimap" width="150" height="150" title="Open the land map"></canvas>
       <span id="saved" class="saved">Saved</span>
     </div>
 
+    <button id="paused" hidden aria-label="Resume the game"><b>⏸ Paused</b><small>Press P or tap to continue</small></button>
     <div id="event-banner" hidden></div>
     <div id="toasts" aria-live="polite"></div>
     <div id="hint" hidden></div>
