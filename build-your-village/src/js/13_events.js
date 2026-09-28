@@ -119,7 +119,7 @@ const EventService = {
     const r = BuildingService.rect(b.type, b.x, b.z, b.rot);
     const d = Math.hypot(Math.max(r.x0 - Player.x, 0, Player.x - r.x1), Math.max(r.z0 - Player.z, 0, Player.z - r.z1));
     if (d > 3.6) return fail('Get closer to the fire');
-    const wells = Math.min(3, BuildingService.count('well') + BuildingService.count('fountain'));
+    const wells = Math.min(6, BuildingService.count('well') + BuildingService.count('fountain') + BuildingService.count('fire_station') * 3);
     ev.p = Math.min(1, ev.p + dt / (4 / (1 + wells * 0.4)));
     if (ev.p >= 1) {
       ev.done = true; ev.finished = true;
@@ -184,7 +184,7 @@ const EventService = {
   },
   tickWolves(dt) {
     this.guardT -= dt;
-    const guards = this.guardT <= 0 ? S.buildings.filter((b) => b.type === 'guard_tower' && Village.workersOf(b.id).length) : [];
+    const guards = this.guardT <= 0 ? S.buildings.filter((b) => (b.type === 'guard_tower' || b.type === 'barracks') && Village.workersOf(b.id).length) : [];
     if (this.guardT <= 0) this.guardT = 1.6;
     for (let i = this.wolves.length - 1; i >= 0; i--) {
       const w = this.wolves[i];

@@ -251,6 +251,6 @@ const Game = {
 };
 
 // developer hook (only with ?debug in the URL): lets automated tests drive the game
-if (/[?&]debug\b/.test(location.search)) window.BYV = { get S() { return S; }, Server, Game, Remote, Player, Nodes, NPCService, EventService, ZoneService, ZoneCtl, BuildingService, Village, UI, BuildCtl, Interact, DataService, Economy, CameraCtl, World, QuestService, Chars, AREAS, BUILDINGS };
+if (/[?&]debug\b/.test(location.search)) window.BYV = { get S() { return S; }, Thumbs, Server, Game, Remote, Player, Nodes, NPCService, EventService, ZoneService, ZoneCtl, BuildingService, Village, UI, BuildCtl, Interact, DataService, Economy, CameraCtl, World, QuestService, Chars, AREAS, BUILDINGS };
 
 Game.boot();

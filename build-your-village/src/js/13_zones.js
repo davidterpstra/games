@@ -24,23 +24,23 @@ const ZoneService = {
   plan(z) {
     const pop = Village.population(), freeHomes = Village.capacity() - pop;
     const unemployed = S.npcs.filter((n) => !n.work).length;
-    const houses = ['townhouse', 'manor', 'cottage', 'small_house'];
+    const houses = ['apartments', 'villa', 'townhouse', 'tower_house', 'row_houses', 'manor', 'farmhouse', 'cottage', 'log_cabin', 'small_house'];
     const inZone = (t) => S.buildings.filter((b) => b.zone === z.id && b.type === t).length;
     const byNeed = () => {
       const L = [];
       const full = RES_KEYS.some((k) => S.res[k] >= Economy.cap(k) * 0.85);
-      if (full) L.push('warehouse', 'storage_shed');
-      if (S.res.food < Math.max(20, pop * 4)) L.push('bakery', 'fisher_hut', 'farm');
+      if (full) L.push('warehouse', 'granary', 'storage_shed');
+      if (S.res.food < Math.max(20, pop * 4)) L.push('greenhouse', 'dairy_farm', 'bakery', 'orchard', 'fisher_hut', 'chicken_coop', 'farm');
       if (S.res.wheat < 20 && BuildingService.count('bakery')) L.push('large_farm', 'farm');
-      if (S.res.wood < Economy.cap('wood') * 0.4) L.push('woodcutter');
-      if (S.res.stone < Economy.cap('stone') * 0.4) L.push('stonecutter', 'mine');
+      if (S.res.wood < Economy.cap('wood') * 0.4) L.push('lumber_camp', 'woodcutter');
+      if (S.res.stone < Economy.cap('stone') * 0.4) L.push('quarry_works', 'stonecutter', 'mine');
       if (BuildingService.count('farm') + BuildingService.count('large_farm') >= 2 && !BuildingService.count('windmill')) L.push('windmill');
       if (S.res.iron > 40 && !BuildingService.count('blacksmith')) L.push('blacksmith');
-      if (unemployed) L.push('woodcutter', 'farm', 'stonecutter', 'fisher_hut', 'workshop', 'guard_tower');
+      if (unemployed) L.push('vineyard', 'sheep_pasture', 'lumber_camp', 'woodcutter', 'farm', 'beehives', 'stonecutter', 'fisher_hut', 'workshop', 'sawmill', 'guard_tower');
       return L;
     };
-    const shops = ['large_market', 'marketplace', 'general_store', 'bakery', 'market_stall', 'tavern', 'inn', 'blacksmith'].filter((t) => BUILDINGS[t].unique || BuildingService.count(t) < 2);
-    const park = ['statue', 'fountain', 'planted_tree', 'flower_bed', 'bench', 'lantern', 'planted_tree', 'flower_bed'];
+    const shops = ['bank', 'large_market', 'theater', 'marketplace', 'apothecary', 'tailor', 'post_office', 'general_store', 'bakery', 'butcher', 'pottery', 'market_stall', 'tavern', 'inn', 'blacksmith'].filter((t) => BUILDINGS[t].unique || BuildingService.count(t) < 2);
+    const park = ['statue', 'obelisk', 'fountain', 'gazebo', 'garden_pond', 'topiary', 'rose_arch', 'bonfire', 'market_cart', 'flag_pole', 'hedge', 'planted_tree', 'flower_bed', 'bench', 'lantern', 'planted_tree', 'flower_bed'];
     let kind = z.kind;
     if (kind === 'auto') kind = freeHomes < 2 ? 'homes' : unemployed > 0 || byNeed().length ? 'work' : BuildingService.count('general_store') + BuildingService.count('market_stall') < Math.ceil(pop / 6) ? 'market' : 'park';
     if (kind === 'homes') {
