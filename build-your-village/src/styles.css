@@ -227,6 +227,28 @@ body.is-paused #game { filter: saturate(0.6) brightness(0.9); }
 .savebox .grow { display: flex; flex-direction: column; gap: 2px; }
 .savebox small { color: var(--ink-2); font-size: 12px; }
 
+/* policies */
+.policy { background: var(--paper-2); border: 2px solid var(--edge); border-radius: 16px; padding: 12px 14px; }
+.policy.on { border-color: var(--leaf); }
+.pol-h { display: flex; align-items: center; gap: 12px; }
+.pol-h .ic { font-size: 28px; }
+.pol-h .grow { display: flex; flex-direction: column; gap: 2px; }
+.pol-h small { color: var(--ink-2); font-size: 12px; line-height: 1.4; }
+.pol-body { display: flex; flex-direction: column; gap: 10px; margin-top: 12px; }
+.pol-body .seg { align-self: flex-start; }
+.policy:not(.on) .pol-body { opacity: 0.5; }
+.amt { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; font-weight: 700; }
+.amt input { width: 90px; font: inherit; font-weight: 800; padding: 5px 8px; border-radius: 10px; border: 2px solid var(--edge); background: var(--paper); color: var(--ink); font-variant-numeric: tabular-nums; user-select: text; -webkit-user-select: text; }
+.pol-sum { display: flex; flex-wrap: wrap; gap: 6px; }
+.pol-sum span { background: var(--paper); border: 1px solid var(--edge); border-radius: 99px; padding: 3px 10px; font-size: 12px; }
+.switch { position: relative; width: 52px; height: 30px; flex: none; }
+.switch input { position: absolute; inset: 0; opacity: 0; margin: 0; cursor: pointer; z-index: 1; }
+.switch i { position: absolute; inset: 0; border-radius: 99px; background: var(--paper-3); border: 2px solid var(--edge-2); transition: background 0.2s; }
+.switch i::after { content: ''; position: absolute; left: 3px; top: 3px; width: 20px; height: 20px; border-radius: 50%; background: #fff; box-shadow: 0 2px 4px rgba(0, 0, 0, 0.25); transition: transform 0.2s; }
+.switch input:checked + i { background: var(--leaf); border-color: var(--leaf-2); }
+.switch input:checked + i::after { transform: translateX(22px); }
+.switch input:focus-visible + i { outline: 3px solid var(--honey); outline-offset: 2px; }
+
 /* build zones */
 .zkinds { display: grid; grid-template-columns: repeat(auto-fill, minmax(128px, 1fr)); gap: 8px; }
 .zkind { min-width: 0; }

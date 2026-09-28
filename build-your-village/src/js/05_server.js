@@ -47,6 +47,7 @@ const DataService = {
       time: { day: 1, hour: 7.2 },
       nodes: { cleared: [], dep: {} },
       zones: [], nextZone: 1,
+      policies: { benefit: { on: false, mode: 'person', amount: 10, lastPaid: 0, lastShare: 0 } },
       chests: [],
       ev: { next: 330 },
       sat: {},
@@ -166,6 +167,10 @@ const DataService = {
     }
     if (Array.isArray(st.zones)) out.zones = st.zones.filter((z) => z && [z.x0, z.z0, z.x1, z.z1, z.id].every(isNum) && ZONE_KINDS[z.kind]).slice(0, 12).map((z) => ({ id: z.id, x0: z.x0, z0: z.z0, x1: z.x1, z1: z.z1, kind: z.kind, paused: !!z.paused, built: num(z.built, 0, 0) }));
     out.nextZone = Math.max(num(st.nextZone, 1), ...out.zones.map((z) => z.id + 1), 1);
+    if (st.policies && st.policies.benefit) {
+      const b = st.policies.benefit;
+      out.policies.benefit = { on: !!b.on, mode: b.mode === 'total' ? 'total' : 'person', amount: Math.floor(num(b.amount, 10, 0, b.mode === 'total' ? 100000 : 1000)), lastPaid: num(b.lastPaid, 0, 0), lastShare: num(b.lastShare, 0, 0) };
+    }
     out.chests = Array.isArray(st.chests) ? st.chests.filter((c) => CHESTS.some((q) => q.id === c)) : [];
     out.ev.next = num(st.ev && st.ev.next, 330, 30, 2000);
     out.sat = {};
@@ -297,7 +302,14 @@ const Village = {
     add('Entertainment', ent, '🎭');
     add('Safety', Math.min(10, 2 + this.sumHappy('safety')), '🛡️');
     add('Services', Math.min(20, this.sumHappy('service')), '⛲');
-    if (pop > 0) { const unemp = S.npcs.filter((n) => !n.work).length; if (unemp) add('Unemployment', -(unemp / pop) * 12, '💼'); }
+    if (pop > 0) {
+      const unemp = S.npcs.filter((n) => !n.work).length;
+      if (unemp) {
+        const relief = PolicyService.relief();
+        add('Unemployment', -(unemp / pop) * 12 * (1 - relief), '💼');
+        if (relief > 0) add('Unemployment benefit', (unemp / pop) * 4 * relief, '🤲');
+      }
+    }
     const dmg = S.buildings.filter((b) => b.damaged).length; if (dmg) add('Damaged buildings', -6 * dmg, '🔥');
     if (EventService.is('rain')) add('Rainy weather', -4, '🌧️');
     if (EventService.active && EventService.active.id === 'wolves' && EventService.active.stolen) add('Wolf scare', -8, '🐺');
@@ -349,7 +361,8 @@ const Village = {
     const xp = 10 + pop * 4;
     if (taxes > 0) Economy.add('coins', taxes, 'taxes', null);
     this.addXP(xp, 'day');
-    Bus.emit('newday', { day: S.time.day, taxes, xp });
+    const benefit = PolicyService.payBenefit();
+    Bus.emit('newday', { day: S.time.day, taxes, xp, benefit });
     NPCService.onNewDay();
     DataService.save('day');
   },
@@ -785,6 +798,41 @@ const AchievementService = {
   },
 };
 
+/* ---------------- PolicyService: village rules you can switch on ---------------- */
+const PolicyService = {
+  /* how many coins each jobless villager gets per day under the current settings */
+  shareFor(jobless) {
+    const b = S.policies.benefit;
+    if (!b.on || !jobless) return 0;
+    return b.mode === 'person' ? b.amount : Math.floor(b.amount / jobless);
+  },
+  /* 0..1: how much the benefit takes away the unhappiness of being jobless (15+ coins/day = fully) */
+  relief() { const b = S.policies.benefit; return b.on && b.lastPaid >= S.time.day - 1 ? clamp(b.lastShare / 15, 0, 1) : 0; },
+  payBenefit() {
+    const b = S.policies.benefit;
+    if (!b.on) return null;
+    const jobless = S.npcs.filter((n) => !n.work);
+    if (!jobless.length) { b.lastShare = 0; return { paid: 0, people: 0 }; }
+    let share = this.shareFor(jobless.length);
+    let short = false;
+    if (share * jobless.length > S.coins) { share = Math.floor(S.coins / jobless.length); short = true; }
+    const paid = share * jobless.length;
+    S.coins -= paid;
+    for (const n of jobless) { n.money += share; n.happy = Math.min(100, n.happy + Math.min(10, share / 1.5)); }
+    b.lastPaid = S.time.day; b.lastShare = share;
+    Bus.emit('res', {});
+    return { paid, people: jobless.length, share, short };
+  },
+  set(p) {
+    const b = S.policies.benefit;
+    if (typeof p.on === 'boolean') b.on = p.on;
+    if (p.mode === 'person' || p.mode === 'total') b.mode = p.mode;
+    if (isNum(p.amount)) b.amount = Math.floor(clamp(p.amount, 0, b.mode === 'total' ? 100000 : 1000));
+    DataService.dirty = true;
+    return { ok: true };
+  },
+};
+
 /* ---------------- misc remotes ---------------- */
 const MiscService = {
   openChest(id) {
@@ -849,6 +897,7 @@ function registerRemotes() {
   Remote.handle('Pickup', (a) => (isNum(a.id) ? EventService.pickup(a.id) : fail('Bad request')), 0.4);
   Remote.handle('MerchantDeal', (a) => (isNum(a.i) ? EventService.buyDeal(a.i) : fail('Bad request')), 0.3);
   Remote.handle('GreetVisitor', () => EventService.greet(), 1);
+  Remote.handle('SetPolicy', (a) => PolicyService.set(a), 0);
   Remote.handle('CreateZone', (a) => ZoneService.create(a), 0.3);
   Remote.handle('ToggleZone', (a) => (isNum(a.id) ? ZoneService.toggle(a.id) : fail('Bad request')), 0.2);
   Remote.handle('RemoveZone', (a) => (isNum(a.id) ? ZoneService.remove(a.id) : fail('Bad request')), 0.2);

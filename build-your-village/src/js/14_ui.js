@@ -81,7 +81,7 @@ const UI = {
     Bus.on('quest:claimed', (q) => { Audio.sfx('coin'); FX.sparkle(Player.pos(), 14); this.refreshOpen(); this.dirty = true; });
     Bus.on('quests', () => { this.trackerDirty = true; });
     Bus.on('achievement', (a) => { this.toast({ icon: a.icon, title: 'Achievement: ' + a.name, text: a.desc + ' · ' + this.costText(a.reward), cls: 'ach' }); Audio.sfx('fanfare'); });
-    Bus.on('newday', (d) => { this.toast({ icon: '🌅', title: 'Good morning! Day ' + d.day, text: `${d.taxes ? 'Taxes collected: +' + d.taxes + ' 🪙 · ' : ''}+${d.xp} XP` }); Audio.sfx('bell'); });
+    Bus.on('newday', (d) => { this.toast({ icon: '🌅', title: 'Good morning! Day ' + d.day, text: `${d.taxes ? 'Taxes collected: +' + d.taxes + ' 🪙 · ' : ''}${d.benefit && d.benefit.paid ? 'Benefits paid: −' + d.benefit.paid + ' 🪙 to ' + d.benefit.people + ' jobless · ' : ''}+${d.xp} XP` }); if (d.benefit && d.benefit.short) this.toast({ icon: '⚠️', title: 'Treasury ran short', text: 'Jobless villagers got less than planned today.' }); Audio.sfx('bell'); this.refreshOpen(); });
     Bus.on('event:start', (ev) => { this.banner({ icon: ev.cfg.icon, title: ev.cfg.name, text: ev.cfg.desc, ev: true }); Audio.sfx(ev.id === 'wolves' ? 'wolf' : ev.id === 'festival' || ev.id === 'harvest' ? 'fanfare' : 'bell'); });
     Bus.on('event:end', (ev) => { this.hideBanner(); this.toast({ icon: ev.cfg.icon, title: ev.cfg.name + ' is over', text: ev.id === 'wolves' ? 'The wolves are gone.' : ev.id === 'fire' && ev.done ? 'Crisis averted.' : 'Back to village life.' }); });
     Bus.on('look', () => { Player.refreshLook(); this.refreshOpen(); });
@@ -158,6 +158,7 @@ const UI = {
     $$('[data-welcome]', el).forEach((b) => b.addEventListener('click', () => { const r = Remote.invoke('Welcome'); if (!r.ok) this.toast({ icon: '🏠', title: 'No room yet', text: r.err }); this.refreshOpen(); }));
     $$('[data-npc]', el).forEach((b) => b.addEventListener('click', () => { const n = S.npcs.find((q) => q.id === +b.dataset.npc); if (n) { this.closePanels(); this.npcCard(n); } }));
     if (name === 'settings') this.wireSettings(el);
+    if (name === 'village' && this.villageTab === 'policies') this.wirePolicies(el);
   },
   /* ---------- helpers ---------- */
   costText(c) { return Object.entries(c).filter(([k]) => k !== 'cos').map(([k, v]) => (k === 'xp' ? `${v} XP` : `${fmt(v)} ${ITEMS[k] ? ITEMS[k].icon : ''}`)).join(' · ') + (c.cos ? ` · 🎁 ${COSMETICS[c.cos].name}` : ''); },
@@ -255,7 +256,8 @@ const UI = {
   },
   /* ---------- VILLAGE ---------- */
   villageHtml() {
-    const tabs = this.tabs([['overview', '🏘️ Overview'], ['residents', `👥 Residents ${Village.population()}`], ['land', '🗺️ Land']], this.villageTab);
+    const tabs = this.tabs([['overview', '🏘️ Overview'], ['residents', `👥 Residents ${Village.population()}`], ['land', '🗺️ Land'], ['policies', '📋 Policies']], this.villageTab);
+    if (this.villageTab === 'policies') return tabs + this.policiesHtml();
     if (this.villageTab === 'residents') {
       const rows = S.npcs.map((n) => {
         const home = BuildingService.byId(n.home), work = BuildingService.byId(n.work);
@@ -290,6 +292,30 @@ const UI = {
     ].map(([i, l, v]) => `<div class="tile"><span class="ic">${i}</span><small>${l}</small><b>${v}</b></div>`).join('');
     const fac = hap.factors.map((f) => `<div class="fac"><span>${f.icon} ${esc(f.name)}</span><b class="${f.v < 0 ? 'neg' : ''}">${f.v > 0 ? '+' : ''}${f.v}</b></div>`).join('');
     return tabs + (S.candidate ? `<div class="callout"><span>👋 <b>New Resident Available!</b> ${esc(S.candidate.name)} is waiting.</span><button class="btn good" data-welcome>Welcome</button></div>` : '') + `<div class="tiles">${tiles}</div><h3>What makes villagers happy</h3><div class="facs">${fac}</div><p class="muted small">Happier villages attract new residents faster and work harder.</p>`;
+  },
+  policiesHtml() {
+    const b = S.policies.benefit;
+    const jobless = S.npcs.filter((n) => !n.work).length;
+    const share = b.mode === 'person' ? b.amount : jobless ? Math.floor(b.amount / jobless) : 0;
+    const total = b.mode === 'person' ? b.amount * jobless : jobless ? share * jobless : 0;
+    const relief = Math.round(clamp(share / 15, 0, 1) * 100);
+    return `<div class="policy${b.on ? ' on' : ''}">
+      <div class="pol-h"><span class="ic">🤲</span><div class="grow"><b>Unemployment benefit</b><small>Villagers without a job get coins from the treasury every morning. They stay happier and spend part of it in your shops.</small></div>
+        <label class="switch"><input type="checkbox" id="pol-on" ${b.on ? 'checked' : ''} aria-label="Unemployment benefit on or off"><i></i></label></div>
+      <div class="pol-body">
+        <div class="seg" role="radiogroup"><button data-pmode="person" class="${b.mode === 'person' ? 'on' : ''}" role="radio" aria-checked="${b.mode === 'person'}">Per person</button><button data-pmode="total" class="${b.mode === 'total' ? 'on' : ''}" role="radio" aria-checked="${b.mode === 'total'}">Total budget</button></div>
+        <div class="amt"><button class="btn sm alt" data-pstep="-${b.mode === 'total' ? 25 : 5}">−</button><label><input type="number" id="pol-amt" min="0" max="${b.mode === 'total' ? 100000 : 1000}" step="${b.mode === 'total' ? 25 : 1}" value="${b.amount}"> 🪙 ${b.mode === 'person' ? 'per jobless villager per day' : 'per day, shared by all jobless villagers'}</label><button class="btn sm alt" data-pstep="${b.mode === 'total' ? 25 : 5}">+</button></div>
+        <div class="pol-sum"><span>👥 Jobless now: <b>${jobless}</b></span><span>🪙 Each gets: <b>${share}</b>/day</span><span>💸 Cost: <b>${total}</b>/day</span><span>😊 Takes away <b>${relief}%</b> of their unhappiness${relief < 100 ? ' (15 🪙 each = 100%)' : ''}</span></div>
+        ${b.lastPaid ? `<small class="muted">Last paid on day ${b.lastPaid}: ${b.lastShare} 🪙 each.</small>` : ''}
+      </div></div>
+      <p class="muted small">Payment happens every morning at 06:00, together with the taxes. If the treasury runs short, everyone gets an equal part of what is left.</p>`;
+  },
+  wirePolicies(el) {
+    const set = (p) => { Remote.invoke('SetPolicy', p); Village.computeHappiness(); this.render('village'); };
+    $('#pol-on', el)?.addEventListener('change', (e) => { set({ on: e.target.checked }); Audio.sfx('tick'); });
+    $$('[data-pmode]', el).forEach((b) => b.addEventListener('click', () => { const mode = b.dataset.pmode; const cur = S.policies.benefit; set({ mode, amount: mode === 'total' && cur.mode === 'person' ? cur.amount * Math.max(1, S.npcs.filter((n) => !n.work).length) : mode === 'person' && cur.mode === 'total' ? Math.max(1, Math.round(cur.amount / Math.max(1, S.npcs.filter((n) => !n.work).length))) : cur.amount }); }));
+    $$('[data-pstep]', el).forEach((b) => b.addEventListener('click', () => set({ amount: Math.max(0, S.policies.benefit.amount + +b.dataset.pstep) })));
+    $('#pol-amt', el)?.addEventListener('change', (e) => set({ amount: Math.max(0, +e.target.value || 0) }));
   },
   /* ---------- SHOP ---------- */
   shopHtml() {

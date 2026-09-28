@@ -567,7 +567,7 @@ const NPCService = {
       const n = r.n;
       if (r.cand || r.leaving) continue;
       n.hunger = Math.min(100, n.hunger + (blk === 'sleep' ? 0.4 : 1.1));
-      const target = clamp(hap + (n.work ? 5 : -10) - (n.hunger > 70 ? 15 : 0), 0, 100);
+      const target = clamp(hap + (n.work ? 5 : -10 + 10 * PolicyService.relief()) - (n.hunger > 70 ? 15 : 0), 0, 100);
       n.happy += (target - n.happy) * 0.05;
       const working = n.work && ((r.state === 'work' && r.workB === n.work) || (r.state === 'inside' && r.inB === n.work));
       if (!working) continue;
