@@ -100,12 +100,14 @@ const ZoneService = {
       let started = false;
       for (const type of wants) {
         if (!BUILDINGS[type] || S.level < BUILDINGS[type].level) continue;
-        const can = BuildingService.canBuild(type);
+        const split = PolicyService.splitCost(BUILDINGS[type].cost);
+        const can = BuildingService.canBuild(type, split.town);
         if (!can.ok) { if (/^Not enough/.test(can.err)) why = `Saving up for a ${BUILDINGS[type].name}`; continue; }
-        if (!this.affordable(BUILDINGS[type].cost)) { why = `Saving up for a ${BUILDINGS[type].name}`; continue; }
+        if (!this.affordable(split.town)) { why = `Saving up for a ${BUILDINGS[type].name}`; continue; }
+        if (split.villagers > PolicyService.savings()) { why = `Villagers are saving for their share of a ${BUILDINGS[type].name} (${fmt(PolicyService.savings())}/${fmt(split.villagers)} 🪙)`; continue; }
         const spot = this.findSpot(z, type);
         if (!spot) { why = 'No room left for a ' + BUILDINGS[type].name; continue; }
-        const r = BuildingService.place(type, spot.x, spot.z, spot.rot, { zone: z.id });
+        const r = BuildingService.place(type, spot.x, spot.z, spot.rot, { zone: z.id, split });
         if (r.ok) { started = true; z.built = (z.built || 0) + 1; this.status[z.id] = 'Building a ' + BUILDINGS[type].name; Bus.emit('zone:site', { z, b: r.b }); break; }
       }
       if (!started) this.status[z.id] = why;

@@ -308,7 +308,22 @@ const UI = {
         <div class="pol-sum"><span>👥 Jobless now: <b>${jobless}</b></span><span>🪙 Each gets: <b>${share}</b>/day</span><span>💸 Cost: <b>${total}</b>/day</span><span>😊 Takes away <b>${relief}%</b> of their unhappiness${relief < 100 ? ' (15 🪙 each = 100%)' : ''}</span></div>
         ${b.lastPaid ? `<small class="muted">Last paid on day ${b.lastPaid}: ${b.lastShare} 🪙 each.</small>` : ''}
       </div></div>
-      <p class="muted small">Payment happens every morning at 06:00, together with the taxes. If the treasury runs short, everyone gets an equal part of what is left.</p>`;
+      <p class="muted small">Payment happens every morning at 06:00, together with the taxes. If the treasury runs short, everyone gets an equal part of what is left.</p>
+      ${this.buildPolicyHtml()}`;
+  },
+  buildPolicyHtml() {
+    const p = S.policies.build, t = p.town;
+    const ex = BUILDINGS[BuildingService.canBuild('cottage').ok || S.level >= 5 ? 'cottage' : 'small_house'];
+    const sp = PolicyService.splitCost(ex.cost);
+    const label = t === 100 ? 'The town pays everything' : t === 0 ? 'The villagers pay everything' : `Town ${t}% · villagers ${100 - t}%`;
+    return `<div class="policy on">
+      <div class="pol-h"><span class="ic">🏗️</span><div class="grow"><b>Construction funding</b><small>Who pays when villagers build in your build zones. The villagers' part comes out of their own savings (they earn wages at work); materials the town does not supply, they buy themselves.</small></div></div>
+      <div class="pol-body">
+        <label class="sl"><span>${label}</span><input type="range" id="pol-town" min="0" max="100" step="10" value="${t}" aria-label="Share the town pays"></label>
+        <div class="pol-sum"><span>🏛️ Town pays: <b>${t}%</b></span><span>👥 Villagers pay: <b>${100 - t}%</b></span><span>💰 Villagers' savings: <b>${fmt(PolicyService.savings())}</b> 🪙</span><span>🧾 Paid by villagers so far: <b>${fmt(p.villagersPaid)}</b> 🪙</span></div>
+        <small class="muted">Example, a ${ex.name}: the town gives ${this.costText(sp.town) || 'nothing'}${sp.villagers ? `, the villagers add ${fmt(sp.villagers)} 🪙` : ''}.</small>
+      </div></div>
+      <p class="muted small">Buildings you place yourself are always paid by you. A lower town share saves your storage, but sites start only when the villagers have saved enough.</p>`;
   },
   wirePolicies(el) {
     const set = (p) => { Remote.invoke('SetPolicy', p); Village.computeHappiness(); this.render('village'); };
@@ -316,6 +331,9 @@ const UI = {
     $$('[data-pmode]', el).forEach((b) => b.addEventListener('click', () => { const mode = b.dataset.pmode; const cur = S.policies.benefit; set({ mode, amount: mode === 'total' && cur.mode === 'person' ? cur.amount * Math.max(1, S.npcs.filter((n) => !n.work).length) : mode === 'person' && cur.mode === 'total' ? Math.max(1, Math.round(cur.amount / Math.max(1, S.npcs.filter((n) => !n.work).length))) : cur.amount }); }));
     $$('[data-pstep]', el).forEach((b) => b.addEventListener('click', () => set({ amount: Math.max(0, S.policies.benefit.amount + +b.dataset.pstep) })));
     $('#pol-amt', el)?.addEventListener('change', (e) => set({ amount: Math.max(0, +e.target.value || 0) }));
+    const town = $('#pol-town', el);
+    town?.addEventListener('input', () => { const v = +town.value; town.previousElementSibling.textContent = v === 100 ? 'The town pays everything' : v === 0 ? 'The villagers pay everything' : `Town ${v}% · villagers ${100 - v}%`; });
+    town?.addEventListener('change', () => { Remote.invoke('SetBuildPolicy', { town: +town.value }); Audio.sfx('tick'); this.render('village'); });
   },
   /* ---------- SHOP ---------- */
   shopHtml() {

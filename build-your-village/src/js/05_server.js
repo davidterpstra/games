@@ -47,7 +47,7 @@ const DataService = {
       time: { day: 1, hour: 7.2 },
       nodes: { cleared: [], dep: {} },
       zones: [], nextZone: 1,
-      policies: { benefit: { on: false, mode: 'person', amount: 10, lastPaid: 0, lastShare: 0 } },
+      policies: { benefit: { on: false, mode: 'person', amount: 10, lastPaid: 0, lastShare: 0 }, build: { town: 100, villagersPaid: 0 } },
       chests: [],
       ev: { next: 330 },
       sat: {},
@@ -171,6 +171,7 @@ const DataService = {
       const b = st.policies.benefit;
       out.policies.benefit = { on: !!b.on, mode: b.mode === 'total' ? 'total' : 'person', amount: Math.floor(num(b.amount, 10, 0, b.mode === 'total' ? 100000 : 1000)), lastPaid: num(b.lastPaid, 0, 0), lastShare: num(b.lastShare, 0, 0) };
     }
+    if (st.policies && st.policies.build) out.policies.build = { town: Math.round(num(st.policies.build.town, 100, 0, 100) / 10) * 10, villagersPaid: num(st.policies.build.villagersPaid, 0, 0) };
     out.chests = Array.isArray(st.chests) ? st.chests.filter((c) => CHESTS.some((q) => q.id === c)) : [];
     out.ev.next = num(st.ev && st.ev.next, 330, 30, 2000);
     out.sat = {};
@@ -480,20 +481,26 @@ const BuildingService = {
     for (const c of CAVES) if (Math.hypot(x - c.x, z - c.z) < 14 + Math.max(W, D) / 2) return fail('Too close to the cave');
     return { ok: true, y };
   },
-  canBuild(type) {
+  canBuild(type, cost = null) {
     const cfg = BUILDINGS[type];
+    cost = cost || cfg.cost;
     if (!cfg || cfg.hidden) return fail('Unknown building');
     if (S.level < cfg.level) return fail(`Unlocks at level ${cfg.level}`);
     if (cfg.unique && this.count(type) > 0) return fail('You can only build one');
     if (cfg.needs2 && this.count(cfg.needs2) === 0) return fail('Requires a ' + BUILDINGS[cfg.needs2].name);
-    if (!Economy.has(cfg.cost)) return fail('Not enough ' + ITEMS[Economy.missing(cfg.cost)].name.toLowerCase());
+    if (!Economy.has(cost)) return fail('Not enough ' + ITEMS[Economy.missing(cost)].name.toLowerCase());
     return { ok: true };
   },
   place(type, x, z, rot, opts = {}) {
-    const can = this.canBuild(type); if (!can.ok) return can;
+    // zone builds may be co-funded by the villagers (Policies > Construction funding)
+    const split = opts.split || null;
+    const townCost = split ? split.town : BUILDINGS[type].cost;
+    const can = this.canBuild(type, townCost); if (!can.ok) return can;
     [x, z] = this.snap(type, x, z, rot);
     const chk = this.check(type, x, z, rot); if (!chk.ok) return chk;
-    if (!Economy.spend(BUILDINGS[type].cost)) return fail('Not enough resources');
+    if (split && split.villagers > PolicyService.savings()) return fail('The villagers cannot afford their share yet');
+    if (!Economy.spend(townCost)) return fail('Not enough resources');
+    if (split && split.villagers > 0) PolicyService.collect(split.villagers);
     const b = { id: S.nextId++, type, x, z, rot, y: chk.y, damaged: false };
     const cfg = BUILDINGS[type];
     if (opts.zone != null) {
@@ -823,6 +830,31 @@ const PolicyService = {
     Bus.emit('res', {});
     return { paid, people: jobless.length, share, short };
   },
+  /* construction funding: the town pays town% of each zone build, villagers pay the rest from their savings.
+     Materials the town does not supply are bought by the villagers at 80% of the shop price. */
+  splitCost(cost) {
+    const t = S.policies.build.town / 100;
+    const town = {}; let villagers = 0;
+    for (const k in cost) {
+      const tv = Math.ceil(cost[k] * t);
+      if (tv > 0) town[k] = tv;
+      const rest = cost[k] - tv;
+      villagers += k === 'coins' ? rest : rest * (ITEMS[k].buy || 4) * 0.8;
+    }
+    return { town, villagers: Math.ceil(villagers) };
+  },
+  savings() { return Math.floor(S.npcs.reduce((s, n) => s + n.money, 0)); },
+  /* take the villagers' share, richest first, so nobody is left with nothing */
+  collect(amount) {
+    const total = this.savings(); if (amount <= 0 || total <= 0) return;
+    for (const n of S.npcs) n.money = Math.max(0, n.money - amount * (n.money / total));
+    S.policies.build.villagersPaid += amount;
+  },
+  setBuild(p) {
+    if (isNum(p.town)) S.policies.build.town = clamp(Math.round(p.town / 10) * 10, 0, 100);
+    DataService.dirty = true;
+    return { ok: true };
+  },
   set(p) {
     const b = S.policies.benefit;
     if (typeof p.on === 'boolean') b.on = p.on;
@@ -898,6 +930,7 @@ function registerRemotes() {
   Remote.handle('MerchantDeal', (a) => (isNum(a.i) ? EventService.buyDeal(a.i) : fail('Bad request')), 0.3);
   Remote.handle('GreetVisitor', () => EventService.greet(), 1);
   Remote.handle('SetPolicy', (a) => PolicyService.set(a), 0);
+  Remote.handle('SetBuildPolicy', (a) => PolicyService.setBuild(a), 0);
   Remote.handle('CreateZone', (a) => ZoneService.create(a), 0.3);
   Remote.handle('ToggleZone', (a) => (isNum(a.id) ? ZoneService.toggle(a.id) : fail('Bad request')), 0.2);
   Remote.handle('RemoveZone', (a) => (isNum(a.id) ? ZoneService.remove(a.id) : fail('Bad request')), 0.2);

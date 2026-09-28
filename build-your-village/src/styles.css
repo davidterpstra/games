@@ -236,6 +236,8 @@ body.is-paused #game { filter: saturate(0.6) brightness(0.9); }
 .pol-h small { color: var(--ink-2); font-size: 12px; line-height: 1.4; }
 .pol-body { display: flex; flex-direction: column; gap: 10px; margin-top: 12px; }
 .pol-body .seg { align-self: flex-start; }
+.policy + .muted + .policy, .policy ~ .policy { margin-top: 14px; }
+.pol-body .sl { grid-template-columns: minmax(0, 220px) 1fr; }
 .policy:not(.on) .pol-body { opacity: 0.5; }
 .amt { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; font-weight: 700; }
 .amt input { width: 90px; font: inherit; font-weight: 800; padding: 5px 8px; border-radius: 10px; border: 2px solid var(--edge); background: var(--paper); color: var(--ink); font-variant-numeric: tabular-nums; user-select: text; -webkit-user-select: text; }
