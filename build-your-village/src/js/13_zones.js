@@ -26,28 +26,41 @@ const ZoneService = {
     const unemployed = S.npcs.filter((n) => !n.work).length;
     const houses = ['apartments', 'villa', 'townhouse', 'tower_house', 'row_houses', 'manor', 'farmhouse', 'cottage', 'log_cabin', 'small_house'];
     const inZone = (t) => S.buildings.filter((b) => b.zone === z.id && b.type === t).length;
+    // "low" and "plenty" use absolute limits too, so a big warehouse never makes 700 wood look scarce
+    const low = (k) => S.res[k] < Math.min(k === 'food' ? Math.max(40, pop * 5) : 250, Economy.cap(k) * 0.35);
+    const plenty = (k) => S.res[k] >= Math.min(500, Economy.cap(k) * 0.6);
+    const makes = { wood: ['woodcutter', 'lumber_camp'], stone: ['stonecutter', 'quarry_works', 'mine'], food: ['chicken_coop', 'orchard', 'fisher_hut', 'dairy_farm', 'greenhouse', 'fishery', 'bakery'], wheat: ['farm', 'large_farm'] };
+    const producers = (k) => makes[k].reduce((n, t) => n + BuildingService.count(t), 0);
+    const outputOf = (t) => Object.keys(BUILDINGS[t].produce || {});
     const byNeed = () => {
       const L = [];
-      const full = RES_KEYS.some((k) => S.res[k] >= Economy.cap(k) * 0.85);
-      if (full) L.push('warehouse', 'granary', 'storage_shed');
-      if (S.res.food < Math.max(20, pop * 4)) L.push('greenhouse', 'dairy_farm', 'bakery', 'orchard', 'fisher_hut', 'chicken_coop', 'farm');
-      if (S.res.wheat < 20 && BuildingService.count('bakery')) L.push('large_farm', 'farm');
-      if (S.res.wood < Economy.cap('wood') * 0.4) L.push('lumber_camp', 'woodcutter');
-      if (S.res.stone < Economy.cap('stone') * 0.4) L.push('quarry_works', 'stonecutter', 'mine');
+      if (RES_KEYS.some((k) => S.res[k] >= Economy.cap(k) * 0.9)) L.push('warehouse', 'granary', 'storage_shed');
+      if (low('food')) L.push('greenhouse', 'dairy_farm', 'orchard', 'fisher_hut', 'chicken_coop', 'bakery', 'farm');
+      if (low('wheat') && BuildingService.count('bakery') && producers('wheat') < 1 + BuildingService.count('bakery')) L.push('large_farm', 'farm');
+      if (low('wood') && producers('wood') < 2 + Math.floor(pop / 8)) L.push('lumber_camp', 'woodcutter');
+      if (low('stone') && producers('stone') < 2 + Math.floor(pop / 8)) L.push('quarry_works', 'stonecutter', 'mine');
       if (BuildingService.count('farm') + BuildingService.count('large_farm') >= 2 && !BuildingService.count('windmill')) L.push('windmill');
       if (S.res.iron > 40 && !BuildingService.count('blacksmith')) L.push('blacksmith');
-      if (unemployed) L.push('vineyard', 'sheep_pasture', 'lumber_camp', 'woodcutter', 'farm', 'beehives', 'stonecutter', 'fisher_hut', 'workshop', 'sawmill', 'guard_tower');
-      return L;
+      if (unemployed) {
+        // jobs for the jobless: skip anything that makes what we already have plenty of, and favour what the village has least of
+        const jobs = ['vineyard', 'sheep_pasture', 'beehives', 'orchard', 'chicken_coop', 'farm', 'fisher_hut', 'workshop', 'sawmill', 'smelter', 'brewery', 'toolmaker', 'pottery', 'guard_tower', 'woodcutter', 'lumber_camp', 'stonecutter', 'quarry_works']
+          .filter((t) => BUILDINGS[t] && !outputOf(t).some((k) => k !== 'coins' && plenty(k)));
+        jobs.sort((a, b) => BuildingService.count(a) - BuildingService.count(b));
+        L.push(...jobs);
+      }
+      // never the same thing three times in a row in one zone
+      const last = (z.last || []).slice(-2);
+      return L.filter((t, i) => L.indexOf(t) === i && !(last.length === 2 && last[0] === t && last[1] === t));
     };
     const shops = ['bank', 'large_market', 'theater', 'marketplace', 'apothecary', 'tailor', 'post_office', 'general_store', 'bakery', 'butcher', 'pottery', 'market_stall', 'tavern', 'inn', 'blacksmith'].filter((t) => BUILDINGS[t].unique || BuildingService.count(t) < 2);
     const park = ['statue', 'obelisk', 'fountain', 'gazebo', 'garden_pond', 'topiary', 'rose_arch', 'bonfire', 'market_cart', 'flag_pole', 'hedge', 'planted_tree', 'flower_bed', 'bench', 'lantern', 'planted_tree', 'flower_bed'];
     let kind = z.kind;
-    if (kind === 'auto') kind = freeHomes < 2 ? 'homes' : unemployed > 0 || byNeed().length ? 'work' : BuildingService.count('general_store') + BuildingService.count('market_stall') < Math.ceil(pop / 6) ? 'market' : 'park';
+    if (kind === 'auto') kind = freeHomes < 2 ? 'homes' : byNeed().length ? 'work' : BuildingService.count('general_store') + BuildingService.count('market_stall') < Math.ceil(pop / 6) ? 'market' : 'park';
     if (kind === 'homes') {
       if (freeHomes >= 3) return inZone('lantern') < inZone('small_house') + inZone('cottage') ? ['lantern', 'flower_bed', 'bench'] : ['flower_bed', 'planted_tree'];
       return houses;
     }
-    if (kind === 'work') return byNeed().concat(['woodcutter', 'stonecutter', 'farm']);
+    if (kind === 'work') return byNeed();
     if (kind === 'market') return shops;
     return park.sort(() => Math.random() - 0.5).concat(['statue', 'fountain']);
   },
@@ -96,7 +109,7 @@ const ZoneService = {
       if (z.paused) { this.status[z.id] = 'Paused'; continue; }
       if (S.buildings.some((b) => b.zone === z.id && b.build > 0)) continue;
       const wants = this.plan(z);
-      let why = 'Waiting for resources (builders keep a 20% reserve)';
+      let why = wants.length ? 'Waiting for resources (builders keep a 20% reserve)' : 'Nothing needed right now. Villagers wait until the village needs more.';
       let started = false;
       for (const type of wants) {
         if (!BUILDINGS[type] || S.level < BUILDINGS[type].level) continue;
@@ -108,7 +121,7 @@ const ZoneService = {
         const spot = this.findSpot(z, type);
         if (!spot) { why = 'No room left for a ' + BUILDINGS[type].name; continue; }
         const r = BuildingService.place(type, spot.x, spot.z, spot.rot, { zone: z.id, split });
-        if (r.ok) { started = true; z.built = (z.built || 0) + 1; this.status[z.id] = 'Building a ' + BUILDINGS[type].name; Bus.emit('zone:site', { z, b: r.b }); break; }
+        if (r.ok) { started = true; z.built = (z.built || 0) + 1; z.last = (z.last || []).concat(type).slice(-3); this.status[z.id] = 'Building a ' + BUILDINGS[type].name; Bus.emit('zone:site', { z, b: r.b }); break; }
       }
       if (!started) this.status[z.id] = why;
       if (this.sites().length >= 2) break;
