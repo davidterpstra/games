@@ -1,0 +1,125 @@
+<!doctype html>
+<html lang="nl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Mini Supermarket</title>
+<meta name="description" content="Bouw je eigen supermarkt: help klanten, beheer voorraad, koop upgrades, neem personeel aan en groei van buurtwinkel tot supermarktketen.">
+<meta name="theme-color" content="#e2557a">
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='88'>🛒</text></svg>">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Fredoka:wght@500;600;700&family=Nunito:wght@600;700;800&display=swap">
+<link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+<div id="app">
+  <header id="topbar">
+    <button id="store-btn" class="brand" type="button" title="Bekijk je winkels">
+      <span class="brand-icon" id="store-icon">🏪</span>
+      <span class="brand-text"><b id="store-name">Neighborhood Market</b><small id="store-size">Grootte 1 · Kleine supermarkt</small></span>
+    </button>
+
+    <div class="stats">
+      <div class="stat stat-money" title="Geld">
+        <span class="ic">💰</span><span class="stat-body"><b id="st-money">€1.000,00</b><small>Geld</small></span>
+      </div>
+      <div class="stat" title="Klanten die nu aan het winkelen zijn / maximaal tegelijk">
+        <span class="ic">👥</span><span class="stat-body"><b id="st-customers">0</b><small>Klanten</small></span>
+      </div>
+      <button class="stat stat-btn" id="stat-stock" type="button" title="Voorraad in het magazijn — tik voor het voorraadmenu">
+        <span class="ic">📦</span><span class="stat-body"><b id="st-stock">0</b><small>Voorraad</small></span>
+        <span class="stat-badge" id="st-stock-warn" hidden>!</span>
+      </button>
+      <div class="stat stat-level" title="Winkelniveau: je level en XP">
+        <span class="ic">⭐</span><span class="stat-body"><b id="st-level">Level 1</b><span class="xpbar"><i id="st-xp-fill"></i></span><small id="st-xp">0 / 70 XP</small></span>
+      </div>
+      <div class="stat" title="Hoe tevreden je klanten zijn">
+        <span class="ic" id="st-mood-ic">😊</span><span class="stat-body"><b id="st-mood">80%</b><small>Tevreden</small></span>
+      </div>
+    </div>
+
+    <div class="top-actions">
+      <button id="btn-save" class="btn btn-save" type="button" title="Sla je spel op (Ctrl+S)">💾 <span>Save Game</span></button>
+      <button id="btn-reset" class="btn btn-reset" type="button" title="Begin helemaal opnieuw">🔄 <span>Reset Game</span></button>
+    </div>
+  </header>
+
+  <main id="main">
+    <section id="stage" aria-label="Je supermarkt">
+      <canvas id="world" aria-label="Supermarkt met klanten, schappen, kassa's en magazijn"></canvas>
+      <div id="goal" class="goal-card"></div>
+      <div class="stage-ctl">
+        <div class="speed" role="group" aria-label="Spelsnelheid">
+          <button type="button" data-speed="0" title="Pauze (spatie)" aria-label="Pauze">⏸️</button>
+          <button type="button" data-speed="1" class="on" title="Normale snelheid (1)">1×</button>
+          <button type="button" data-speed="2" title="Twee keer zo snel (2)">2×</button>
+          <button type="button" data-speed="3" title="Drie keer zo snel (3)">3×</button>
+        </div>
+        <button id="btn-sound" class="icon-btn" type="button" title="Geluid aan/uit" aria-label="Geluid aan/uit">🔊</button>
+        <button id="btn-help" class="icon-btn" type="button" title="Hoe speel je?" aria-label="Uitleg">❓</button>
+      </div>
+      <div id="toasts" aria-live="polite"></div>
+      <div class="zoom-ctl">
+        <button type="button" data-zoom="in" title="Inzoomen" aria-label="Inzoomen">＋</button>
+        <button type="button" data-zoom="out" title="Uitzoomen" aria-label="Uitzoomen">－</button>
+        <button type="button" data-zoom="fit" title="Hele winkel tonen" aria-label="Hele winkel tonen">⤢</button>
+      </div>
+      <div id="tooltip" hidden></div>
+      <div id="inspect" class="inspect" hidden></div>
+      <button id="paused-overlay" type="button" hidden>⏸ Gepauzeerd <small>tik om verder te spelen</small></button>
+    </section>
+
+    <aside id="side">
+      <nav id="tabs" role="tablist" aria-label="Menu">
+        <button type="button" role="tab" data-tab="stock" class="on">📦<span>Voorraad</span><i class="badge" hidden></i></button>
+        <button type="button" role="tab" data-tab="upgrades">⬆️<span>Upgrades</span><i class="badge" hidden></i></button>
+        <button type="button" role="tab" data-tab="staff">🧑‍💼<span>Personeel</span><i class="badge" hidden></i></button>
+        <button type="button" role="tab" data-tab="challenges">🏆<span>Uitdagingen</span><i class="badge" hidden></i></button>
+        <button type="button" role="tab" data-tab="stores">🗺️<span>Winkels</span><i class="badge" hidden></i></button>
+        <button type="button" role="tab" data-tab="customers">👥<span>Klanten</span><i class="badge" hidden></i></button>
+      </nav>
+      <div id="panel" class="panel" role="tabpanel"></div>
+    </aside>
+  </main>
+
+  <div id="celebrate" aria-live="polite"></div>
+  <div id="modal-root"></div>
+  <noscript><p class="noscript">Mini Supermarket heeft JavaScript nodig.</p></noscript>
+</div>
+
+<!-- Core -->
+<script src="js/util.js"></script>
+<!-- Data (add products, upgrades, stores … here) -->
+<script src="js/data/products.js"></script>
+<script src="js/data/customers.js"></script>
+<script src="js/data/staff.js"></script>
+<script src="js/data/upgrades.js"></script>
+<script src="js/data/stores.js"></script>
+<script src="js/data/progression.js"></script>
+<!-- Systems -->
+<script src="js/systems/pathfinding.js"></script>
+<script src="js/systems/layout.js"></script>
+<script src="js/systems/product.js"></script>
+<script src="js/systems/upgrades.js"></script>
+<script src="js/systems/inventory.js"></script>
+<script src="js/systems/walker.js"></script>
+<script src="js/systems/customer.js"></script>
+<script src="js/systems/employee.js"></script>
+<script src="js/systems/delivery.js"></script>
+<script src="js/systems/store.js"></script>
+<script src="js/systems/challenges.js"></script>
+<script src="js/systems/save.js"></script>
+<script src="js/systems/audio.js"></script>
+<!-- Rendering -->
+<script src="js/render/sprites.js"></script>
+<script src="js/render/effects.js"></script>
+<script src="js/render/renderer.js"></script>
+<!-- Game + UI -->
+<script src="js/game.js"></script>
+<script src="js/ui/ui.js"></script>
+<script src="js/ui/panels.js"></script>
+<script src="js/ui/input.js"></script>
+<script src="js/main.js"></script>
+</body>
+</html>
