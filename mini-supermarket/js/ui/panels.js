@@ -511,7 +511,7 @@
         <div><b>📦 Bestellen</b>Bestel voorraad in 📦 Voorraad. De 🚚 bezorgwagen brengt het — tik erop om uit te laden.</div>
         <div><b>⬆️ Groeien</b>Koop upgrades, plaats schappen, neem personeel aan en breid je winkel uit.</div>
       </div>
-      <p class="lead" style="text-align:center;font-size:13px">Tip: slepen = kijken, scrollen of knijpen = zoomen, spatie = pauze.</p>
+      <p class="lead" style="text-align:center;font-size:13px">Tip: slepen = kijken, scrollen of knijpen = zoomen, spatie = pauze, M = muziek aan/uit.</p>
       <div class="modal-actions" style="justify-content:center"><button class="btn primary big" data-act="modal-close">🚀 Open de winkel!</button></div>`;
   }
 

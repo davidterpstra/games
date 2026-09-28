@@ -31,7 +31,7 @@
         money: $('st-money'), moneyStat: document.querySelector('.stat-money'), customers: $('st-customers'),
         stock: $('st-stock'), stockWarn: $('st-stock-warn'), level: $('st-level'),
         xpFill: $('st-xp-fill'), xp: $('st-xp'), mood: $('st-mood'), moodIc: $('st-mood-ic'),
-        storeIcon: $('store-icon'), storeName: $('store-name'), storeSize: $('store-size'), sound: $('btn-sound'),
+        storeIcon: $('store-icon'), storeName: $('store-name'), storeSize: $('store-size'), sound: $('btn-sound'), music: $('btn-music'),
       };
       this.el.goal.classList.toggle('collapsed', this.goalCollapsed);
       this.bind();
@@ -52,6 +52,7 @@
         g.audio.setEnabled(g.settings.sound);
         this.syncTopButtons();
       });
+      this.el.music.addEventListener('click', () => this.toggleMusic());
       $('btn-save').addEventListener('click', () => g.save(true));
       $('btn-reset').addEventListener('click', () => this.confirmReset());
       $('btn-help').addEventListener('click', () => this.openModal(MS.Panels.intro()));
@@ -72,7 +73,7 @@
       const onAct = (e) => {
         const b = e.target.closest('[data-act]');
         if (!b || b.disabled) return;
-        this.game.audio.unlock();
+        this.game.unlockAudio();
         this.handleAction(b.dataset.act, b.dataset, b);
       };
       for (const root of [this.el.panel, this.el.inspect, this.el.modalRoot]) root.addEventListener('click', onAct);
@@ -177,6 +178,14 @@
       if (reveal && window.innerWidth <= 900) document.getElementById('side').scrollIntoView({ behavior: 'smooth', block: 'nearest' });
     }
 
+    toggleMusic() {
+      const g = this.game;
+      g.settings.music = !g.settings.music;
+      g.music.setEnabled(g.settings.music);
+      if (g.settings.music) g.music.start();
+      this.syncTopButtons();
+    }
+
     setSpeed(s) {
       const g = this.game;
       if (s === 0) g.paused = true;
@@ -192,6 +201,9 @@
       });
       this.el.paused.hidden = !g.paused || this.modalOpen;
       this.el.sound.textContent = g.settings.sound ? '🔊' : '🔇';
+      this.el.music.classList.toggle('off', !g.settings.music);
+      this.el.music.setAttribute('aria-pressed', String(g.settings.music));
+      this.el.music.title = g.settings.music ? 'Muziek uitzetten (M)' : 'Muziek aanzetten (M)';
     }
 
     // ---- World selection ---------------------------------------------------------------------------------------

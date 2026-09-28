@@ -18,6 +18,7 @@
     constructor() {
       this.bus = MS.bus;
       this.audio = new MS.Sound();
+      this.music = new MS.Music();
       this.effects = new MS.Effects(this);
       this.saveSystem = new MS.SaveSystem(this);
       this.challenges = new MS.ChallengeSystem(this);
@@ -46,7 +47,7 @@
       this.activeStoreId = MS.STORES[0].id;
       this.challenges.reset();
       this.goals.reset();
-      this.settings = { sound: true, speed: 1 };
+      this.settings = { sound: true, music: true, speed: 1 };
     }
 
     get store() { return this.stores[this.activeStoreId]; }
@@ -59,6 +60,7 @@
       this.store.activate();
       this.challenges.ensureToday();
       this.audio.enabled = this.settings.sound;
+      this.music.enabled = this.settings.music;
       this.speed = this.settings.speed || 1;
       return !!saved;
     }
@@ -113,6 +115,7 @@
       this.goals.load(d.goals);
       if (d.settings && typeof d.settings === 'object') {
         this.settings.sound = d.settings.sound !== false;
+        this.settings.music = d.settings.music !== false;
         this.settings.speed = [1, 2, 3].includes(d.settings.speed) ? d.settings.speed : 1;
       }
     }
@@ -197,6 +200,12 @@
     }
 
     // ---- Money, XP, rewards ----------------------------------------------------------------
+    /** Call from click/tap handlers: browsers only allow sound after a user gesture. */
+    unlockAudio() {
+      this.audio.unlock();
+      this.music.start();
+    }
+
     canAfford(cents) { return this.money >= cents; }
 
     spend(cents) {

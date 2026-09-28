@@ -35,7 +35,7 @@
     }
 
     onDown(e) {
-      this.game.audio.unlock();
+      this.game.unlockAudio();
       const p = this.local(e);
       this.pointers.set(e.pointerId, { x: p.x, y: p.y, sx: p.x, sy: p.y });
       try { this.canvas.setPointerCapture(e.pointerId); } catch { /* ignore */ }
@@ -189,6 +189,9 @@
         this.renderer.setZoom(this.renderer.zoom / 1.25);
       } else if (e.key === '0') {
         this.renderer.resetView();
+      } else if (e.key === 'm' || e.key === 'M') {
+        g.unlockAudio();
+        ui.toggleMusic();
       }
     }
   }

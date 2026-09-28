@@ -35,7 +35,11 @@
     requestAnimationFrame(frame);
 
     const saveNow = () => game.save(false);
-    document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'hidden') saveNow(); });
+    document.addEventListener('visibilitychange', () => {
+      const hidden = document.visibilityState === 'hidden';
+      if (hidden) saveNow();
+      game.music.setHidden(hidden);
+    });
     window.addEventListener('pagehide', saveNow);
     window.addEventListener('beforeunload', saveNow);
   }

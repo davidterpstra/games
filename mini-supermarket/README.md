@@ -28,6 +28,7 @@ In het begin doe je alles zelf door te tikken. Personeel neemt die klusjes één
 | Rondkijken | slepen | slepen |
 | Zoomen | scrollwiel, `+` / `-`, `0` = hele winkel | knijpen, ＋ / － / ⤢ |
 | Pauze / snelheid | `spatie`, `1` `2` `3` | ⏸️ 1× 2× 3× |
+| Muziek / geluidseffecten aan of uit | `M` · 🎵 / 🔊 | 🎵 / 🔊 |
 | Opslaan | `Ctrl+S` of 💾 Save Game | 💾 |
 | Sluiten | `Esc` | ✕ |
 
@@ -44,7 +45,8 @@ In het begin doe je alles zelf door te tikken. Personeel neemt die klusjes één
 - **Levels en XP** voor verkopen, klanten helpen, uitdagingen en uitbreidingen. Elk level laat zien wat er is vrijgespeeld.
 - **5 winkels**: 🏪 Neighborhood Market, 🏙️ City Market, 🏖️ Beach Market, 🏔️ Mountain Market en 🌆 Downtown Supermarket. Elke winkel heeft een eigen stijl, prijsniveau, klantenmix en specialiteiten. Een winkel met kassamedewerker, vakvuller, magazijnmedewerker én manager verdient de helft van zijn gemiddelde winst door terwijl jij in een andere winkel bent.
 - **Opslaan** in `localStorage`: automatisch elke 20 seconden en bij het sluiten, of met 💾 Save Game. 🔄 Reset Game vraagt eerst om bevestiging. Een kapotte of oude save laat het spel niet crashen.
-- **Feedback**: geldteksten, muntjes, sparkles, ✨ Upgrade!, 🎉 LEVEL UP!, geluidjes (WebAudio, geen bestanden). Met `prefers-reduced-motion` zijn de animaties rustiger.
+- **Muziek**: het nummer *The Sunlit Shelf* (album *Corner Shop Chronicles*) speelt in een loop. Het start bij je eerste klik (browsers blokkeren automatisch afspelen), pauzeert als het tabblad verborgen is en is met 🎵 of `M` aan en uit te zetten; die keuze wordt opgeslagen.
+- **Feedback**: geldteksten, muntjes, sparkles, ✨ Upgrade!, 🎉 LEVEL UP!, geluidseffecten (WebAudio). Met `prefers-reduced-motion` zijn de animaties rustiger.
 - **Responsive** voor desktop, laptop, tablet en telefoon.
 
 ## Code
@@ -54,6 +56,7 @@ Gewone scripts (geen ES-modules), zodat `index.html` ook via `file://` werkt. Al
 ```
 index.html            pagina + volgorde van de scripts
 css/style.css         alle opmaak (responsive, reduced motion)
+assets/music/         achtergrondmuziek (.m4a/AAC en .webm/Opus als reserve)
 js/util.js            hulpfuncties, geldnotatie, seeded random, event bus
 js/data/              alle spelinhoud als data
   products.js         producten, zeldzaamheden, afdelingen en schappen
@@ -76,6 +79,7 @@ js/systems/           spellogica
   challenges.js       ChallengeSystem + GoalSystem
   save.js             SaveSystem (localStorage)
   audio.js            Sound (WebAudio-effecten)
+  music.js            Music (achtergrondmuziek)
 js/render/            tekenen op <canvas>
   sprites.js          mensen, schappen, kassa's, wagen, emoji-cache
   effects.js          zwevende teksten en deeltjes

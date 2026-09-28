@@ -162,6 +162,7 @@ h1, h2, h3, h4 { font-family: var(--font-d); font-weight: 600; margin: 0; }
   font-size: 17px;
 }
 .icon-btn:hover { background: var(--panel-2); }
+.icon-btn.off { opacity: 0.45; filter: grayscale(1); }
 
 /* ---------- Buttons ---------- */
 .btn {
@@ -645,7 +646,7 @@ h1, h2, h3, h4 { font-family: var(--font-d); font-weight: 600; margin: 0; }
   .intro-steps { grid-template-columns: 1fr; }
   .product-grid { grid-template-columns: repeat(2, 1fr); }
   .inspect { padding: 12px; }
-  .zoom-ctl { right: 8px; bottom: 8px; }
+  .zoom-ctl { right: 8px; bottom: 8px; flex-direction: row; }
   .zoom-ctl button { width: 34px; height: 34px; }
   .stage-ctl { right: 8px; top: 8px; flex-direction: column; align-items: flex-end; }
   .stage-ctl .speed { flex-direction: column; }
