@@ -165,7 +165,7 @@ const DataService = {
       out.nodes.dep = {};
       if (st.nodes.dep && typeof st.nodes.dep === 'object') for (const [k, v] of Object.entries(st.nodes.dep)) if (isNum(v)) out.nodes.dep[k] = clamp(v, 0, 600);
     }
-    if (Array.isArray(st.zones)) out.zones = st.zones.filter((z) => z && [z.x0, z.z0, z.x1, z.z1, z.id].every(isNum) && ZONE_KINDS[z.kind]).slice(0, 12).map((z) => ({ id: z.id, x0: z.x0, z0: z.z0, x1: z.x1, z1: z.z1, kind: z.kind, paused: !!z.paused, built: num(z.built, 0, 0), last: Array.isArray(z.last) ? z.last.filter((t) => BUILDINGS[t]).slice(-3) : [] }));
+    if (Array.isArray(st.zones)) out.zones = st.zones.filter((z) => z && [z.x0, z.z0, z.x1, z.z1, z.id].every(isNum) && ZONE_KINDS[z.kind]).slice(0, 12).map((z) => ({ id: z.id, x0: z.x0, z0: z.z0, x1: z.x1, z1: z.z1, kind: z.kind, paused: !!z.paused, built: num(z.built, 0, 0), last: Array.isArray(z.last) ? z.last.filter((t) => BUILDINGS[t]).slice(-3) : [], pick: BUILDINGS[z.pick] ? z.pick : null }));
     out.nextZone = Math.max(num(st.nextZone, 1), ...out.zones.map((z) => z.id + 1), 1);
     if (st.policies && st.policies.benefit) {
       const b = st.policies.benefit;
@@ -932,6 +932,7 @@ function registerRemotes() {
   Remote.handle('SetPolicy', (a) => PolicyService.set(a), 0);
   Remote.handle('SetBuildPolicy', (a) => PolicyService.setBuild(a), 0);
   Remote.handle('CreateZone', (a) => ZoneService.create(a), 0.3);
+  Remote.handle('SetZonePick', (a) => (isNum(a.id) ? ZoneService.setPick(a.id, isStr(a.type) ? a.type : null) : fail('Bad request')), 0.1);
   Remote.handle('ToggleZone', (a) => (isNum(a.id) ? ZoneService.toggle(a.id) : fail('Bad request')), 0.2);
   Remote.handle('RemoveZone', (a) => (isNum(a.id) ? ZoneService.remove(a.id) : fail('Bad request')), 0.2);
 }

@@ -57,8 +57,19 @@ const ZoneService = {
     let kind = z.kind;
     if (kind === 'auto') kind = freeHomes < 2 ? 'homes' : byNeed().length ? 'work' : BuildingService.count('general_store') + BuildingService.count('market_stall') < Math.ceil(pop / 6) ? 'market' : 'park';
     if (kind === 'homes') {
-      if (freeHomes >= 3) return inZone('lantern') < inZone('small_house') + inZone('cottage') ? ['lantern', 'flower_bed', 'bench'] : ['flower_bed', 'planted_tree'];
-      return houses;
+      if (freeHomes >= 3) {
+        // enough empty homes: dress up the street a little (max 2 decorations per house), then wait
+        const zb = S.buildings.filter((b) => b.zone === z.id);
+        const nHouses = zb.filter((b) => BUILDINGS[b.type].house).length, nDecor = zb.filter((b) => BUILDINGS[b.type].cat === 'decor').length;
+        if (nDecor >= nHouses * 2) return [];
+        const deco = ['lantern', 'flower_bed', 'planted_tree', 'bench', 'hedge', 'picket_fence'];
+        return deco.slice(nDecor % deco.length).concat(deco.slice(0, nDecor % deco.length));
+      }
+      // biggest homes first; if the last two were the same type, try something else first
+      const L = houses.filter((t) => S.level >= BUILDINGS[t].level).sort((a, b) => BUILDINGS[b].house - BUILDINGS[a].house);
+      const last = (z.last || []).slice(-2);
+      if (last.length === 2 && last[0] === last[1] && L.length > 1 && L[0] === last[0]) L.push(L.shift());
+      return L;
     }
     if (kind === 'work') return byNeed();
     if (kind === 'market') return shops;
@@ -108,22 +119,31 @@ const ZoneService = {
     for (const z of S.zones) {
       if (z.paused) { this.status[z.id] = 'Paused'; continue; }
       if (S.buildings.some((b) => b.zone === z.id && b.build > 0)) continue;
-      const wants = this.plan(z);
-      let why = wants.length ? 'Waiting for resources (builders keep a 20% reserve)' : 'Nothing needed right now. Villagers wait until the village needs more.';
+      const wants = z.pick && BUILDINGS[z.pick] ? [z.pick] : this.plan(z);
+      const urgent = Village.capacity() - Village.population() <= 0;
+      let why = wants.length ? 'Waiting for resources (builders keep a 20% reserve)' : z.kind === 'homes' ? 'Enough free homes for now. Villagers build more when they fill up.' : 'Nothing needed right now. Villagers wait until the village needs more.';
       let started = false;
+      let firstWhy = null, tried = 0;
+      const note = (t) => { if (!firstWhy) firstWhy = t; };
       for (const type of wants) {
-        if (!BUILDINGS[type] || S.level < BUILDINGS[type].level) continue;
+        if (!BUILDINGS[type]) continue;
+        const nm = BUILDINGS[type].name;
+        if (S.level < BUILDINGS[type].level) { note(`${nm}: unlocks at level ${BUILDINGS[type].level}`); continue; }
+        // houses picked by the villagers: save up for a good one instead of settling for the cheapest,
+        // unless people are already waiting for a home
+        if (z.kind === 'homes' && !z.pick && tried >= 2 && firstWhy && /waiting for|saving/.test(firstWhy) && !urgent) break;
+        tried++;
         const split = PolicyService.splitCost(BUILDINGS[type].cost);
         const can = BuildingService.canBuild(type, split.town);
-        if (!can.ok) { if (/^Not enough/.test(can.err)) why = `Saving up for a ${BUILDINGS[type].name}`; continue; }
-        if (!this.affordable(split.town)) { why = `Saving up for a ${BUILDINGS[type].name}`; continue; }
-        if (split.villagers > PolicyService.savings()) { why = `Villagers are saving for their share of a ${BUILDINGS[type].name} (${fmt(PolicyService.savings())}/${fmt(split.villagers)} 🪙)`; continue; }
+        if (!can.ok) { note(/^Not enough/.test(can.err) ? `${nm}: waiting for ${can.err.replace('Not enough ', '')}` : `${nm}: ${can.err}`); continue; }
+        if (!this.affordable(split.town)) { const k = Object.keys(split.town).find((q) => Economy.amount(q) - split.town[q] < this.reserve(q)); note(`${nm}: waiting for ${ITEMS[k].name.toLowerCase()} (builders keep a 20% reserve)`); continue; }
+        if (split.villagers > PolicyService.savings()) { note(`${nm}: villagers are saving for their share (${fmt(PolicyService.savings())}/${fmt(split.villagers)} 🪙)`); continue; }
         const spot = this.findSpot(z, type);
-        if (!spot) { why = 'No room left for a ' + BUILDINGS[type].name; continue; }
+        if (!spot) { note(`${nm}: no room left in this zone`); continue; }
         const r = BuildingService.place(type, spot.x, spot.z, spot.rot, { zone: z.id, split });
         if (r.ok) { started = true; z.built = (z.built || 0) + 1; z.last = (z.last || []).concat(type).slice(-3); this.status[z.id] = 'Building a ' + BUILDINGS[type].name; Bus.emit('zone:site', { z, b: r.b }); break; }
       }
-      if (!started) this.status[z.id] = why;
+      if (!started) this.status[z.id] = firstWhy || why;
       if (this.sites().length >= 2) break;
     }
   },
@@ -178,6 +198,19 @@ const ZoneService = {
     Bus.emit('zones', {});
     DataService.dirty = true;
     return { ok: true, z };
+  },
+  /* zone options: which buildings you can pin a zone to */
+  options(kind) {
+    const all = Object.values(BUILDINGS).filter((b) => !b.hidden && !b.road);
+    const pick = { homes: (b) => b.house, work: (b) => b.cat === 'production', market: (b) => b.cat === 'shops' || ['tavern', 'inn', 'theater'].includes(b.id), park: (b) => b.cat === 'decor', auto: () => true }[kind];
+    return all.filter(pick).sort((a, b) => a.level - b.level);
+  },
+  setPick(id, type) {
+    const z = S.zones.find((q) => q.id === id); if (!z) return fail('Unknown zone');
+    if (type && !this.options(z.kind).some((b) => b.id === type)) return fail('That building does not fit this zone');
+    z.pick = type || null; this.status[z.id] = 'Planning…'; this.t = Math.min(this.t, 0.5);
+    Bus.emit('zones', {}); DataService.dirty = true;
+    return { ok: true };
   },
   toggle(id) { const z = S.zones.find((q) => q.id === id); if (!z) return fail('Unknown zone'); z.paused = !z.paused; this.status[z.id] = z.paused ? 'Paused' : 'Planning…'; Bus.emit('zones', {}); return { ok: true }; },
   remove(id) {

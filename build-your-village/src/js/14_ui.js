@@ -139,6 +139,7 @@ const UI = {
       });
       Thumbs.fill(el);
       $$('[data-zone-new]', el).forEach((b) => b.addEventListener('click', () => ZoneCtl.start(b.dataset.zoneNew)));
+      $$('[data-zone-pick]', el).forEach((s) => s.addEventListener('change', () => { const r = Remote.invoke('SetZonePick', { id: +s.dataset.zonePick, type: s.value || null }); if (!r.ok) this.toast({ icon: '🏗️', title: 'Zone', text: r.err }); Audio.sfx('tick'); }));
       $$('[data-zone-toggle]', el).forEach((b) => b.addEventListener('click', () => { Remote.invoke('ToggleZone', { id: +b.dataset.zoneToggle }); Audio.sfx('tick'); }));
       $$('[data-zone-del]', el).forEach((b) => b.addEventListener('click', () => this.confirm('Remove this zone?', 'Buildings already built stay. Villagers stop building here.', 'Remove', () => { Remote.invoke('RemoveZone', { id: +b.dataset.zoneDel }); }, true)));
     }
@@ -195,7 +196,7 @@ const UI = {
     const list = S.zones.map((z) => {
       const K = ZONE_KINDS[z.kind], site = S.buildings.find((b) => b.zone === z.id && b.build > 0);
       const st = site ? `Building a ${BUILDINGS[site.type].name} · ${Math.round((1 - site.build / (site.buildT || 1)) * 100)}%` : ZoneService.status[z.id] || (z.paused ? 'Paused' : 'Planning…');
-      return `<div class="zrow"><span class="zdot" style="background:#${K.col.toString(16).padStart(6, '0')}">${K.icon}</span><div class="grow"><b>${K.name} zone</b><small>${Math.round(z.x1 - z.x0)} × ${Math.round(z.z1 - z.z0)} · ${z.built || 0} built</small><small class="muted">${esc(st)}</small></div><button class="btn sm alt" data-zone-toggle="${z.id}">${z.paused ? 'Resume' : 'Pause'}</button><button class="btn sm danger" data-zone-del="${z.id}">Remove</button></div>`;
+      return `<div class="zrow"><span class="zdot" style="background:#${K.col.toString(16).padStart(6, '0')}">${K.icon}</span><div class="grow"><b>${K.name} zone</b><small>${Math.round(z.x1 - z.x0)} × ${Math.round(z.z1 - z.z0)} · ${z.built || 0} built</small><small class="muted">${esc(st)}</small><label class="zpick"><span>Build:</span><select data-zone-pick="${z.id}" aria-label="What to build in this zone"><option value="">Villagers choose</option>${ZoneService.options(z.kind).map((b) => `<option value="${b.id}" ${z.pick === b.id ? 'selected' : ''} ${S.level < b.level ? 'disabled' : ''}>${esc(b.name)}${S.level < b.level ? ' (level ' + b.level + ')' : b.house ? ' · ' + b.house + ' residents' : ''}</option>`).join('')}</select></label></div><button class="btn sm alt" data-zone-toggle="${z.id}">${z.paused ? 'Resume' : 'Pause'}</button><button class="btn sm danger" data-zone-del="${z.id}">Remove</button></div>`;
     }).join('');
     return `<p class="muted">Mark an area and your villagers build there by themselves, paid from your storage. They always keep a reserve: they never spend the last 20% of a resource or your last 100 coins. Builders from a Workshop help all day; other villagers help in their free time. Two sites can be under construction at once.</p>
       <div class="zkinds">${kinds}</div>

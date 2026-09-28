@@ -262,6 +262,8 @@ body.is-paused #game { filter: saturate(0.6) brightness(0.9); }
 .zrow { display: flex; align-items: center; gap: 10px; background: var(--paper-2); border: 2px solid var(--edge); border-radius: 14px; padding: 7px 10px; }
 .zrow .grow { display: flex; flex-direction: column; }
 .zrow small { font-size: 12px; color: var(--ink-2); }
+.zpick { display: flex; align-items: center; gap: 6px; margin-top: 4px; font-size: 12px; font-weight: 700; color: var(--ink-2); }
+.zpick select { font: inherit; color: var(--ink); background: var(--paper); border: 2px solid var(--edge); border-radius: 9px; padding: 3px 6px; max-width: 100%; min-width: 0; }
 .zdot { width: 34px; height: 34px; border-radius: 10px; display: grid; place-items: center; font-size: 18px; flex: none; }
 .site { position: absolute; left: 0; top: 0; display: flex; flex-direction: column; align-items: center; gap: 3px; background: var(--paper); color: var(--ink); border: 2px solid var(--edge); border-radius: 12px; padding: 4px 9px; font-size: 12px; white-space: nowrap; box-shadow: 0 4px 10px rgba(0, 0, 0, 0.2); will-change: transform; }
 .site > i { display: block; width: 110px; height: 6px; border-radius: 6px; background: var(--paper-3); overflow: hidden; }
