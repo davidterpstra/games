@@ -1,0 +1,85 @@
+<div id="app">
+  <canvas id="game" aria-label="Build Your Village game world"></canvas>
+  <div id="labels" aria-hidden="true"></div>
+  <div id="popups" aria-hidden="true"></div>
+
+  <div id="hud" hidden>
+    <div class="hud-tl">
+      <div class="lvl" title="Village level">
+        <div class="lvl-n"><span id="lvl-n">1</span></div>
+        <div class="lvl-txt"><b id="lvl-title">Small Village</b><div class="xpbar"><i id="xp-fill"></i></div><small id="xp-txt">0 / 80 XP</small></div>
+      </div>
+      <div id="tracker" class="tracker"></div>
+    </div>
+
+    <div class="hud-top" id="resbar">
+      <div class="pill coin" title="Coins"><span class="ic">🪙</span><b id="r-coins">0</b></div>
+      <div class="pill" title="Wood"><span class="ic">🪵</span><b id="r-wood">0</b></div>
+      <div class="pill" title="Stone"><span class="ic">🪨</span><b id="r-stone">0</b></div>
+      <div class="pill" title="Food"><span class="ic">🍞</span><b id="r-food">0</b></div>
+      <div class="pill" title="Population (residents / homes)"><span class="ic">👥</span><b id="r-pop">0/0</b></div>
+      <div class="pill hap" title="Happiness"><span class="ic" id="r-happy-ic">😊</span><b id="r-happy">50%</b></div>
+    </div>
+
+    <div class="hud-tr">
+      <div class="clock"><span id="clock-ic" class="ic">☀️</span><div><b id="clock-t">07:10</b><small id="clock-d">Day 1</small></div><button id="btn-settings" class="iconbtn" data-open="settings" aria-label="Settings">⚙</button></div>
+      <canvas id="minimap" width="150" height="150" title="Open the land map"></canvas>
+      <span id="saved" class="saved">Saved</span>
+    </div>
+
+    <div id="event-banner" hidden></div>
+    <div id="toasts" aria-live="polite"></div>
+    <div id="hint" hidden></div>
+    <div id="prompt" hidden><kbd>E</kbd><span></span><i class="hp" hidden><i></i></i><i class="hold" hidden></i></div>
+
+    <nav id="dock" aria-label="Main menu">
+      <button data-open="build"><span class="ic">🔨</span><span class="lb">Build</span><kbd>B</kbd></button>
+      <button data-open="inventory"><span class="ic">🎒</span><span class="lb">Inventory</span><kbd>I</kbd></button>
+      <button data-open="quests"><span class="ic">📜</span><span class="lb">Quests</span><kbd>J</kbd><span class="badge" hidden>0</span></button>
+      <button data-open="village"><span class="ic">🏘️</span><span class="lb">Village</span><kbd>V</kbd><span class="badge" hidden>0</span></button>
+      <button data-open="shop"><span class="ic">🛒</span><span class="lb">Shop</span><kbd>T</kbd></button>
+    </nav>
+
+    <div id="placebar" hidden>
+      <div class="pb-info"><b id="pb-name">Small House</b><div id="pb-cost" class="costs"></div><small id="pb-status"></small></div>
+      <div class="pb-btns">
+        <button id="pb-rot" class="btn alt" aria-label="Rotate">⟳ <span class="lb">Rotate</span> <kbd>R</kbd></button>
+        <button id="pb-ok" class="btn good" aria-label="Build here">✓ <span class="lb">Build</span></button>
+        <button id="pb-cancel" class="btn danger" aria-label="Cancel">✕ <span class="lb">Cancel</span> <kbd>Esc</kbd></button>
+      </div>
+    </div>
+
+    <div id="mobile-ctl">
+      <div id="joy"><div id="joy-knob"></div></div>
+      <button id="btn-jump" aria-label="Jump">⤒</button>
+      <button id="btn-act" aria-label="Interact">E</button>
+    </div>
+  </div>
+
+  <section class="panel" id="panel-build" hidden><header><h2>🔨 Build</h2><button class="x" data-close aria-label="Close">✕</button></header><div class="pbody"></div></section>
+  <section class="panel" id="panel-inventory" hidden><header><h2>🎒 Inventory</h2><button class="x" data-close aria-label="Close">✕</button></header><div class="pbody"></div></section>
+  <section class="panel" id="panel-quests" hidden><header><h2>📜 Quests</h2><button class="x" data-close aria-label="Close">✕</button></header><div class="pbody"></div></section>
+  <section class="panel" id="panel-village" hidden><header><h2>🏘️ Village</h2><button class="x" data-close aria-label="Close">✕</button></header><div class="pbody"></div></section>
+  <section class="panel" id="panel-shop" hidden><header><h2>🛒 Shop</h2><button class="x" data-close aria-label="Close">✕</button></header><div class="pbody"></div></section>
+  <section class="panel" id="panel-settings" hidden><header><h2>⚙ Settings</h2><button class="x" data-close aria-label="Close">✕</button></header><div class="pbody"></div></section>
+
+  <aside id="card" class="card" hidden></aside>
+  <div id="dialog" hidden></div>
+  <div id="levelup" hidden></div>
+  <div id="fade"></div>
+
+  <div id="title" hidden>
+    <div class="t-box">
+      <div class="t-mark" aria-hidden="true"><i></i><i></i><i></i></div>
+      <h1>Build Your Village</h1>
+      <p id="t-sub">A small plot of land, one cozy house, and a lot of possibilities.</p>
+      <div class="t-btns"><button id="t-continue" class="btn good big">Continue</button><button id="t-new" class="btn big">Start your village</button></div>
+      <ul class="t-steps"><li><b>Gather</b> wood, stone and wheat</li><li><b>Build</b> homes, farms and shops</li><li><b>Welcome</b> villagers who live their own lives</li><li><b>Grow</b> from a hamlet into a Grand City</li></ul>
+      <p class="t-keys"><kbd>WASD</kbd> walk · <kbd>E</kbd> interact · <kbd>B</kbd> build · drag to turn the camera</p>
+    </div>
+  </div>
+
+  <div id="loading">
+    <div class="ld-box"><b>Build Your Village</b><div class="ld-bar"><i id="load-fill"></i></div><small id="load-text">Loading…</small></div>
+  </div>
+</div>
