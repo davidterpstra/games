@@ -14,8 +14,8 @@ const UI = {
     $('#btn-act').addEventListener('pointerup', () => Interact.release());
     $('#btn-jump').addEventListener('pointerdown', (e) => { e.preventDefault(); Input.keys.add(' '); setTimeout(() => Input.keys.delete(' '), 120); });
     $('#pb-rot').addEventListener('click', () => BuildCtl.rotate());
-    $('#pb-ok').addEventListener('click', () => BuildCtl.confirm());
-    $('#pb-cancel').addEventListener('click', () => BuildCtl.cancel());
+    $('#pb-ok').addEventListener('click', () => (ZoneCtl.active ? ZoneCtl.finish() : BuildCtl.confirm()));
+    $('#pb-cancel').addEventListener('click', () => (ZoneCtl.active ? ZoneCtl.cancel() : BuildCtl.cancel()));
     $('#minimap').addEventListener('click', () => this.open('village', 'land'));
     $$('#speed button').forEach((b) => b.addEventListener('click', () => Game.setSpeed(+b.dataset.speed)));
     $('#paused').addEventListener('click', () => Game.togglePause());
@@ -35,7 +35,22 @@ const UI = {
     Bus.on('xp', (d) => { this.dirty = true; if (d.pos) this.popup(d.pos, `+${d.n} XP`, 'xp'); });
     Bus.on('toast', (d) => this.toast(d));
     Bus.on('levelup', (d) => this.levelUp(d));
+    Bus.on('zones', () => { ZoneRender.rebuild(); this.refreshOpen(); });
+    Bus.on('building:done', ({ b }) => {
+      BuildRender.anims.push({ b, t: 0.45 });
+      if (Math.hypot(b.x - Player.x, b.z - Player.z) < 60) { Audio.sfx('build'); FX.sparkle(new THREE.Vector3(b.x, b.y + Models.get(b.type).height * 0.7, b.z), 22); }
+      this.toast({ icon: '🏗️', title: BUILDINGS[b.type].name + ' finished!', text: 'Your villagers built it in a build zone.' });
+      this.refreshOpen();
+    });
+    Bus.on('zone:site', ({ z, b }) => { if (now() - (this._siteT || 0) > 6) { this._siteT = now(); this.toast({ icon: ZONE_KINDS[z.kind].icon, title: 'Construction started', text: `Villagers are building a ${BUILDINGS[b.type].name} in your ${ZONE_KINDS[z.kind].name} zone.` }); } });
     Bus.on('building:placed', ({ b, cleared }) => {
+      if (b.build > 0) {
+        BuildRender.add(b, false);
+        FX.dust(new THREE.Vector3(b.x, b.y + 0.3, b.z), 10);
+        Decor.refreshHidden(BuildRender.rects(), BuildingService.rect(b.type, b.x, b.z, b.rot));
+        this.refreshOpen();
+        return;
+      }
       BuildRender.add(b, true);
       const r = BuildingService.rect(b.type, b.x, b.z, b.rot);
       for (const [x, z] of [[r.x0, r.z0], [r.x1, r.z0], [r.x0, r.z1], [r.x1, r.z1], [b.x, b.z]]) FX.dust(new THREE.Vector3(x, b.y + 0.3, z), BUILDINGS[b.type].road ? 3 : 8);
@@ -74,7 +89,7 @@ const UI = {
   },
   onKey(k, e) {
     if (Game.state !== 'play') return;
-    if (k === 'escape') { if (BuildCtl.active) BuildCtl.cancel(); else if ($('#dialog:not([hidden])')) this.closeDialog(); else { this.closePanels(); this.closeCard(); } return; }
+    if (k === 'escape') { if (ZoneCtl.active) ZoneCtl.cancel(); else if (BuildCtl.active) BuildCtl.cancel(); else if ($('#dialog:not([hidden])')) this.closeDialog(); else { this.closePanels(); this.closeCard(); } return; }
     if (k === 'e' && !e.repeat) { if (BuildCtl.active) return; Interact.press(); return; }
     if (k === 'r' && BuildCtl.active) return BuildCtl.rotate();
     if (k === 'q' && BuildCtl.active) return BuildCtl.rotate();
@@ -87,6 +102,7 @@ const UI = {
   toggle(name, tab) { if (this.current === name && !tab) this.closePanels(); else this.open(name, tab); },
   open(name, tab) {
     if (BuildCtl.active && name !== 'build') BuildCtl.cancel();
+    if (ZoneCtl.active) ZoneCtl.cancel();
     this.closeCard();
     $$('.panel').forEach((p) => { p.hidden = p.id !== 'panel-' + name; });
     $$('#dock button').forEach((b) => b.classList.toggle('on', b.dataset.open === name));
@@ -122,6 +138,9 @@ const UI = {
         c.addEventListener('pointerenter', () => { const d = $('#bdetail', el); if (d) d.innerHTML = this.buildDetail(c.dataset.type); });
       });
       Thumbs.fill(el);
+      $$('[data-zone-new]', el).forEach((b) => b.addEventListener('click', () => ZoneCtl.start(b.dataset.zoneNew)));
+      $$('[data-zone-toggle]', el).forEach((b) => b.addEventListener('click', () => { Remote.invoke('ToggleZone', { id: +b.dataset.zoneToggle }); Audio.sfx('tick'); }));
+      $$('[data-zone-del]', el).forEach((b) => b.addEventListener('click', () => this.confirm('Remove this zone?', 'Buildings already built stay. Villagers stop building here.', 'Remove', () => { Remote.invoke('RemoveZone', { id: +b.dataset.zoneDel }); }, true)));
     }
     $$('[data-claim]', el).forEach((b) => b.addEventListener('click', () => { const r = Remote.invoke('ClaimQuest', { id: b.dataset.claim }); if (!r.ok) this.toast({ icon: '📜', title: 'Quest', text: r.err }); else this.popupScreen(b, '+' + this.costText(r.q.reward)); }));
     $$('[data-trade]', el).forEach((b) => b.addEventListener('click', () => {
@@ -154,7 +173,8 @@ const UI = {
   bar(p, cls = '') { return `<div class="bar ${cls}"><i style="width:${clamp(p, 0, 1) * 100}%"></i></div>`; },
   /* ---------- BUILD ---------- */
   buildHtml() {
-    const cats = BUILD_CATS.map((c) => [c.id, `${c.icon} ${c.name}`]);
+    const cats = BUILD_CATS.map((c) => [c.id, `${c.icon} ${c.name}`]).concat([['zones', '🏗️ Zones']]);
+    if (this.buildTab === 'zones') return this.tabs(cats, 'zones') + this.zonesHtml();
     const list = Object.values(BUILDINGS).filter((b) => b.cat === this.buildTab && !b.hidden).sort((a, b) => a.level - b.level);
     const cards = list.map((b) => {
       const locked = S.level < b.level;
@@ -169,6 +189,28 @@ const UI = {
     }).join('');
     return `${this.tabs(cats, this.buildTab)}<div class="bgrid">${cards}</div><div class="bdetail" id="bdetail">${this.buildDetail(list.find((b) => S.level >= b.level)?.id || list[0].id)}</div>`;
   },
+  zonesHtml() {
+    const kinds = Object.entries(ZONE_KINDS).map(([id, k]) => `<button class="zkind" data-zone-new="${id}" style="--zc:#${k.col.toString(16).padStart(6, '0')}"><span class="ic">${k.icon}</span><b>${k.name}</b><small>${esc(k.desc)}</small></button>`).join('');
+    const list = S.zones.map((z) => {
+      const K = ZONE_KINDS[z.kind], site = S.buildings.find((b) => b.zone === z.id && b.build > 0);
+      const st = site ? `Building a ${BUILDINGS[site.type].name} · ${Math.round((1 - site.build / (site.buildT || 1)) * 100)}%` : ZoneService.status[z.id] || (z.paused ? 'Paused' : 'Planning…');
+      return `<div class="zrow"><span class="zdot" style="background:#${K.col.toString(16).padStart(6, '0')}">${K.icon}</span><div class="grow"><b>${K.name} zone</b><small>${Math.round(z.x1 - z.x0)} × ${Math.round(z.z1 - z.z0)} · ${z.built || 0} built</small><small class="muted">${esc(st)}</small></div><button class="btn sm alt" data-zone-toggle="${z.id}">${z.paused ? 'Resume' : 'Pause'}</button><button class="btn sm danger" data-zone-del="${z.id}">Remove</button></div>`;
+    }).join('');
+    return `<p class="muted">Mark an area and your villagers build there by themselves, paid from your storage. They always keep a reserve: they never spend the last 20% of a resource or your last 100 coins. Builders from a Workshop help all day; other villagers help in their free time. Two sites can be under construction at once.</p>
+      <div class="zkinds">${kinds}</div>
+      <h3>Your zones ${S.zones.length}/12</h3>${list ? `<div class="zlist">${list}</div>` : '<p class="empty">No zones yet. Pick a kind above and draw it on the ground.</p>'}`;
+  },
+  zoneBar(show, kind) {
+    const b = $('#placebar'); b.hidden = !show; $('#dock').hidden = show; document.body.classList.toggle('placing', show);
+    $('#pb-rot').hidden = show;
+    if (!show) { $('#pb-ok').innerHTML = '✓ <span class="lb">Build</span>'; return; }
+    const K = ZONE_KINDS[kind];
+    $('#pb-name').textContent = `${K.icon} New ${K.name} zone`;
+    $('#pb-cost').innerHTML = '<span class="chip">Villagers pay from storage</span>';
+    $('#pb-ok').innerHTML = '✓ <span class="lb">Mark zone</span>';
+    ZoneCtl.refresh();
+  },
+  zoneStatus(text, ok) { const s = $('#pb-status'); s.textContent = text; s.className = ok ? 'ok' : 'bad'; $('#pb-ok').disabled = !(ok && ZoneCtl.rect()); },
   buildDetail(type) {
     const b = BUILDINGS[type];
     const eff = [];
@@ -281,22 +323,30 @@ const UI = {
   settingsHtml() {
     const s = S.settings;
     const sl = (k, label) => `<label class="sl"><span>${label}</span><input type="range" id="set-${k}" min="0" max="${k === 'sens' ? 2.5 : 1}" step="0.05" value="${s[k]}"></label>`;
-    return `<h3>Graphics</h3><div class="seg" role="radiogroup">${['low', 'medium', 'high'].map((q) => `<button data-q="${q}" class="${s.quality === q ? 'on' : ''}" role="radio" aria-checked="${s.quality === q}">${q[0].toUpperCase() + q.slice(1)}</button>`).join('')}</div>
+    const last = DataService.lastSavedAt ? new Date(DataService.lastSavedAt) : null;
+    const ago = last ? Math.round((Date.now() - last) / 1000) : null;
+    const saveBox = `<h3>Saving</h3><div class="savebox"><span class="ic">💾</span><div class="grow"><b id="save-when">${last ? 'Last saved at ' + last.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' }) + (ago < 60 ? ' (just now)' : ` (${Math.floor(ago / 60)} min ago)`) : 'Not saved yet this session'}</b><small>Saves automatically every 30 seconds, every morning and when you leave. Shortcut: Ctrl+S.</small></div><button class="btn good" id="set-save">Save now</button></div>`;
+    return saveBox + `<h3>Graphics</h3><div class="seg" role="radiogroup">${['low', 'medium', 'high'].map((q) => `<button data-q="${q}" class="${s.quality === q ? 'on' : ''}" role="radio" aria-checked="${s.quality === q}">${q[0].toUpperCase() + q.slice(1)}</button>`).join('')}</div>
       <p class="muted small">Low turns off shadows and thins out grass for weaker devices.</p>
       <h3>Sound</h3>${sl('master', 'Master')}${sl('music', 'Music')}${sl('sfx', 'Effects')}${sl('amb', 'Ambience')}
       <h3>Controls</h3>${sl('sens', 'Camera speed')}
       <label class="tg"><input type="checkbox" id="set-names" ${s.names ? 'checked' : ''}> Show villager names</label>
-      <div class="keys"><span><kbd>WASD</kbd> walk</span><span><kbd>Shift</kbd> run</span><span><kbd>Space</kbd> jump</span><span><kbd>E</kbd> interact</span><span><kbd>Drag</kbd> turn camera</span><span><kbd>Wheel</kbd> zoom</span><span><kbd>B</kbd> build</span><span><kbd>R</kbd> rotate</span><span><kbd>I J V T</kbd> menus</span><span><kbd>P</kbd> pause</span><span><kbd>1–4</kbd> game speed</span><span><kbd>Esc</kbd> close</span></div>
+      <div class="keys"><span><kbd>WASD</kbd> walk</span><span><kbd>Shift</kbd> run</span><span><kbd>Space</kbd> jump</span><span><kbd>E</kbd> interact</span><span><kbd>Drag</kbd> turn camera</span><span><kbd>Wheel</kbd> zoom</span><span><kbd>B</kbd> build</span><span><kbd>R</kbd> rotate</span><span><kbd>I J V T</kbd> menus</span><span><kbd>Ctrl+S</kbd> save</span><span><kbd>P</kbd> pause</span><span><kbd>1–4</kbd> game speed</span><span><kbd>Esc</kbd> close</span></div>
       <h3>Your village</h3>
-      <div class="btnrow"><button class="btn" id="set-save">Save now</button><button class="btn alt" id="set-export">Copy save code</button><button class="btn alt" id="set-import">Load save code</button><button class="btn danger" id="set-reset">Start over</button></div>
+      <div class="btnrow"><button class="btn alt" id="set-export">Copy save code</button><button class="btn alt" id="set-import">Load save code</button><button class="btn danger" id="set-reset">Start over</button></div>
       <textarea id="set-code" rows="3" placeholder="Paste a save code here, then press Load save code." aria-label="Save code"></textarea>
       <p class="muted small">Your village saves automatically every 30 seconds and when you leave. Save codes let you move it to another browser.</p>`;
+  },
+  saveNow() {
+    const ok = DataService.save('manual');
+    this.toast(ok ? { icon: '💾', title: 'Village saved', text: 'Your progress is stored in this browser.', cls: 'good' } : { icon: '⚠️', title: 'Saving failed', text: 'This browser blocks storage (private window?). Use Copy save code as a backup.' });
+    Audio.sfx(ok ? 'quest' : 'error');
   },
   wireSettings(el) {
     $$('[data-q]', el).forEach((b) => b.addEventListener('click', () => { Remote.invoke('Settings', { quality: b.dataset.q }); Game.applyQuality(); this.render('settings'); }));
     for (const k of ['master', 'music', 'sfx', 'amb', 'sens']) { const i = $('#set-' + k, el); i.addEventListener('input', () => { Remote.invoke('Settings', { [k]: +i.value }); Audio.applyVolumes(); }); }
     $('#set-names', el).addEventListener('change', (e) => Remote.invoke('Settings', { names: e.target.checked }));
-    $('#set-save', el).addEventListener('click', () => DataService.save('manual'));
+    $('#set-save', el).addEventListener('click', () => { this.saveNow(); this.render('settings'); });
     $('#set-export', el).addEventListener('click', () => {
       const code = DataService.exportCode(), ta = $('#set-code', el); ta.value = code;
       navigator.clipboard?.writeText(code).then(() => this.toast({ icon: '📋', title: 'Save code copied', text: 'Paste it in another browser to continue there.' })).catch(() => { ta.select(); this.toast({ icon: '📋', title: 'Save code ready', text: 'Select the text box and copy it.' }); });
@@ -342,6 +392,7 @@ const UI = {
       if (cfg.jobs) body += `<h4>Workers ${wk.length}/${cfg.jobs.n}</h4><div class="people">${wk.map((n) => `<button class="chip" data-npc="${n.id}">${PROFS[n.prof].icon} ${esc(n.name.split(' ')[0])}</button>`).join('') || '<small class="muted">No workers yet. New residents take open jobs.</small>'}</div>`;
       if (cfg.produce) body += `<p class="small">⚙️ ${cfg.consume ? this.costText(cfg.consume) + ' → ' : ''}${this.costText(cfg.produce)} per worker every 5 seconds while they work (07:30–17:30).</p>`;
       if (cfg.storage) body += `<p class="small">📦 Adds ${cfg.storage} storage for every resource.</p>`;
+      if (b.build > 0) body += `<div class="callout"><span>🏗️ Under construction · ${Math.round((1 - b.build / (b.buildT || 1)) * 100)}% · ${b.helpers || 0} helping</span></div>`;
       const btns = [];
       if (cfg.shop) btns.push(`<button class="btn good" id="c-trade">Trade</button>`);
       if (b.type === 'home') btns.push(`<button class="btn" id="c-sleep">Sleep</button>`);
@@ -613,6 +664,8 @@ const Minimap = {
       c.fillStyle = BUILDINGS[b.type].road ? '#b99b72' : b.damaged ? '#c0392b' : '#6b4630';
       c.fillRect((r.x0 - x0) * s, (r.z0 - z0) * s, Math.max(2, (r.x1 - r.x0) * s), Math.max(2, (r.z1 - r.z0) * s));
     }
+    for (const z of S.zones) { c.strokeStyle = '#' + ZONE_KINDS[z.kind].col.toString(16).padStart(6, '0'); c.lineWidth = 1.5; c.setLineDash([3, 2]); c.strokeRect((z.x0 - x0) * s, (z.z0 - z0) * s, (z.x1 - z.x0) * s, (z.z1 - z.z0) * s); }
+    c.setLineDash([]);
     c.fillStyle = '#fff4c2';
     for (const r of NPCService.rt.values()) { if (r.ent.hidden) continue; c.beginPath(); c.arc((r.ent.x - x0) * s, (r.ent.z - z0) * s, r.n.req || r.cand ? 3 : 1.8, 0, TAU); c.fill(); }
     c.fillStyle = '#e74c3c';

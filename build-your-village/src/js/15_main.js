@@ -40,7 +40,7 @@ const Game = {
       Decor.build(this.scene, this.decorDensity());
       this.loading(0.76, 'Waking up the villagers…'); await nextFrame();
       Barriers.init(this.scene); DayNight.init(this.scene); FX.init(this.scene); Chars.init(this.scene);
-      BuildRender.init(this.scene); SelRing.init(this.scene); BuildCtl.init(this.scene); EventService.init(this.scene);
+      BuildRender.init(this.scene); SelRing.init(this.scene); BuildCtl.init(this.scene); EventService.init(this.scene); ZoneRender.init(this.scene);
       BuildingService.rebuildIndex(); BuildingService.initY();
       for (const b of S.buildings) BuildRender.add(b, false);
       Decor.refreshHidden(BuildRender.rects());
@@ -168,6 +168,7 @@ const Game = {
     if (this.state !== 'play') return;
     Audio.unlock();
     if (BuildCtl.active) return BuildCtl.onClick(sx, sy, button, type);
+    if (ZoneCtl.active) return ZoneCtl.onClick(sx, sy, button, type);
     if (button === 2) return;
     const ray = this.ray(sx, sy);
     const ground = this.pickGround(sx, sy);
@@ -232,7 +233,7 @@ const Game = {
       FX.update(dt, this.camera);
       this.lodT -= dt;
       if (this.lodT <= 0) { this.lodT = 0.5; Decor.lod(this.camera.position.x, this.camera.position.z, this.decorDist()); }
-      if (this.state === 'play') { Labels.update(this.camera); UI.update(dt); }
+      if (this.state === 'play') { Labels.update(this.camera); ZoneRender.labels(this.camera); UI.update(dt); }
       Audio.update(dt);
       this.jsMs = lerp(this.jsMs || 0, performance.now() - tJs, 0.05);
       this.renderer.render(this.scene, this.camera);
@@ -250,6 +251,6 @@ const Game = {
 };
 
 // developer hook (only with ?debug in the URL): lets automated tests drive the game
-if (/[?&]debug\b/.test(location.search)) window.BYV = { get S() { return S; }, Server, Game, Remote, Player, Nodes, NPCService, EventService, BuildingService, Village, UI, BuildCtl, Interact, DataService, Economy, CameraCtl, World, QuestService, Chars, AREAS, BUILDINGS };
+if (/[?&]debug\b/.test(location.search)) window.BYV = { get S() { return S; }, Server, Game, Remote, Player, Nodes, NPCService, EventService, ZoneService, ZoneCtl, BuildingService, Village, UI, BuildCtl, Interact, DataService, Economy, CameraCtl, World, QuestService, Chars, AREAS, BUILDINGS };
 
 Game.boot();

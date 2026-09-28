@@ -8,6 +8,7 @@ const Input = {
     addEventListener('keydown', (e) => {
       if (this.typing()) return;
       const k = e.key.toLowerCase();
+      if (k === 's' && (e.ctrlKey || e.metaKey)) { e.preventDefault(); if (Game.state === 'play') UI.saveNow(); return; }
       if (['arrowup', 'arrowdown', 'arrowleft', 'arrowright', ' '].includes(k)) e.preventDefault();
       if (!this.keys.has(k)) UI.onKey(k, e);
       this.keys.add(k);
@@ -19,12 +20,13 @@ const Input = {
       canvas.setPointerCapture(e.pointerId);
       this.ptrs.set(e.pointerId, { x: e.clientX, y: e.clientY, sx: e.clientX, sy: e.clientY, t: now(), moved: false, button: e.button, type: e.pointerType });
       if (this.ptrs.size === 2) { const [a, b] = [...this.ptrs.values()]; this.pinchD = Math.hypot(a.x - b.x, a.y - b.y); }
+      if (ZoneCtl.active && e.button === 0 && e.pointerType !== 'touch') ZoneCtl.onDown(e.clientX, e.clientY);
       Audio.unlock();
     });
     canvas.addEventListener('pointermove', (e) => {
       this.hover.x = e.clientX; this.hover.y = e.clientY; this.hover.in = true;
       const p = this.ptrs.get(e.pointerId);
-      if (!p) { BuildCtl.onHover(e.clientX, e.clientY); return; }
+      if (!p) { BuildCtl.onHover(e.clientX, e.clientY); if (ZoneCtl.active) ZoneCtl.onHover(e.clientX, e.clientY); return; }
       const dx = e.clientX - p.x, dy = e.clientY - p.y;
       p.x = e.clientX; p.y = e.clientY;
       if (Math.hypot(p.x - p.sx, p.y - p.sy) > 7) p.moved = true;
@@ -35,6 +37,7 @@ const Input = {
         this.pinchD = d; return;
       }
       if (BuildCtl.active && p.button === 0 && BuildCtl.onDrag(e.clientX, e.clientY, p)) return;
+      if (ZoneCtl.active && p.button === 0 && p.type !== 'touch' && p.moved && ZoneCtl.onDrag(e.clientX, e.clientY)) return;
       if (p.moved) CameraCtl.rotate(dx, dy);
       BuildCtl.onHover(e.clientX, e.clientY);
     });
@@ -45,6 +48,7 @@ const Input = {
       if (!p) return;
       if (!p.moved && now() - p.t < 0.6) Game.onClick(e.clientX, e.clientY, p.button, p.type);
       BuildCtl.onUp();
+      if (ZoneCtl.active) ZoneCtl.onUp();
     };
     canvas.addEventListener('pointerup', up);
     canvas.addEventListener('pointercancel', (e) => { this.ptrs.delete(e.pointerId); BuildCtl.onUp(); });

@@ -182,7 +182,7 @@ body.is-paused #game { filter: saturate(0.6) brightness(0.9); }
 .panel h2 { margin: 0; font-size: 21px; }
 .x { width: 34px; height: 34px; border-radius: 50%; border: 2px solid var(--edge); background: var(--paper-2); display: grid; place-items: center; font-size: 14px; transition: transform 0.15s; }
 .x:hover { transform: rotate(90deg); }
-.pbody { overflow-y: auto; padding: 6px 20px 18px; overscroll-behavior: contain; }
+.pbody { min-width: 0; overflow-x: hidden; overflow-y: auto; padding: 6px 20px 18px; overscroll-behavior: contain; }
 .pbody h3 { font-size: 15px; margin: 16px 0 8px; color: var(--ink-2); letter-spacing: 0.02em; }
 .tabs { display: flex; gap: 6px; flex-wrap: wrap; margin: 4px 0 12px; }
 .tabs button { border: 2px solid var(--edge); background: var(--paper-2); border-radius: 99px; padding: 6px 12px; font-weight: 800; font-size: 13px; color: var(--ink-2); transition: background 0.15s, transform 0.15s; }
@@ -232,6 +232,28 @@ body.is-paused #game { filter: saturate(0.6) brightness(0.9); }
 .bdetail .warn { color: var(--berry); font-weight: 800; }
 .effs { display: flex; flex-wrap: wrap; gap: 6px; }
 .effs span { background: var(--paper); border-radius: 99px; padding: 2px 10px; font-size: 12px; font-weight: 700; border: 1px solid var(--edge); }
+
+.savebox { display: flex; align-items: center; gap: 12px; background: var(--paper-2); border: 2px solid var(--edge); border-radius: 14px; padding: 10px 12px; }
+.savebox .ic { font-size: 26px; }
+.savebox .grow { display: flex; flex-direction: column; gap: 2px; }
+.savebox small { color: var(--ink-2); font-size: 12px; }
+
+/* build zones */
+.zkinds { display: grid; grid-template-columns: repeat(auto-fill, minmax(128px, 1fr)); gap: 8px; }
+.zkind { min-width: 0; }
+.zkind { display: flex; flex-direction: column; align-items: flex-start; gap: 3px; text-align: left; padding: 10px 12px; background: var(--paper-2); border: 2px solid var(--edge); border-left: 6px solid var(--zc); border-radius: 14px; transition: transform 0.15s; }
+.zkind:hover { transform: translateY(-2px); border-color: var(--zc); }
+.zkind .ic { font-size: 24px; }
+.zkind small { color: var(--ink-2); font-size: 11px; line-height: 1.3; }
+.zlist { display: flex; flex-direction: column; gap: 6px; }
+.zrow { display: flex; align-items: center; gap: 10px; background: var(--paper-2); border: 2px solid var(--edge); border-radius: 14px; padding: 7px 10px; }
+.zrow .grow { display: flex; flex-direction: column; }
+.zrow small { font-size: 12px; color: var(--ink-2); }
+.zdot { width: 34px; height: 34px; border-radius: 10px; display: grid; place-items: center; font-size: 18px; flex: none; }
+.site { position: absolute; left: 0; top: 0; display: flex; flex-direction: column; align-items: center; gap: 3px; background: var(--paper); color: var(--ink); border: 2px solid var(--edge); border-radius: 12px; padding: 4px 9px; font-size: 12px; white-space: nowrap; box-shadow: 0 4px 10px rgba(0, 0, 0, 0.2); will-change: transform; }
+.site > i { display: block; width: 110px; height: 6px; border-radius: 6px; background: var(--paper-3); overflow: hidden; }
+.site > i > i { display: block; height: 100%; background: var(--honey); }
+.site small { color: var(--ink-2); font-size: 10px; }
 
 /* inventory */
 .slots { display: grid; grid-template-columns: repeat(auto-fill, minmax(170px, 1fr)); gap: 8px; }
@@ -2875,6 +2897,7 @@ const Remote = {
   },
 };
 const fail = (err, extra) => Object.assign({ ok: false, err }, extra || {});
+const isActive = (b) => !b.damaged && !(b.build > 0);
 
 /* ---------------- DataService ---------------- */
 const SAVE_SALT = 'byv-3f9a';
@@ -2896,6 +2919,7 @@ const DataService = {
       settings: { quality: DataService.autoQuality(), master: 0.8, music: 0.45, sfx: 0.8, amb: 0.7, sens: 1, names: true },
       time: { day: 1, hour: 7.2 },
       nodes: { cleared: [], dep: {} },
+      zones: [], nextZone: 1,
       chests: [],
       ev: { next: 330 },
       sat: {},
@@ -2946,6 +2970,7 @@ const DataService = {
       ok = this.write(this.KEY, str);
     } catch (e) { console.error('[DataService] save failed', e); }
     this.lastSave = now(); this.dirty = false;
+    if (ok) this.lastSavedAt = Date.now();
     Bus.emit('saved', { ok, reason });
     return ok;
   },
@@ -2962,7 +2987,7 @@ const DataService = {
     if (Array.isArray(st.buildings)) {
       const seen = new Set();
       out.buildings = st.buildings.filter((b) => b && BUILDINGS[b.type] && isNum(b.x) && isNum(b.z) && isNum(b.id) && !seen.has(b.id) && seen.add(b.id))
-        .map((b) => ({ id: b.id, type: b.type, x: clamp(b.x, -WORLD.PLAY, WORLD.PLAY), z: clamp(b.z, -WORLD.PLAY, WORLD.PLAY), rot: (b.rot | 0) & 3, damaged: !!b.damaged }));
+        .map((b) => { const o = { id: b.id, type: b.type, x: clamp(b.x, -WORLD.PLAY, WORLD.PLAY), z: clamp(b.z, -WORLD.PLAY, WORLD.PLAY), rot: (b.rot | 0) & 3, damaged: !!b.damaged }; if (isNum(b.build) && b.build > 0) { o.build = clamp(b.build, 0, 600); o.buildT = clamp(num(b.buildT, o.build), o.build, 600); } if (isNum(b.zone)) o.zone = b.zone; return o; });
       if (!out.buildings.some((b) => b.type === 'home')) out.buildings.unshift(d.buildings[0]);
     }
     out.nextId = Math.max(num(st.nextId, 2), ...out.buildings.map((b) => b.id + 1));
@@ -3012,6 +3037,8 @@ const DataService = {
       out.nodes.dep = {};
       if (st.nodes.dep && typeof st.nodes.dep === 'object') for (const [k, v] of Object.entries(st.nodes.dep)) if (isNum(v)) out.nodes.dep[k] = clamp(v, 0, 600);
     }
+    if (Array.isArray(st.zones)) out.zones = st.zones.filter((z) => z && [z.x0, z.z0, z.x1, z.z1, z.id].every(isNum) && ZONE_KINDS[z.kind]).slice(0, 12).map((z) => ({ id: z.id, x0: z.x0, z0: z.z0, x1: z.x1, z1: z.z1, kind: z.kind, paused: !!z.paused, built: num(z.built, 0, 0) }));
+    out.nextZone = Math.max(num(st.nextZone, 1), ...out.zones.map((z) => z.id + 1), 1);
     out.chests = Array.isArray(st.chests) ? st.chests.filter((c) => CHESTS.some((q) => q.id === c)) : [];
     out.ev.next = num(st.ev && st.ev.next, 330, 30, 2000);
     out.sat = {};
@@ -3039,7 +3066,7 @@ const Economy = {
   incomeLog: [], lastFullWarn: {},
   cap(k) {
     let c = BASE_CAP;
-    for (const b of S.buildings) { const s = BUILDINGS[b.type].storage; if (s) c += s; }
+    for (const b of S.buildings) { const s = BUILDINGS[b.type].storage; if (s && !(b.build > 0)) c += s; }
     return c;
   },
   amount(k) { return k === 'coins' ? S.coins : S.res[k] || 0; },
@@ -3120,11 +3147,11 @@ const Village = {
   isUnlockedIdx(idx) { const a = AREAS[idx]; return !!a && !a.hidden && S && S.areas.includes(a.id); },
   isUnlockedAt(x, z) { return this.isUnlockedIdx(areaIdxAt(x, z)); },
   population() { return S.npcs.length; },
-  capacity() { let c = 0; for (const b of S.buildings) if (!b.damaged) c += BUILDINGS[b.type].house || 0; return c; },
+  capacity() { let c = 0; for (const b of S.buildings) if (isActive(b)) c += BUILDINGS[b.type].house || 0; return c; },
   residentsOf(bid) { return S.npcs.filter((n) => n.home === bid); },
   workersOf(bid) { return S.npcs.filter((n) => n.work === bid); },
   title() { return levelTitle(S.level); },
-  sumHappy(key) { let s = 0; for (const b of S.buildings) { if (b.damaged) continue; const h = BUILDINGS[b.type].happy; if (h && h[key]) s += h[key]; } return s; },
+  sumHappy(key) { let s = 0; for (const b of S.buildings) { if (!isActive(b)) continue; const h = BUILDINGS[b.type].happy; if (h && h[key]) s += h[key]; } return s; },
   computeHappiness() {
     const pop = this.population();
     const F = [];
@@ -3227,7 +3254,7 @@ const Village = {
     const mins = sec / 60, got = {};
     const workers = S.npcs.filter((n) => n.work);
     for (const n of workers) {
-      const b = BuildingService.byId(n.work); if (!b || b.damaged) continue;
+      const b = BuildingService.byId(n.work); if (!b || !isActive(b)) continue;
       const cfg = BUILDINGS[b.type];
       if (cfg.produce) for (const k in cfg.produce) { if (cfg.consume) continue; got[k] = (got[k] || 0) + cfg.produce[k] * 12 * mins * 0.25; }
     }
@@ -3322,20 +3349,24 @@ const BuildingService = {
     if (!Economy.has(cfg.cost)) return fail('Not enough ' + ITEMS[Economy.missing(cfg.cost)].name.toLowerCase());
     return { ok: true };
   },
-  place(type, x, z, rot) {
+  place(type, x, z, rot, opts = {}) {
     const can = this.canBuild(type); if (!can.ok) return can;
     [x, z] = this.snap(type, x, z, rot);
     const chk = this.check(type, x, z, rot); if (!chk.ok) return chk;
     if (!Economy.spend(BUILDINGS[type].cost)) return fail('Not enough resources');
     const b = { id: S.nextId++, type, x, z, rot, y: chk.y, damaged: false };
-    S.buildings.push(b); this._byId.set(b.id, b);
     const cfg = BUILDINGS[type];
+    if (opts.zone != null) {
+      const value = Object.entries(cfg.cost).reduce((s, [k, v]) => s + v * (k === 'coins' ? 1 : (ITEMS[k].buy || 1) * 0.5), 0);
+      b.zone = opts.zone; b.build = b.buildT = Math.round(clamp(8 + value / 45, 10, 80));
+    }
+    S.buildings.push(b); this._byId.set(b.id, b);
     // clearing the land yields the resources that were standing there
     const cleared = ResourceService.clearRect(this.rect(type, x, z, rot));
     S.stats.built++;
     S.stats.builtCat[cfg.cat] = (S.stats.builtCat[cfg.cat] || 0) + 1;
     const value = Object.entries(cfg.cost).reduce((s, [k, v]) => s + v * (k === 'coins' ? 1 : (ITEMS[k].buy || 1) * 0.5), 0);
-    Village.addXP(cfg.road ? 1 : Math.max(8, Math.round(value / 6)), 'build', new THREE.Vector3(x, chk.y + 4, z));
+    if (!b.build) Village.addXP(cfg.road ? 1 : Math.max(8, Math.round(value / 6)), 'build', new THREE.Vector3(x, chk.y + 4, z));
     this.assignJobs();
     Bus.emit('building:placed', { b, cleared });
     NPCService.onBuildingsChanged(b);
@@ -3372,7 +3403,7 @@ const BuildingService = {
     DataService.dirty = true;
     return { ok: true, b };
   },
-  jobSlots(b) { const j = BUILDINGS[b.type].jobs; return j && !b.damaged ? j.n : 0; },
+  jobSlots(b) { const j = BUILDINGS[b.type].jobs; return j && isActive(b) ? j.n : 0; },
   /* fill open job slots with unemployed residents (they retrain) */
   assignJobs() {
     const open = [];
@@ -3387,7 +3418,7 @@ const BuildingService = {
   freeHome() {
     let best = null, bq = -1;
     for (const b of S.buildings) {
-      const cap = BUILDINGS[b.type].house; if (!cap || b.damaged) continue;
+      const cap = BUILDINGS[b.type].house; if (!cap || !isActive(b)) continue;
       const used = S.npcs.filter((p) => p.home === b.id).length;
       const q = BUILDINGS[b.type].quality || 1;
       if (used < cap && q > bq) { best = b; bq = q; }
@@ -3468,7 +3499,7 @@ const ResourceService = {
 const ShopService = {
   available() {
     const list = ['cart'];
-    for (const [id, sh] of Object.entries(SHOPS)) if (sh.building && S.buildings.some((b) => b.type === sh.building && !b.damaged)) list.push(id);
+    for (const [id, sh] of Object.entries(SHOPS)) if (sh.building && S.buildings.some((b) => b.type === sh.building && isActive(b))) list.push(id);
     if (EventService.is('merchant')) list.push('merchant');
     return list;
   },
@@ -3691,6 +3722,9 @@ function registerRemotes() {
   Remote.handle('Pickup', (a) => (isNum(a.id) ? EventService.pickup(a.id) : fail('Bad request')), 0.4);
   Remote.handle('MerchantDeal', (a) => (isNum(a.i) ? EventService.buyDeal(a.i) : fail('Bad request')), 0.3);
   Remote.handle('GreetVisitor', () => EventService.greet(), 1);
+  Remote.handle('CreateZone', (a) => ZoneService.create(a), 0.3);
+  Remote.handle('ToggleZone', (a) => (isNum(a.id) ? ZoneService.toggle(a.id) : fail('Bad request')), 0.2);
+  Remote.handle('RemoveZone', (a) => (isNum(a.id) ? ZoneService.remove(a.id) : fail('Bad request')), 0.2);
 }
 
 /* the server heartbeat: fixed small steps, independent of rendering */
@@ -3704,6 +3738,7 @@ const Server = {
     ResourceService.tick(dt);
     NPCService.tick(dt);
     EventService.tick(dt);
+    ZoneService.tick(dt);
     AchievementService.tick(dt);
     this.prodT -= dt;
     if (this.prodT <= 0) { this.prodT = 5; NPCService.productionTick(); QuestService.check(); }
@@ -4257,9 +4292,9 @@ const NPCService = {
     }
     const a = Math.random() * TAU; return [START.board[0] + Math.cos(a) * 5, START.board[1] + Math.sin(a) * 5];
   },
-  shopBuildings() { return S.buildings.filter((b) => !b.damaged && (BUILDINGS[b.type].shop || b.type === 'tavern' || b.type === 'inn')); },
+  shopBuildings() { return S.buildings.filter((b) => isActive(b) && (BUILDINGS[b.type].shop || b.type === 'tavern' || b.type === 'inn')); },
   foodShop(r) {
-    const list = S.buildings.filter((b) => !b.damaged && ['bakery', 'market_stall', 'marketplace', 'large_market', 'tavern'].includes(b.type));
+    const list = S.buildings.filter((b) => isActive(b) && ['bakery', 'market_stall', 'marketplace', 'large_market', 'tavern'].includes(b.type));
     let best = null, bd = 1e9; for (const b of list) { const d = Math.hypot(b.x - r.ent.x, b.z - r.ent.z); if (d < bd) { bd = d; best = b; } }
     return best;
   },
@@ -4322,7 +4357,15 @@ const NPCService = {
     if (r.state === 'walk' || r.state === 'chat' || r.leaving) return;
     const blk = scheduleBlock(S.time.hour);
     // danger: run home
-    if (r.flee) { r.flee = false; r.run = true; e.bubble = { text: '😱', t: 2 }; return this.goHome(r); }
+    if (r.flee) { r.flee = false; r.run = true; e.bubble = { text: '😱', t: 2 }; r.site = null; return this.goHome(r); }
+    // helping on a construction site in a build zone
+    if (r.site) {
+      const sb = BuildingService.byId(r.site);
+      const busy = r.n.work && r.n.prof !== 'builder' && (blk === 'work' || blk === 'lunch');
+      if (!sb || !(sb.build > 0) || blk === 'sleep' || busy) r.site = null;
+      else if (r.state === 'work') { r.until = t + 6; e.anim.act = 4; e.yaw = Math.atan2(sb.x - e.x, sb.z - e.z); return; }
+      else r.site = null;
+    }
     if (blk === 'sleep' || (EventService.is('rain') && blk === 'evening')) {
       if (!(r.state === 'inside' && r.inB === r.n.home)) { if (r.state === 'inside') this.exit(r); return this.goHome(r); }
       if (blk === 'sleep' && Math.random() < 0.15) { const b = BuildingService.byId(r.n.home); if (b) { e.bubble = { text: '💤', t: 3 }; } }
@@ -4490,7 +4533,7 @@ const NPCService = {
       const working = n.work && ((r.state === 'work' && r.workB === n.work) || (r.state === 'inside' && r.inB === n.work));
       if (!working) continue;
       const b = BuildingService.byId(n.work);
-      if (!b || b.damaged) continue;
+      if (!b || !isActive(b)) continue;
       const cfg = BUILDINGS[b.type];
       n.money += 1.5;
       if (!cfg.produce) continue;
@@ -4539,6 +4582,7 @@ const Input = {
     addEventListener('keydown', (e) => {
       if (this.typing()) return;
       const k = e.key.toLowerCase();
+      if (k === 's' && (e.ctrlKey || e.metaKey)) { e.preventDefault(); if (Game.state === 'play') UI.saveNow(); return; }
       if (['arrowup', 'arrowdown', 'arrowleft', 'arrowright', ' '].includes(k)) e.preventDefault();
       if (!this.keys.has(k)) UI.onKey(k, e);
       this.keys.add(k);
@@ -4550,12 +4594,13 @@ const Input = {
       canvas.setPointerCapture(e.pointerId);
       this.ptrs.set(e.pointerId, { x: e.clientX, y: e.clientY, sx: e.clientX, sy: e.clientY, t: now(), moved: false, button: e.button, type: e.pointerType });
       if (this.ptrs.size === 2) { const [a, b] = [...this.ptrs.values()]; this.pinchD = Math.hypot(a.x - b.x, a.y - b.y); }
+      if (ZoneCtl.active && e.button === 0 && e.pointerType !== 'touch') ZoneCtl.onDown(e.clientX, e.clientY);
       Audio.unlock();
     });
     canvas.addEventListener('pointermove', (e) => {
       this.hover.x = e.clientX; this.hover.y = e.clientY; this.hover.in = true;
       const p = this.ptrs.get(e.pointerId);
-      if (!p) { BuildCtl.onHover(e.clientX, e.clientY); return; }
+      if (!p) { BuildCtl.onHover(e.clientX, e.clientY); if (ZoneCtl.active) ZoneCtl.onHover(e.clientX, e.clientY); return; }
       const dx = e.clientX - p.x, dy = e.clientY - p.y;
       p.x = e.clientX; p.y = e.clientY;
       if (Math.hypot(p.x - p.sx, p.y - p.sy) > 7) p.moved = true;
@@ -4566,6 +4611,7 @@ const Input = {
         this.pinchD = d; return;
       }
       if (BuildCtl.active && p.button === 0 && BuildCtl.onDrag(e.clientX, e.clientY, p)) return;
+      if (ZoneCtl.active && p.button === 0 && p.type !== 'touch' && p.moved && ZoneCtl.onDrag(e.clientX, e.clientY)) return;
       if (p.moved) CameraCtl.rotate(dx, dy);
       BuildCtl.onHover(e.clientX, e.clientY);
     });
@@ -4576,6 +4622,7 @@ const Input = {
       if (!p) return;
       if (!p.moved && now() - p.t < 0.6) Game.onClick(e.clientX, e.clientY, p.button, p.type);
       BuildCtl.onUp();
+      if (ZoneCtl.active) ZoneCtl.onUp();
     };
     canvas.addEventListener('pointerup', up);
     canvas.addEventListener('pointercancel', (e) => { this.ptrs.delete(e.pointerId); BuildCtl.onUp(); });
@@ -4837,7 +4884,38 @@ const BuildRender = {
     FX.lampsDirty = true;
   },
   animating() { return this.anims.length > 0; },
+  scaffolds: new Map(),
+  scaffold(b) {
+    let m = this.scaffolds.get(b.id);
+    if (m) return m;
+    const [W, D] = BuildingService.dims(b.type, b.rot);
+    const H = Math.max(3, Models.get(b.type).height * 0.9);
+    const g = new GB(), c = P.woodL, c2 = P.wood;
+    const hw = W / 2 + 0.3, hd = D / 2 + 0.3;
+    const nx = Math.max(1, Math.round(W / 3)), nz = Math.max(1, Math.round(D / 3));
+    for (let i = 0; i <= nx; i++) for (const zz of [-hd, hd]) g.boxB(0.14, H, 0.14, c2, -hw + (i / nx) * hw * 2, 0, zz);
+    for (let i = 1; i < nz; i++) for (const xx of [-hw, hw]) g.boxB(0.14, H, 0.14, c2, xx, 0, -hd + (i / nz) * hd * 2);
+    for (let y = 1.4; y < H; y += 1.6) {
+      g.box(hw * 2 + 0.2, 0.1, 0.5, c, 0, y, -hd).box(hw * 2 + 0.2, 0.1, 0.5, c, 0, y, hd);
+      g.box(0.5, 0.1, hd * 2 + 0.2, c, -hw, y, 0).box(0.5, 0.1, hd * 2 + 0.2, c, hw, y, 0);
+    }
+    g.box(0.08, Math.hypot(hw * 2, H), 0.08, c2, 0, H / 2, hd + 0.05, 0, 0, Math.atan2(hw * 2, H));
+    m = new THREE.Mesh(g.build().main, Mats.bld); m.castShadow = true;
+    m.position.set(b.x, b.y, b.z);
+    this.scene.add(m); this.scaffolds.set(b.id, m);
+    return m;
+  },
+  dropScaffold(id) { const m = this.scaffolds.get(id); if (!m) return; this.scene.remove(m); m.geometry.dispose(); this.scaffolds.delete(id); },
   update(dt) {
+    // construction sites grow with their progress inside a scaffold
+    for (const [id] of this.scaffolds) { const b = BuildingService.byId(id); if (!b || !(b.build > 0)) this.dropScaffold(id); }
+    for (const b of S.buildings) {
+      if (!(b.build > 0) || this.anims.some((a) => a.b === b)) continue;
+      const p = 1 - b.build / (b.buildT || 1);
+      this.scaffold(b);
+      this.apply(b, 0.3 + 0.7 * p, 0.97);
+      if (b.helpers && Math.random() < dt * 3 && Math.hypot(b.x - Player.x, b.z - Player.z) < 50) { FX.dust(new THREE.Vector3(b.x + randRange(-2, 2), b.y + 0.4, b.z + randRange(-2, 2)), 2); if (Math.random() < 0.3 && Math.hypot(b.x - Player.x, b.z - Player.z) < 25) Audio.sfx('chop'); }
+    }
     for (let i = this.anims.length - 1; i >= 0; i--) {
       const a = this.anims[i];
       a.t += dt / 1.15;
@@ -5957,6 +6035,282 @@ const EventService = {
   },
 };
 
+/* ==== 13_zones.js ==== */
+/* =====================================================================
+   BUILD ZONES — mark an area, villagers build there by themselves.
+   ZoneService (server) plans what the village needs, reserves a spot,
+   pays from the treasury (keeping a reserve) and opens a construction
+   site. Villagers walk over and hammer; helpers speed it up.
+   ZoneCtl / ZoneRender (client) draw zones and construction labels.
+   ===================================================================== */
+const ZONE_KINDS = {
+  homes: { name: 'Homes', icon: '🏠', col: 0xf2b33d, desc: 'Houses for new residents, with a few flowers and lanterns.' },
+  work: { name: 'Work', icon: '🪓', col: 0xc98a4c, desc: 'Workplaces for whatever the village is short of: food, wood, stone or storage.' },
+  market: { name: 'Market', icon: '🛒', col: 0x5fb3d6, desc: 'Shops, a tavern and an inn.' },
+  park: { name: 'Park', icon: '🌷', col: 0x7fd17a, desc: 'Trees, flower beds, benches, fountains and statues.' },
+  auto: { name: 'Anything', icon: '✨', col: 0xb28dff, desc: 'Villagers decide for themselves what the village needs most.' },
+};
+const ZONE_RESERVE = 0.2; // share of each storage cap the builders never spend
+
+const ZoneService = {
+  t: 3, helpT: 0, status: {},
+  sites() { return S.buildings.filter((b) => b.build > 0); },
+  reserve(k) { return k === 'coins' ? 100 : Economy.cap(k) * ZONE_RESERVE; },
+  affordable(cost) { for (const k in cost) if (Economy.amount(k) - cost[k] < this.reserve(k)) return false; return true; },
+  buildable(type) { const c = BuildingService.canBuild(type); return c.ok && this.affordable(BUILDINGS[type].cost); },
+  /* what should go into this zone next? returns an ordered list of candidate types */
+  plan(z) {
+    const pop = Village.population(), freeHomes = Village.capacity() - pop;
+    const unemployed = S.npcs.filter((n) => !n.work).length;
+    const houses = ['townhouse', 'manor', 'cottage', 'small_house'];
+    const inZone = (t) => S.buildings.filter((b) => b.zone === z.id && b.type === t).length;
+    const byNeed = () => {
+      const L = [];
+      const full = RES_KEYS.some((k) => S.res[k] >= Economy.cap(k) * 0.85);
+      if (full) L.push('warehouse', 'storage_shed');
+      if (S.res.food < Math.max(20, pop * 4)) L.push('bakery', 'fisher_hut', 'farm');
+      if (S.res.wheat < 20 && BuildingService.count('bakery')) L.push('large_farm', 'farm');
+      if (S.res.wood < Economy.cap('wood') * 0.4) L.push('woodcutter');
+      if (S.res.stone < Economy.cap('stone') * 0.4) L.push('stonecutter', 'mine');
+      if (BuildingService.count('farm') + BuildingService.count('large_farm') >= 2 && !BuildingService.count('windmill')) L.push('windmill');
+      if (S.res.iron > 40 && !BuildingService.count('blacksmith')) L.push('blacksmith');
+      if (unemployed) L.push('woodcutter', 'farm', 'stonecutter', 'fisher_hut', 'workshop', 'guard_tower');
+      return L;
+    };
+    const shops = ['large_market', 'marketplace', 'general_store', 'bakery', 'market_stall', 'tavern', 'inn', 'blacksmith'].filter((t) => BUILDINGS[t].unique || BuildingService.count(t) < 2);
+    const park = ['statue', 'fountain', 'planted_tree', 'flower_bed', 'bench', 'lantern', 'planted_tree', 'flower_bed'];
+    let kind = z.kind;
+    if (kind === 'auto') kind = freeHomes < 2 ? 'homes' : unemployed > 0 || byNeed().length ? 'work' : BuildingService.count('general_store') + BuildingService.count('market_stall') < Math.ceil(pop / 6) ? 'market' : 'park';
+    if (kind === 'homes') {
+      if (freeHomes >= 3) return inZone('lantern') < inZone('small_house') + inZone('cottage') ? ['lantern', 'flower_bed', 'bench'] : ['flower_bed', 'planted_tree'];
+      return houses;
+    }
+    if (kind === 'work') return byNeed().concat(['woodcutter', 'stonecutter', 'farm']);
+    if (kind === 'market') return shops;
+    return park.sort(() => Math.random() - 0.5).concat(['statue', 'fountain']);
+  },
+  /* first free spot inside the zone, packed from one corner, with a walkway around it */
+  findSpot(z, type) {
+    const cfg = BUILDINGS[type];
+    const cx = (z.x0 + z.x1) / 2, cz = (z.z0 + z.z1) / 2;
+    const rots = [0, 2, 1, 3];
+    const pad = cfg.cat === 'decor' ? 0.6 : 1.6;
+    for (let zz = z.z0; zz <= z.z1; zz += 1.5) for (let xx = z.x0; xx <= z.x1; xx += 1.5) {
+      for (const rot of rots) {
+        const [W, D] = BuildingService.dims(type, rot);
+        const [x, zc] = BuildingService.snap(type, xx + W / 2, zz + D / 2, rot);
+        const r = BuildingService.rect(type, x, zc, rot);
+        if (r.x0 < z.x0 || r.x1 > z.x1 || r.z0 < z.z0 || r.z1 > z.z1) continue;
+        const c = BuildingService.check(type, x, zc, rot);
+        if (!c.ok) continue;
+        const crowded = S.buildings.some((b) => { if (BUILDINGS[b.type].road) return false; const o = BuildingService.rect(b.type, b.x, b.z, b.rot); return r.x1 + pad > o.x0 && r.x0 - pad < o.x1 && r.z1 + pad > o.z0 && r.z0 - pad < o.z1; });
+        if (crowded) continue;
+        const d = BuildingService.door({ type, x, z: zc, rot });
+        if (World.isWater(d.x, d.z) || World.blockedStatic(d.x, d.z, 0.3)) continue;
+        return { x, z: zc, rot, dist: Math.hypot(x - cx, zc - cz) };
+      }
+    }
+    return null;
+  },
+  tick(dt) {
+    // construction progress
+    for (const b of S.buildings) {
+      if (!(b.build > 0)) continue;
+      let helpers = 0;
+      for (const r of NPCService.rt.values()) if (r.site === b.id && r.state === 'work' && Math.hypot(r.ent.x - b.x, r.ent.z - b.z) < Math.max(...BUILDINGS[b.type].size) / 2 + 4) helpers++;
+      b.helpers = helpers;
+      b.build = Math.max(0, b.build - dt * (0.35 + helpers * 0.65));
+      if (b.build === 0) this.complete(b);
+    }
+    // recruit helpers
+    this.helpT -= dt;
+    if (this.helpT <= 0) { this.helpT = 2.5; this.recruit(); }
+    // plan new sites
+    this.t -= dt;
+    if (this.t > 0) return;
+    this.t = 6;
+    if (this.sites().length >= 2) return;
+    for (const z of S.zones) {
+      if (z.paused) { this.status[z.id] = 'Paused'; continue; }
+      if (S.buildings.some((b) => b.zone === z.id && b.build > 0)) continue;
+      const wants = this.plan(z);
+      let why = 'Waiting for resources (builders keep a 20% reserve)';
+      let started = false;
+      for (const type of wants) {
+        if (!BUILDINGS[type] || S.level < BUILDINGS[type].level) continue;
+        const can = BuildingService.canBuild(type);
+        if (!can.ok) { if (/^Not enough/.test(can.err)) why = `Saving up for a ${BUILDINGS[type].name}`; continue; }
+        if (!this.affordable(BUILDINGS[type].cost)) { why = `Saving up for a ${BUILDINGS[type].name}`; continue; }
+        const spot = this.findSpot(z, type);
+        if (!spot) { why = 'No room left for a ' + BUILDINGS[type].name; continue; }
+        const r = BuildingService.place(type, spot.x, spot.z, spot.rot, { zone: z.id });
+        if (r.ok) { started = true; z.built = (z.built || 0) + 1; this.status[z.id] = 'Building a ' + BUILDINGS[type].name; Bus.emit('zone:site', { z, b: r.b }); break; }
+      }
+      if (!started) this.status[z.id] = why;
+      if (this.sites().length >= 2) break;
+    }
+  },
+  recruit() {
+    const blk = scheduleBlock(S.time.hour);
+    if (blk === 'sleep') return;
+    for (const b of this.sites()) {
+      let have = 0;
+      for (const r of NPCService.rt.values()) if (r.site === b.id && (r.state === 'work' || (r.state === 'walk' && r.goal === 'build'))) have++;
+      if (have >= 3) continue;
+      const cands = [...NPCService.rt.values()].filter((r) => !r.cand && !r.leaving && !r.ent.hidden && r.state !== 'chat' && r.site !== b.id
+        && (r.n.prof === 'builder' || !r.n.work || blk === 'evening' || blk === 'morning')
+        && (r.state === 'idle' || r.state === 'sit' || (r.state === 'walk' && ['wander', 'square', 'sit'].includes(r.goal))));
+      cands.sort((p, q) => (p.n.prof === 'builder' ? -50 : 0) + Math.hypot(p.ent.x - b.x, p.ent.z - b.z) - ((q.n.prof === 'builder' ? -50 : 0) + Math.hypot(q.ent.x - b.x, q.ent.z - b.z)));
+      const r = cands[0];
+      if (!r) continue;
+      const [W, D] = BuildingService.dims(b.type, b.rot), a = Math.random() * TAU, rr = Math.max(W, D) / 2 + 1.2;
+      r.site = b.id;
+      if (r.state === 'sit') r.ent.anim.act = 0;
+      NPCService.goTo(r, b.x + Math.cos(a) * rr, b.z + Math.sin(a) * rr, 'build', { x: b.x, z: b.z });
+      r.ent.bubble = { text: '🔨', t: 2 };
+    }
+  },
+  complete(b) {
+    b.build = 0; delete b.buildT; delete b.helpers;
+    const cfg = BUILDINGS[b.type];
+    const value = Object.entries(cfg.cost).reduce((s, [k, v]) => s + v * (k === 'coins' ? 1 : (ITEMS[k].buy || 1) * 0.5), 0);
+    Village.addXP(Math.max(8, Math.round(value / 6)), 'build', new THREE.Vector3(b.x, b.y + 4, b.z));
+    for (const r of NPCService.rt.values()) if (r.site === b.id) { r.site = null; if (r.state === 'work') { r.until = 0; r.ent.anim.act = 2; r.ent.bubble = { text: '🎉', t: 2 }; } }
+    BuildingService.assignJobs();
+    const z = S.zones.find((q) => q.id === b.zone);
+    if (z) this.status[z.id] = 'Finished a ' + cfg.name;
+    Bus.emit('building:done', { b });
+    QuestService.check();
+    DataService.dirty = true;
+  },
+  create({ x0, z0, x1, z1, kind }) {
+    if (![x0, z0, x1, z1].every(isNum) || !ZONE_KINDS[kind]) return fail('Bad zone');
+    [x0, x1] = [Math.min(x0, x1), Math.max(x0, x1)]; [z0, z1] = [Math.min(z0, z1), Math.max(z0, z1)];
+    x0 = Math.round(x0); z0 = Math.round(z0); x1 = Math.round(x1); z1 = Math.round(z1);
+    if (x1 - x0 < 8 || z1 - z0 < 8) return fail('Make the zone at least 8 × 8');
+    if (x1 - x0 > 70 || z1 - z0 > 70) return fail('Keep the zone under 70 × 70');
+    if (S.zones.length >= 12) return fail('You can have up to 12 zones');
+    let inside = 0, n = 0;
+    for (let x = x0; x <= x1; x += 2) for (let z = z0; z <= z1; z += 2) { n++; if (Village.isUnlockedAt(x, z)) inside++; }
+    if (inside < n * 0.6) return fail('Most of the zone must be on your own land');
+    if (S.zones.some((q) => x1 > q.x0 && x0 < q.x1 && z1 > q.z0 && z0 < q.z1)) return fail('Zones cannot overlap');
+    const z = { id: S.nextZone++, x0, z0, x1, z1, kind, paused: false, built: 0 };
+    S.zones.push(z);
+    this.status[z.id] = 'Planning…';
+    this.t = Math.min(this.t, 1);
+    Bus.emit('zones', {});
+    DataService.dirty = true;
+    return { ok: true, z };
+  },
+  toggle(id) { const z = S.zones.find((q) => q.id === id); if (!z) return fail('Unknown zone'); z.paused = !z.paused; this.status[z.id] = z.paused ? 'Paused' : 'Planning…'; Bus.emit('zones', {}); return { ok: true }; },
+  remove(id) {
+    const z = S.zones.find((q) => q.id === id); if (!z) return fail('Unknown zone');
+    S.zones = S.zones.filter((q) => q !== z);
+    for (const b of S.buildings) if (b.zone === id) delete b.zone;
+    Bus.emit('zones', {});
+    return { ok: true };
+  },
+};
+
+/* ---------------- client: drawing + showing zones ---------------- */
+const ZoneRender = {
+  group: null, meshes: new Map(), pool: [],
+  init(scene) { this.group = new THREE.Group(); scene.add(this.group); this.preview = null; this.rebuild(); },
+  surface(x0, z0, x1, z1, col, fillOp, lineOp) {
+    const grp = new THREE.Group();
+    const nx = Math.max(2, Math.ceil((x1 - x0) / 2)), nz = Math.max(2, Math.ceil((z1 - z0) / 2));
+    const g = new THREE.PlaneGeometry(1, 1, nx, nz); g.rotateX(-Math.PI / 2);
+    const p = g.attributes.position;
+    for (let i = 0; i < p.count; i++) { const x = x0 + (p.getX(i) + 0.5) * (x1 - x0), z = z0 + (p.getZ(i) + 0.5) * (z1 - z0); p.setXYZ(i, x, Math.max(World.heightAt(x, z), 0) + 0.18, z); }
+    g.computeBoundingSphere();
+    const fill = new THREE.Mesh(g, new THREE.MeshBasicMaterial({ color: col, transparent: true, opacity: fillOp, depthWrite: false, polygonOffset: true, polygonOffsetFactor: -4, polygonOffsetUnits: -4 }));
+    fill.renderOrder = 2; grp.add(fill);
+    const pts = [];
+    const edge = (ax, az, bx, bz) => { const n = Math.ceil(Math.hypot(bx - ax, bz - az) / 1.5); for (let i = 0; i < n; i++) { const x = lerp(ax, bx, i / n), z = lerp(az, bz, i / n); pts.push(new THREE.Vector3(x, Math.max(World.heightAt(x, z), 0) + 0.3, z)); } };
+    edge(x0, z0, x1, z0); edge(x1, z0, x1, z1); edge(x1, z1, x0, z1); edge(x0, z1, x0, z0);
+    const line = new THREE.LineLoop(new THREE.BufferGeometry().setFromPoints(pts), new THREE.LineBasicMaterial({ color: col, transparent: true, opacity: lineOp }));
+    line.renderOrder = 3; grp.add(line);
+    return grp;
+  },
+  rebuild() {
+    for (const m of this.meshes.values()) { this.group.remove(m); m.traverse((o) => { if (o.geometry) o.geometry.dispose(); if (o.material) o.material.dispose(); }); }
+    this.meshes.clear();
+    for (const z of S.zones) { const m = this.surface(z.x0, z.z0, z.x1, z.z1, ZONE_KINDS[z.kind].col, z.paused ? 0.06 : 0.13, z.paused ? 0.35 : 0.8); this.group.add(m); this.meshes.set(z.id, m); }
+  },
+  showPreview(r, ok, kind) {
+    if (this.preview) { this.group.remove(this.preview); this.preview.traverse((o) => { if (o.geometry) o.geometry.dispose(); if (o.material) o.material.dispose(); }); this.preview = null; }
+    if (!r) return;
+    this.preview = this.surface(r.x0, r.z0, r.x1, r.z1, ok ? ZONE_KINDS[kind].col : 0xff5a5a, 0.28, 1);
+    this.group.add(this.preview);
+  },
+  /* floating "🏗️ 40%" chips over construction sites */
+  labels(camera) {
+    const layer = $('#labels'), v = new THREE.Vector3();
+    let k = 0;
+    for (const b of S.buildings) {
+      if (!(b.build > 0) || Math.hypot(b.x - Player.x, b.z - Player.z) > 70) continue;
+      v.set(b.x, b.y + Models.get(b.type).height * 0.5 + 2.4, b.z).project(camera);
+      if (v.z > 1 || Math.abs(v.x) > 1.1 || Math.abs(v.y) > 1.1) continue;
+      let el = this.pool[k];
+      if (!el) { el = h('div', 'site'); layer.appendChild(el); this.pool[k] = el; }
+      const p = Math.round((1 - b.build / (b.buildT || 1)) * 100);
+      el.innerHTML = `<b>🏗️ ${esc(BUILDINGS[b.type].name)}</b><i><i style="width:${p}%"></i></i><small>${p}% · ${b.helpers || 0} helping</small>`;
+      el.style.display = '';
+      el.style.transform = `translate(${((v.x + 1) / 2) * innerWidth}px, ${((1 - v.y) / 2) * innerHeight}px) translate(-50%, -100%)`;
+      k++;
+    }
+    for (let i = k; i < this.pool.length; i++) this.pool[i].style.display = 'none';
+  },
+};
+
+const ZoneCtl = {
+  active: false, kind: 'homes', a: null, b: null, pending: null, dragging: false,
+  start(kind) {
+    if (BuildCtl.active) BuildCtl.cancel();
+    this.active = true; this.kind = kind; this.a = this.b = this.pending = null; this.dragging = false;
+    UI.closePanels();
+    UI.zoneBar(true, kind);
+    CameraCtl.tDist = Math.max(CameraCtl.tDist, 42); CameraCtl.pitch = Math.max(CameraCtl.pitch, 0.95);
+    Audio.sfx('open');
+  },
+  cancel() { if (!this.active) return; this.active = false; ZoneRender.showPreview(null); UI.zoneBar(false); },
+  rect() { if (!this.a || !this.b) return null; return { x0: Math.min(this.a.x, this.b.x), x1: Math.max(this.a.x, this.b.x), z0: Math.min(this.a.z, this.b.z), z1: Math.max(this.a.z, this.b.z) }; },
+  refresh() {
+    const r = this.rect();
+    if (!r) { ZoneRender.showPreview(null); UI.zoneStatus(this.a ? 'Now pick the opposite corner' : (document.body.classList.contains('touch') ? 'Tap one corner of the area' : 'Drag across the ground, or click two corners'), true); return; }
+    const w = Math.round(r.x1 - r.x0), d = Math.round(r.z1 - r.z0);
+    let ok = w >= 8 && d >= 8 && w <= 70 && d <= 70, msg = `${w} × ${d}`;
+    if (w < 8 || d < 8) msg += ' · too small (min 8 × 8)'; else if (w > 70 || d > 70) msg += ' · too big (max 70 × 70)';
+    else if (S.zones.some((q) => r.x1 > q.x0 && r.x0 < q.x1 && r.z1 > q.z0 && r.z0 < q.z1)) { ok = false; msg += ' · overlaps another zone'; }
+    ZoneRender.showPreview(r, ok, this.kind);
+    UI.zoneStatus(msg, ok);
+  },
+  onDown(sx, sy) { const g = Game.pickGround(sx, sy); this.pending = g ? { x: g.x, z: g.z } : null; },
+  onDrag(sx, sy) {
+    const g = Game.pickGround(sx, sy); if (!g || !this.pending) return true;
+    if (!this.dragging) { this.dragging = true; this.a = this.pending; }
+    this.b = { x: g.x, z: g.z }; this.refresh();
+    return true;
+  },
+  onUp() { if (this.dragging) { this.dragging = false; this.finish(); } },
+  onHover(sx, sy) { if (!this.a || this.dragging || document.body.classList.contains('touch')) return; const g = Game.pickGround(sx, sy); if (g) { this.b = { x: g.x, z: g.z }; this.refresh(); } },
+  onClick(sx, sy, button) {
+    if (button === 2) return this.cancel();
+    const g = Game.pickGround(sx, sy); if (!g) return;
+    if (!this.a || (this.a && this.b && !document.body.classList.contains('touch') && this._done)) { this._done = false; this.a = { x: g.x, z: g.z }; this.b = null; this.refresh(); return; }
+    this.b = { x: g.x, z: g.z }; this.refresh();
+    if (!document.body.classList.contains('touch')) this.finish();
+  },
+  finish() {
+    const r = this.rect(); if (!r) return;
+    const res = Remote.invoke('CreateZone', { ...r, kind: this.kind });
+    if (!res.ok) { UI.zoneStatus(res.err, false); Audio.sfx('error'); this.a = this.b = null; this._done = true; return; }
+    Audio.sfx('place');
+    UI.toast({ icon: ZONE_KINDS[this.kind].icon, title: ZONE_KINDS[this.kind].name + ' zone marked', text: 'Villagers will start building here when the village can afford it.' });
+    this.cancel();
+  },
+};
+
 /* ==== 14_ui.js ==== */
 /* =====================================================================
    UI — HUD, dock, panels (Build, Inventory, Quests, Village, Shop,
@@ -5974,8 +6328,8 @@ const UI = {
     $('#btn-act').addEventListener('pointerup', () => Interact.release());
     $('#btn-jump').addEventListener('pointerdown', (e) => { e.preventDefault(); Input.keys.add(' '); setTimeout(() => Input.keys.delete(' '), 120); });
     $('#pb-rot').addEventListener('click', () => BuildCtl.rotate());
-    $('#pb-ok').addEventListener('click', () => BuildCtl.confirm());
-    $('#pb-cancel').addEventListener('click', () => BuildCtl.cancel());
+    $('#pb-ok').addEventListener('click', () => (ZoneCtl.active ? ZoneCtl.finish() : BuildCtl.confirm()));
+    $('#pb-cancel').addEventListener('click', () => (ZoneCtl.active ? ZoneCtl.cancel() : BuildCtl.cancel()));
     $('#minimap').addEventListener('click', () => this.open('village', 'land'));
     $$('#speed button').forEach((b) => b.addEventListener('click', () => Game.setSpeed(+b.dataset.speed)));
     $('#paused').addEventListener('click', () => Game.togglePause());
@@ -5995,7 +6349,22 @@ const UI = {
     Bus.on('xp', (d) => { this.dirty = true; if (d.pos) this.popup(d.pos, `+${d.n} XP`, 'xp'); });
     Bus.on('toast', (d) => this.toast(d));
     Bus.on('levelup', (d) => this.levelUp(d));
+    Bus.on('zones', () => { ZoneRender.rebuild(); this.refreshOpen(); });
+    Bus.on('building:done', ({ b }) => {
+      BuildRender.anims.push({ b, t: 0.45 });
+      if (Math.hypot(b.x - Player.x, b.z - Player.z) < 60) { Audio.sfx('build'); FX.sparkle(new THREE.Vector3(b.x, b.y + Models.get(b.type).height * 0.7, b.z), 22); }
+      this.toast({ icon: '🏗️', title: BUILDINGS[b.type].name + ' finished!', text: 'Your villagers built it in a build zone.' });
+      this.refreshOpen();
+    });
+    Bus.on('zone:site', ({ z, b }) => { if (now() - (this._siteT || 0) > 6) { this._siteT = now(); this.toast({ icon: ZONE_KINDS[z.kind].icon, title: 'Construction started', text: `Villagers are building a ${BUILDINGS[b.type].name} in your ${ZONE_KINDS[z.kind].name} zone.` }); } });
     Bus.on('building:placed', ({ b, cleared }) => {
+      if (b.build > 0) {
+        BuildRender.add(b, false);
+        FX.dust(new THREE.Vector3(b.x, b.y + 0.3, b.z), 10);
+        Decor.refreshHidden(BuildRender.rects(), BuildingService.rect(b.type, b.x, b.z, b.rot));
+        this.refreshOpen();
+        return;
+      }
       BuildRender.add(b, true);
       const r = BuildingService.rect(b.type, b.x, b.z, b.rot);
       for (const [x, z] of [[r.x0, r.z0], [r.x1, r.z0], [r.x0, r.z1], [r.x1, r.z1], [b.x, b.z]]) FX.dust(new THREE.Vector3(x, b.y + 0.3, z), BUILDINGS[b.type].road ? 3 : 8);
@@ -6034,7 +6403,7 @@ const UI = {
   },
   onKey(k, e) {
     if (Game.state !== 'play') return;
-    if (k === 'escape') { if (BuildCtl.active) BuildCtl.cancel(); else if ($('#dialog:not([hidden])')) this.closeDialog(); else { this.closePanels(); this.closeCard(); } return; }
+    if (k === 'escape') { if (ZoneCtl.active) ZoneCtl.cancel(); else if (BuildCtl.active) BuildCtl.cancel(); else if ($('#dialog:not([hidden])')) this.closeDialog(); else { this.closePanels(); this.closeCard(); } return; }
     if (k === 'e' && !e.repeat) { if (BuildCtl.active) return; Interact.press(); return; }
     if (k === 'r' && BuildCtl.active) return BuildCtl.rotate();
     if (k === 'q' && BuildCtl.active) return BuildCtl.rotate();
@@ -6047,6 +6416,7 @@ const UI = {
   toggle(name, tab) { if (this.current === name && !tab) this.closePanels(); else this.open(name, tab); },
   open(name, tab) {
     if (BuildCtl.active && name !== 'build') BuildCtl.cancel();
+    if (ZoneCtl.active) ZoneCtl.cancel();
     this.closeCard();
     $$('.panel').forEach((p) => { p.hidden = p.id !== 'panel-' + name; });
     $$('#dock button').forEach((b) => b.classList.toggle('on', b.dataset.open === name));
@@ -6082,6 +6452,9 @@ const UI = {
         c.addEventListener('pointerenter', () => { const d = $('#bdetail', el); if (d) d.innerHTML = this.buildDetail(c.dataset.type); });
       });
       Thumbs.fill(el);
+      $$('[data-zone-new]', el).forEach((b) => b.addEventListener('click', () => ZoneCtl.start(b.dataset.zoneNew)));
+      $$('[data-zone-toggle]', el).forEach((b) => b.addEventListener('click', () => { Remote.invoke('ToggleZone', { id: +b.dataset.zoneToggle }); Audio.sfx('tick'); }));
+      $$('[data-zone-del]', el).forEach((b) => b.addEventListener('click', () => this.confirm('Remove this zone?', 'Buildings already built stay. Villagers stop building here.', 'Remove', () => { Remote.invoke('RemoveZone', { id: +b.dataset.zoneDel }); }, true)));
     }
     $$('[data-claim]', el).forEach((b) => b.addEventListener('click', () => { const r = Remote.invoke('ClaimQuest', { id: b.dataset.claim }); if (!r.ok) this.toast({ icon: '📜', title: 'Quest', text: r.err }); else this.popupScreen(b, '+' + this.costText(r.q.reward)); }));
     $$('[data-trade]', el).forEach((b) => b.addEventListener('click', () => {
@@ -6114,7 +6487,8 @@ const UI = {
   bar(p, cls = '') { return `<div class="bar ${cls}"><i style="width:${clamp(p, 0, 1) * 100}%"></i></div>`; },
   /* ---------- BUILD ---------- */
   buildHtml() {
-    const cats = BUILD_CATS.map((c) => [c.id, `${c.icon} ${c.name}`]);
+    const cats = BUILD_CATS.map((c) => [c.id, `${c.icon} ${c.name}`]).concat([['zones', '🏗️ Zones']]);
+    if (this.buildTab === 'zones') return this.tabs(cats, 'zones') + this.zonesHtml();
     const list = Object.values(BUILDINGS).filter((b) => b.cat === this.buildTab && !b.hidden).sort((a, b) => a.level - b.level);
     const cards = list.map((b) => {
       const locked = S.level < b.level;
@@ -6129,6 +6503,28 @@ const UI = {
     }).join('');
     return `${this.tabs(cats, this.buildTab)}<div class="bgrid">${cards}</div><div class="bdetail" id="bdetail">${this.buildDetail(list.find((b) => S.level >= b.level)?.id || list[0].id)}</div>`;
   },
+  zonesHtml() {
+    const kinds = Object.entries(ZONE_KINDS).map(([id, k]) => `<button class="zkind" data-zone-new="${id}" style="--zc:#${k.col.toString(16).padStart(6, '0')}"><span class="ic">${k.icon}</span><b>${k.name}</b><small>${esc(k.desc)}</small></button>`).join('');
+    const list = S.zones.map((z) => {
+      const K = ZONE_KINDS[z.kind], site = S.buildings.find((b) => b.zone === z.id && b.build > 0);
+      const st = site ? `Building a ${BUILDINGS[site.type].name} · ${Math.round((1 - site.build / (site.buildT || 1)) * 100)}%` : ZoneService.status[z.id] || (z.paused ? 'Paused' : 'Planning…');
+      return `<div class="zrow"><span class="zdot" style="background:#${K.col.toString(16).padStart(6, '0')}">${K.icon}</span><div class="grow"><b>${K.name} zone</b><small>${Math.round(z.x1 - z.x0)} × ${Math.round(z.z1 - z.z0)} · ${z.built || 0} built</small><small class="muted">${esc(st)}</small></div><button class="btn sm alt" data-zone-toggle="${z.id}">${z.paused ? 'Resume' : 'Pause'}</button><button class="btn sm danger" data-zone-del="${z.id}">Remove</button></div>`;
+    }).join('');
+    return `<p class="muted">Mark an area and your villagers build there by themselves, paid from your storage. They always keep a reserve: they never spend the last 20% of a resource or your last 100 coins. Builders from a Workshop help all day; other villagers help in their free time. Two sites can be under construction at once.</p>
+      <div class="zkinds">${kinds}</div>
+      <h3>Your zones ${S.zones.length}/12</h3>${list ? `<div class="zlist">${list}</div>` : '<p class="empty">No zones yet. Pick a kind above and draw it on the ground.</p>'}`;
+  },
+  zoneBar(show, kind) {
+    const b = $('#placebar'); b.hidden = !show; $('#dock').hidden = show; document.body.classList.toggle('placing', show);
+    $('#pb-rot').hidden = show;
+    if (!show) { $('#pb-ok').innerHTML = '✓ <span class="lb">Build</span>'; return; }
+    const K = ZONE_KINDS[kind];
+    $('#pb-name').textContent = `${K.icon} New ${K.name} zone`;
+    $('#pb-cost').innerHTML = '<span class="chip">Villagers pay from storage</span>';
+    $('#pb-ok').innerHTML = '✓ <span class="lb">Mark zone</span>';
+    ZoneCtl.refresh();
+  },
+  zoneStatus(text, ok) { const s = $('#pb-status'); s.textContent = text; s.className = ok ? 'ok' : 'bad'; $('#pb-ok').disabled = !(ok && ZoneCtl.rect()); },
   buildDetail(type) {
     const b = BUILDINGS[type];
     const eff = [];
@@ -6241,22 +6637,30 @@ const UI = {
   settingsHtml() {
     const s = S.settings;
     const sl = (k, label) => `<label class="sl"><span>${label}</span><input type="range" id="set-${k}" min="0" max="${k === 'sens' ? 2.5 : 1}" step="0.05" value="${s[k]}"></label>`;
-    return `<h3>Graphics</h3><div class="seg" role="radiogroup">${['low', 'medium', 'high'].map((q) => `<button data-q="${q}" class="${s.quality === q ? 'on' : ''}" role="radio" aria-checked="${s.quality === q}">${q[0].toUpperCase() + q.slice(1)}</button>`).join('')}</div>
+    const last = DataService.lastSavedAt ? new Date(DataService.lastSavedAt) : null;
+    const ago = last ? Math.round((Date.now() - last) / 1000) : null;
+    const saveBox = `<h3>Saving</h3><div class="savebox"><span class="ic">💾</span><div class="grow"><b id="save-when">${last ? 'Last saved at ' + last.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' }) + (ago < 60 ? ' (just now)' : ` (${Math.floor(ago / 60)} min ago)`) : 'Not saved yet this session'}</b><small>Saves automatically every 30 seconds, every morning and when you leave. Shortcut: Ctrl+S.</small></div><button class="btn good" id="set-save">Save now</button></div>`;
+    return saveBox + `<h3>Graphics</h3><div class="seg" role="radiogroup">${['low', 'medium', 'high'].map((q) => `<button data-q="${q}" class="${s.quality === q ? 'on' : ''}" role="radio" aria-checked="${s.quality === q}">${q[0].toUpperCase() + q.slice(1)}</button>`).join('')}</div>
       <p class="muted small">Low turns off shadows and thins out grass for weaker devices.</p>
       <h3>Sound</h3>${sl('master', 'Master')}${sl('music', 'Music')}${sl('sfx', 'Effects')}${sl('amb', 'Ambience')}
       <h3>Controls</h3>${sl('sens', 'Camera speed')}
       <label class="tg"><input type="checkbox" id="set-names" ${s.names ? 'checked' : ''}> Show villager names</label>
-      <div class="keys"><span><kbd>WASD</kbd> walk</span><span><kbd>Shift</kbd> run</span><span><kbd>Space</kbd> jump</span><span><kbd>E</kbd> interact</span><span><kbd>Drag</kbd> turn camera</span><span><kbd>Wheel</kbd> zoom</span><span><kbd>B</kbd> build</span><span><kbd>R</kbd> rotate</span><span><kbd>I J V T</kbd> menus</span><span><kbd>P</kbd> pause</span><span><kbd>1–4</kbd> game speed</span><span><kbd>Esc</kbd> close</span></div>
+      <div class="keys"><span><kbd>WASD</kbd> walk</span><span><kbd>Shift</kbd> run</span><span><kbd>Space</kbd> jump</span><span><kbd>E</kbd> interact</span><span><kbd>Drag</kbd> turn camera</span><span><kbd>Wheel</kbd> zoom</span><span><kbd>B</kbd> build</span><span><kbd>R</kbd> rotate</span><span><kbd>I J V T</kbd> menus</span><span><kbd>Ctrl+S</kbd> save</span><span><kbd>P</kbd> pause</span><span><kbd>1–4</kbd> game speed</span><span><kbd>Esc</kbd> close</span></div>
       <h3>Your village</h3>
-      <div class="btnrow"><button class="btn" id="set-save">Save now</button><button class="btn alt" id="set-export">Copy save code</button><button class="btn alt" id="set-import">Load save code</button><button class="btn danger" id="set-reset">Start over</button></div>
+      <div class="btnrow"><button class="btn alt" id="set-export">Copy save code</button><button class="btn alt" id="set-import">Load save code</button><button class="btn danger" id="set-reset">Start over</button></div>
       <textarea id="set-code" rows="3" placeholder="Paste a save code here, then press Load save code." aria-label="Save code"></textarea>
       <p class="muted small">Your village saves automatically every 30 seconds and when you leave. Save codes let you move it to another browser.</p>`;
+  },
+  saveNow() {
+    const ok = DataService.save('manual');
+    this.toast(ok ? { icon: '💾', title: 'Village saved', text: 'Your progress is stored in this browser.', cls: 'good' } : { icon: '⚠️', title: 'Saving failed', text: 'This browser blocks storage (private window?). Use Copy save code as a backup.' });
+    Audio.sfx(ok ? 'quest' : 'error');
   },
   wireSettings(el) {
     $$('[data-q]', el).forEach((b) => b.addEventListener('click', () => { Remote.invoke('Settings', { quality: b.dataset.q }); Game.applyQuality(); this.render('settings'); }));
     for (const k of ['master', 'music', 'sfx', 'amb', 'sens']) { const i = $('#set-' + k, el); i.addEventListener('input', () => { Remote.invoke('Settings', { [k]: +i.value }); Audio.applyVolumes(); }); }
     $('#set-names', el).addEventListener('change', (e) => Remote.invoke('Settings', { names: e.target.checked }));
-    $('#set-save', el).addEventListener('click', () => DataService.save('manual'));
+    $('#set-save', el).addEventListener('click', () => { this.saveNow(); this.render('settings'); });
     $('#set-export', el).addEventListener('click', () => {
       const code = DataService.exportCode(), ta = $('#set-code', el); ta.value = code;
       navigator.clipboard?.writeText(code).then(() => this.toast({ icon: '📋', title: 'Save code copied', text: 'Paste it in another browser to continue there.' })).catch(() => { ta.select(); this.toast({ icon: '📋', title: 'Save code ready', text: 'Select the text box and copy it.' }); });
@@ -6302,6 +6706,7 @@ const UI = {
       if (cfg.jobs) body += `<h4>Workers ${wk.length}/${cfg.jobs.n}</h4><div class="people">${wk.map((n) => `<button class="chip" data-npc="${n.id}">${PROFS[n.prof].icon} ${esc(n.name.split(' ')[0])}</button>`).join('') || '<small class="muted">No workers yet. New residents take open jobs.</small>'}</div>`;
       if (cfg.produce) body += `<p class="small">⚙️ ${cfg.consume ? this.costText(cfg.consume) + ' → ' : ''}${this.costText(cfg.produce)} per worker every 5 seconds while they work (07:30–17:30).</p>`;
       if (cfg.storage) body += `<p class="small">📦 Adds ${cfg.storage} storage for every resource.</p>`;
+      if (b.build > 0) body += `<div class="callout"><span>🏗️ Under construction · ${Math.round((1 - b.build / (b.buildT || 1)) * 100)}% · ${b.helpers || 0} helping</span></div>`;
       const btns = [];
       if (cfg.shop) btns.push(`<button class="btn good" id="c-trade">Trade</button>`);
       if (b.type === 'home') btns.push(`<button class="btn" id="c-sleep">Sleep</button>`);
@@ -6573,6 +6978,8 @@ const Minimap = {
       c.fillStyle = BUILDINGS[b.type].road ? '#b99b72' : b.damaged ? '#c0392b' : '#6b4630';
       c.fillRect((r.x0 - x0) * s, (r.z0 - z0) * s, Math.max(2, (r.x1 - r.x0) * s), Math.max(2, (r.z1 - r.z0) * s));
     }
+    for (const z of S.zones) { c.strokeStyle = '#' + ZONE_KINDS[z.kind].col.toString(16).padStart(6, '0'); c.lineWidth = 1.5; c.setLineDash([3, 2]); c.strokeRect((z.x0 - x0) * s, (z.z0 - z0) * s, (z.x1 - z.x0) * s, (z.z1 - z.z0) * s); }
+    c.setLineDash([]);
     c.fillStyle = '#fff4c2';
     for (const r of NPCService.rt.values()) { if (r.ent.hidden) continue; c.beginPath(); c.arc((r.ent.x - x0) * s, (r.ent.z - z0) * s, r.n.req || r.cand ? 3 : 1.8, 0, TAU); c.fill(); }
     c.fillStyle = '#e74c3c';
@@ -6633,7 +7040,7 @@ const Game = {
       Decor.build(this.scene, this.decorDensity());
       this.loading(0.76, 'Waking up the villagers…'); await nextFrame();
       Barriers.init(this.scene); DayNight.init(this.scene); FX.init(this.scene); Chars.init(this.scene);
-      BuildRender.init(this.scene); SelRing.init(this.scene); BuildCtl.init(this.scene); EventService.init(this.scene);
+      BuildRender.init(this.scene); SelRing.init(this.scene); BuildCtl.init(this.scene); EventService.init(this.scene); ZoneRender.init(this.scene);
       BuildingService.rebuildIndex(); BuildingService.initY();
       for (const b of S.buildings) BuildRender.add(b, false);
       Decor.refreshHidden(BuildRender.rects());
@@ -6761,6 +7168,7 @@ const Game = {
     if (this.state !== 'play') return;
     Audio.unlock();
     if (BuildCtl.active) return BuildCtl.onClick(sx, sy, button, type);
+    if (ZoneCtl.active) return ZoneCtl.onClick(sx, sy, button, type);
     if (button === 2) return;
     const ray = this.ray(sx, sy);
     const ground = this.pickGround(sx, sy);
@@ -6825,7 +7233,7 @@ const Game = {
       FX.update(dt, this.camera);
       this.lodT -= dt;
       if (this.lodT <= 0) { this.lodT = 0.5; Decor.lod(this.camera.position.x, this.camera.position.z, this.decorDist()); }
-      if (this.state === 'play') { Labels.update(this.camera); UI.update(dt); }
+      if (this.state === 'play') { Labels.update(this.camera); ZoneRender.labels(this.camera); UI.update(dt); }
       Audio.update(dt);
       this.jsMs = lerp(this.jsMs || 0, performance.now() - tJs, 0.05);
       this.renderer.render(this.scene, this.camera);
@@ -6843,7 +7251,7 @@ const Game = {
 };
 
 // developer hook (only with ?debug in the URL): lets automated tests drive the game
-if (/[?&]debug\b/.test(location.search)) window.BYV = { get S() { return S; }, Server, Game, Remote, Player, Nodes, NPCService, EventService, BuildingService, Village, UI, BuildCtl, Interact, DataService, Economy, CameraCtl, World, QuestService, Chars, AREAS, BUILDINGS };
+if (/[?&]debug\b/.test(location.search)) window.BYV = { get S() { return S; }, Server, Game, Remote, Player, Nodes, NPCService, EventService, ZoneService, ZoneCtl, BuildingService, Village, UI, BuildCtl, Interact, DataService, Economy, CameraCtl, World, QuestService, Chars, AREAS, BUILDINGS };
 
 Game.boot();
 

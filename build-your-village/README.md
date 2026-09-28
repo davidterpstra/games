@@ -16,6 +16,8 @@ A cozy low-poly village builder that runs in the browser. You start with one sma
 | Rotate while placing | `R` / `Q` / `Shift`+wheel | ⟳ |
 | Place | click (drag to paint roads) | tap to move the preview, ✓ to build |
 | Inventory · Quests · Village · Shop · Land map | `I` · `J` · `V` · `T` · `M` | dock buttons |
+| Pause · game speed | `P` · `1`–`4` | ⏸ 1× 2× 3× 4× under the clock |
+| Save now | `Ctrl+S` or ⚙ Settings | ⚙ Settings |
 | Close / cancel | `Esc` | ✕ |
 
 ## What is in the game
@@ -31,9 +33,11 @@ A cozy low-poly village builder that runs in the browser. You start with one sma
 - **33 story quests + endless daily quests**, **21 achievements**, **14 cosmetics** (hats and tunics).
 - **Happiness** from housing, food, shops, decoration, entertainment, safety and services, minus shortages, unemployment and damage. It drives how fast new residents come and how hard people work.
 - **Events** – Heavy Rain, Village Festival, Wolves Attack, Traveling Merchant, Harvest Festival, Small Fire, Meteor Shower, Special Visitor (never back to back).
+- **Build zones** – mark an area as Homes, Work, Market, Park or Anything; villagers decide what the village needs, pay from storage (keeping a 20% reserve) and build it themselves on a scaffolded construction site. Builders from a Workshop help all day, other villagers in their free time.
+- **Game speed** – pause, or run the world 2×, 3× or 4× as fast (`P`, `1`–`4`).
 - **Day/night** – sun and moon, stars, sunsets, glowing windows, lanterns with real lights near you, fireflies at night, pollen by day. Sleep in your home to skip the night.
 - **Audio** – everything is synthesised with WebAudio (birds, wind, water, crickets, rain, village murmur, footsteps, chopping, building, UI sounds and a soft generative tune), so no sound file can fail to load.
-- **Saving** – autosave every 30 s, on new days, important actions and when you leave; a checksum plus a rotating backup slot protect against corrupt saves; offline progress when you come back; save codes to move a village to another browser.
+- **Saving** – autosave every 30 s, on new days, important actions and when you leave; a checksum plus a rotating backup slot protect against corrupt saves; offline progress when you come back; a **Save now** button in Settings (or `Ctrl+S`) shows when you last saved; save codes move a village to another browser.
 
 ## Code structure
 
@@ -47,6 +51,7 @@ A cozy low-poly village builder that runs in the browser. You start with one sma
 | `05_server.js` | `ServerScriptService/Services` | `Remote` gateway, DataService, EconomyService, VillageService, BuildingService, ResourceService, ShopService, QuestService, AchievementService |
 | `07_npc.js` | `NPCService` | navigation grid + A*, villager schedules, production, requests |
 | `13_events.js` | `EventService` | random events |
+| `13_zones.js` | `ZoneService` | build zones, construction sites, villager helpers |
 | `06_chars.js`, `08_player.js`, `09_build.js`, `10_interact.js`, `11_fx.js`, `12_audio.js`, `14_ui.js` | `StarterPlayerScripts` | characters, input/camera, BuildingController, InteractionController, effects + day/night, audio, UI |
 | `15_main.js` | – | boot, render loop, picking, quality settings |
 

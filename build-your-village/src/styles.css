@@ -171,7 +171,7 @@ body.is-paused #game { filter: saturate(0.6) brightness(0.9); }
 .panel h2 { margin: 0; font-size: 21px; }
 .x { width: 34px; height: 34px; border-radius: 50%; border: 2px solid var(--edge); background: var(--paper-2); display: grid; place-items: center; font-size: 14px; transition: transform 0.15s; }
 .x:hover { transform: rotate(90deg); }
-.pbody { overflow-y: auto; padding: 6px 20px 18px; overscroll-behavior: contain; }
+.pbody { min-width: 0; overflow-x: hidden; overflow-y: auto; padding: 6px 20px 18px; overscroll-behavior: contain; }
 .pbody h3 { font-size: 15px; margin: 16px 0 8px; color: var(--ink-2); letter-spacing: 0.02em; }
 .tabs { display: flex; gap: 6px; flex-wrap: wrap; margin: 4px 0 12px; }
 .tabs button { border: 2px solid var(--edge); background: var(--paper-2); border-radius: 99px; padding: 6px 12px; font-weight: 800; font-size: 13px; color: var(--ink-2); transition: background 0.15s, transform 0.15s; }
@@ -221,6 +221,28 @@ body.is-paused #game { filter: saturate(0.6) brightness(0.9); }
 .bdetail .warn { color: var(--berry); font-weight: 800; }
 .effs { display: flex; flex-wrap: wrap; gap: 6px; }
 .effs span { background: var(--paper); border-radius: 99px; padding: 2px 10px; font-size: 12px; font-weight: 700; border: 1px solid var(--edge); }
+
+.savebox { display: flex; align-items: center; gap: 12px; background: var(--paper-2); border: 2px solid var(--edge); border-radius: 14px; padding: 10px 12px; }
+.savebox .ic { font-size: 26px; }
+.savebox .grow { display: flex; flex-direction: column; gap: 2px; }
+.savebox small { color: var(--ink-2); font-size: 12px; }
+
+/* build zones */
+.zkinds { display: grid; grid-template-columns: repeat(auto-fill, minmax(128px, 1fr)); gap: 8px; }
+.zkind { min-width: 0; }
+.zkind { display: flex; flex-direction: column; align-items: flex-start; gap: 3px; text-align: left; padding: 10px 12px; background: var(--paper-2); border: 2px solid var(--edge); border-left: 6px solid var(--zc); border-radius: 14px; transition: transform 0.15s; }
+.zkind:hover { transform: translateY(-2px); border-color: var(--zc); }
+.zkind .ic { font-size: 24px; }
+.zkind small { color: var(--ink-2); font-size: 11px; line-height: 1.3; }
+.zlist { display: flex; flex-direction: column; gap: 6px; }
+.zrow { display: flex; align-items: center; gap: 10px; background: var(--paper-2); border: 2px solid var(--edge); border-radius: 14px; padding: 7px 10px; }
+.zrow .grow { display: flex; flex-direction: column; }
+.zrow small { font-size: 12px; color: var(--ink-2); }
+.zdot { width: 34px; height: 34px; border-radius: 10px; display: grid; place-items: center; font-size: 18px; flex: none; }
+.site { position: absolute; left: 0; top: 0; display: flex; flex-direction: column; align-items: center; gap: 3px; background: var(--paper); color: var(--ink); border: 2px solid var(--edge); border-radius: 12px; padding: 4px 9px; font-size: 12px; white-space: nowrap; box-shadow: 0 4px 10px rgba(0, 0, 0, 0.2); will-change: transform; }
+.site > i { display: block; width: 110px; height: 6px; border-radius: 6px; background: var(--paper-3); overflow: hidden; }
+.site > i > i { display: block; height: 100%; background: var(--honey); }
+.site small { color: var(--ink-2); font-size: 10px; }
 
 /* inventory */
 .slots { display: grid; grid-template-columns: repeat(auto-fill, minmax(170px, 1fr)); gap: 8px; }

@@ -24,6 +24,7 @@ const Remote = {
   },
 };
 const fail = (err, extra) => Object.assign({ ok: false, err }, extra || {});
+const isActive = (b) => !b.damaged && !(b.build > 0);
 
 /* ---------------- DataService ---------------- */
 const SAVE_SALT = 'byv-3f9a';
@@ -45,6 +46,7 @@ const DataService = {
       settings: { quality: DataService.autoQuality(), master: 0.8, music: 0.45, sfx: 0.8, amb: 0.7, sens: 1, names: true },
       time: { day: 1, hour: 7.2 },
       nodes: { cleared: [], dep: {} },
+      zones: [], nextZone: 1,
       chests: [],
       ev: { next: 330 },
       sat: {},
@@ -95,6 +97,7 @@ const DataService = {
       ok = this.write(this.KEY, str);
     } catch (e) { console.error('[DataService] save failed', e); }
     this.lastSave = now(); this.dirty = false;
+    if (ok) this.lastSavedAt = Date.now();
     Bus.emit('saved', { ok, reason });
     return ok;
   },
@@ -111,7 +114,7 @@ const DataService = {
     if (Array.isArray(st.buildings)) {
       const seen = new Set();
       out.buildings = st.buildings.filter((b) => b && BUILDINGS[b.type] && isNum(b.x) && isNum(b.z) && isNum(b.id) && !seen.has(b.id) && seen.add(b.id))
-        .map((b) => ({ id: b.id, type: b.type, x: clamp(b.x, -WORLD.PLAY, WORLD.PLAY), z: clamp(b.z, -WORLD.PLAY, WORLD.PLAY), rot: (b.rot | 0) & 3, damaged: !!b.damaged }));
+        .map((b) => { const o = { id: b.id, type: b.type, x: clamp(b.x, -WORLD.PLAY, WORLD.PLAY), z: clamp(b.z, -WORLD.PLAY, WORLD.PLAY), rot: (b.rot | 0) & 3, damaged: !!b.damaged }; if (isNum(b.build) && b.build > 0) { o.build = clamp(b.build, 0, 600); o.buildT = clamp(num(b.buildT, o.build), o.build, 600); } if (isNum(b.zone)) o.zone = b.zone; return o; });
       if (!out.buildings.some((b) => b.type === 'home')) out.buildings.unshift(d.buildings[0]);
     }
     out.nextId = Math.max(num(st.nextId, 2), ...out.buildings.map((b) => b.id + 1));
@@ -161,6 +164,8 @@ const DataService = {
       out.nodes.dep = {};
       if (st.nodes.dep && typeof st.nodes.dep === 'object') for (const [k, v] of Object.entries(st.nodes.dep)) if (isNum(v)) out.nodes.dep[k] = clamp(v, 0, 600);
     }
+    if (Array.isArray(st.zones)) out.zones = st.zones.filter((z) => z && [z.x0, z.z0, z.x1, z.z1, z.id].every(isNum) && ZONE_KINDS[z.kind]).slice(0, 12).map((z) => ({ id: z.id, x0: z.x0, z0: z.z0, x1: z.x1, z1: z.z1, kind: z.kind, paused: !!z.paused, built: num(z.built, 0, 0) }));
+    out.nextZone = Math.max(num(st.nextZone, 1), ...out.zones.map((z) => z.id + 1), 1);
     out.chests = Array.isArray(st.chests) ? st.chests.filter((c) => CHESTS.some((q) => q.id === c)) : [];
     out.ev.next = num(st.ev && st.ev.next, 330, 30, 2000);
     out.sat = {};
@@ -188,7 +193,7 @@ const Economy = {
   incomeLog: [], lastFullWarn: {},
   cap(k) {
     let c = BASE_CAP;
-    for (const b of S.buildings) { const s = BUILDINGS[b.type].storage; if (s) c += s; }
+    for (const b of S.buildings) { const s = BUILDINGS[b.type].storage; if (s && !(b.build > 0)) c += s; }
     return c;
   },
   amount(k) { return k === 'coins' ? S.coins : S.res[k] || 0; },
@@ -269,11 +274,11 @@ const Village = {
   isUnlockedIdx(idx) { const a = AREAS[idx]; return !!a && !a.hidden && S && S.areas.includes(a.id); },
   isUnlockedAt(x, z) { return this.isUnlockedIdx(areaIdxAt(x, z)); },
   population() { return S.npcs.length; },
-  capacity() { let c = 0; for (const b of S.buildings) if (!b.damaged) c += BUILDINGS[b.type].house || 0; return c; },
+  capacity() { let c = 0; for (const b of S.buildings) if (isActive(b)) c += BUILDINGS[b.type].house || 0; return c; },
   residentsOf(bid) { return S.npcs.filter((n) => n.home === bid); },
   workersOf(bid) { return S.npcs.filter((n) => n.work === bid); },
   title() { return levelTitle(S.level); },
-  sumHappy(key) { let s = 0; for (const b of S.buildings) { if (b.damaged) continue; const h = BUILDINGS[b.type].happy; if (h && h[key]) s += h[key]; } return s; },
+  sumHappy(key) { let s = 0; for (const b of S.buildings) { if (!isActive(b)) continue; const h = BUILDINGS[b.type].happy; if (h && h[key]) s += h[key]; } return s; },
   computeHappiness() {
     const pop = this.population();
     const F = [];
@@ -376,7 +381,7 @@ const Village = {
     const mins = sec / 60, got = {};
     const workers = S.npcs.filter((n) => n.work);
     for (const n of workers) {
-      const b = BuildingService.byId(n.work); if (!b || b.damaged) continue;
+      const b = BuildingService.byId(n.work); if (!b || !isActive(b)) continue;
       const cfg = BUILDINGS[b.type];
       if (cfg.produce) for (const k in cfg.produce) { if (cfg.consume) continue; got[k] = (got[k] || 0) + cfg.produce[k] * 12 * mins * 0.25; }
     }
@@ -471,20 +476,24 @@ const BuildingService = {
     if (!Economy.has(cfg.cost)) return fail('Not enough ' + ITEMS[Economy.missing(cfg.cost)].name.toLowerCase());
     return { ok: true };
   },
-  place(type, x, z, rot) {
+  place(type, x, z, rot, opts = {}) {
     const can = this.canBuild(type); if (!can.ok) return can;
     [x, z] = this.snap(type, x, z, rot);
     const chk = this.check(type, x, z, rot); if (!chk.ok) return chk;
     if (!Economy.spend(BUILDINGS[type].cost)) return fail('Not enough resources');
     const b = { id: S.nextId++, type, x, z, rot, y: chk.y, damaged: false };
-    S.buildings.push(b); this._byId.set(b.id, b);
     const cfg = BUILDINGS[type];
+    if (opts.zone != null) {
+      const value = Object.entries(cfg.cost).reduce((s, [k, v]) => s + v * (k === 'coins' ? 1 : (ITEMS[k].buy || 1) * 0.5), 0);
+      b.zone = opts.zone; b.build = b.buildT = Math.round(clamp(8 + value / 45, 10, 80));
+    }
+    S.buildings.push(b); this._byId.set(b.id, b);
     // clearing the land yields the resources that were standing there
     const cleared = ResourceService.clearRect(this.rect(type, x, z, rot));
     S.stats.built++;
     S.stats.builtCat[cfg.cat] = (S.stats.builtCat[cfg.cat] || 0) + 1;
     const value = Object.entries(cfg.cost).reduce((s, [k, v]) => s + v * (k === 'coins' ? 1 : (ITEMS[k].buy || 1) * 0.5), 0);
-    Village.addXP(cfg.road ? 1 : Math.max(8, Math.round(value / 6)), 'build', new THREE.Vector3(x, chk.y + 4, z));
+    if (!b.build) Village.addXP(cfg.road ? 1 : Math.max(8, Math.round(value / 6)), 'build', new THREE.Vector3(x, chk.y + 4, z));
     this.assignJobs();
     Bus.emit('building:placed', { b, cleared });
     NPCService.onBuildingsChanged(b);
@@ -521,7 +530,7 @@ const BuildingService = {
     DataService.dirty = true;
     return { ok: true, b };
   },
-  jobSlots(b) { const j = BUILDINGS[b.type].jobs; return j && !b.damaged ? j.n : 0; },
+  jobSlots(b) { const j = BUILDINGS[b.type].jobs; return j && isActive(b) ? j.n : 0; },
   /* fill open job slots with unemployed residents (they retrain) */
   assignJobs() {
     const open = [];
@@ -536,7 +545,7 @@ const BuildingService = {
   freeHome() {
     let best = null, bq = -1;
     for (const b of S.buildings) {
-      const cap = BUILDINGS[b.type].house; if (!cap || b.damaged) continue;
+      const cap = BUILDINGS[b.type].house; if (!cap || !isActive(b)) continue;
       const used = S.npcs.filter((p) => p.home === b.id).length;
       const q = BUILDINGS[b.type].quality || 1;
       if (used < cap && q > bq) { best = b; bq = q; }
@@ -617,7 +626,7 @@ const ResourceService = {
 const ShopService = {
   available() {
     const list = ['cart'];
-    for (const [id, sh] of Object.entries(SHOPS)) if (sh.building && S.buildings.some((b) => b.type === sh.building && !b.damaged)) list.push(id);
+    for (const [id, sh] of Object.entries(SHOPS)) if (sh.building && S.buildings.some((b) => b.type === sh.building && isActive(b))) list.push(id);
     if (EventService.is('merchant')) list.push('merchant');
     return list;
   },
@@ -840,6 +849,9 @@ function registerRemotes() {
   Remote.handle('Pickup', (a) => (isNum(a.id) ? EventService.pickup(a.id) : fail('Bad request')), 0.4);
   Remote.handle('MerchantDeal', (a) => (isNum(a.i) ? EventService.buyDeal(a.i) : fail('Bad request')), 0.3);
   Remote.handle('GreetVisitor', () => EventService.greet(), 1);
+  Remote.handle('CreateZone', (a) => ZoneService.create(a), 0.3);
+  Remote.handle('ToggleZone', (a) => (isNum(a.id) ? ZoneService.toggle(a.id) : fail('Bad request')), 0.2);
+  Remote.handle('RemoveZone', (a) => (isNum(a.id) ? ZoneService.remove(a.id) : fail('Bad request')), 0.2);
 }
 
 /* the server heartbeat: fixed small steps, independent of rendering */
@@ -853,6 +865,7 @@ const Server = {
     ResourceService.tick(dt);
     NPCService.tick(dt);
     EventService.tick(dt);
+    ZoneService.tick(dt);
     AchievementService.tick(dt);
     this.prodT -= dt;
     if (this.prodT <= 0) { this.prodT = 5; NPCService.productionTick(); QuestService.check(); }

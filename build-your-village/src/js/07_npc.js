@@ -331,9 +331,9 @@ const NPCService = {
     }
     const a = Math.random() * TAU; return [START.board[0] + Math.cos(a) * 5, START.board[1] + Math.sin(a) * 5];
   },
-  shopBuildings() { return S.buildings.filter((b) => !b.damaged && (BUILDINGS[b.type].shop || b.type === 'tavern' || b.type === 'inn')); },
+  shopBuildings() { return S.buildings.filter((b) => isActive(b) && (BUILDINGS[b.type].shop || b.type === 'tavern' || b.type === 'inn')); },
   foodShop(r) {
-    const list = S.buildings.filter((b) => !b.damaged && ['bakery', 'market_stall', 'marketplace', 'large_market', 'tavern'].includes(b.type));
+    const list = S.buildings.filter((b) => isActive(b) && ['bakery', 'market_stall', 'marketplace', 'large_market', 'tavern'].includes(b.type));
     let best = null, bd = 1e9; for (const b of list) { const d = Math.hypot(b.x - r.ent.x, b.z - r.ent.z); if (d < bd) { bd = d; best = b; } }
     return best;
   },
@@ -396,7 +396,15 @@ const NPCService = {
     if (r.state === 'walk' || r.state === 'chat' || r.leaving) return;
     const blk = scheduleBlock(S.time.hour);
     // danger: run home
-    if (r.flee) { r.flee = false; r.run = true; e.bubble = { text: '😱', t: 2 }; return this.goHome(r); }
+    if (r.flee) { r.flee = false; r.run = true; e.bubble = { text: '😱', t: 2 }; r.site = null; return this.goHome(r); }
+    // helping on a construction site in a build zone
+    if (r.site) {
+      const sb = BuildingService.byId(r.site);
+      const busy = r.n.work && r.n.prof !== 'builder' && (blk === 'work' || blk === 'lunch');
+      if (!sb || !(sb.build > 0) || blk === 'sleep' || busy) r.site = null;
+      else if (r.state === 'work') { r.until = t + 6; e.anim.act = 4; e.yaw = Math.atan2(sb.x - e.x, sb.z - e.z); return; }
+      else r.site = null;
+    }
     if (blk === 'sleep' || (EventService.is('rain') && blk === 'evening')) {
       if (!(r.state === 'inside' && r.inB === r.n.home)) { if (r.state === 'inside') this.exit(r); return this.goHome(r); }
       if (blk === 'sleep' && Math.random() < 0.15) { const b = BuildingService.byId(r.n.home); if (b) { e.bubble = { text: '💤', t: 3 }; } }
@@ -564,7 +572,7 @@ const NPCService = {
       const working = n.work && ((r.state === 'work' && r.workB === n.work) || (r.state === 'inside' && r.inB === n.work));
       if (!working) continue;
       const b = BuildingService.byId(n.work);
-      if (!b || b.damaged) continue;
+      if (!b || !isActive(b)) continue;
       const cfg = BUILDINGS[b.type];
       n.money += 1.5;
       if (!cfg.produce) continue;

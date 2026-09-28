@@ -77,7 +77,38 @@ const BuildRender = {
     FX.lampsDirty = true;
   },
   animating() { return this.anims.length > 0; },
+  scaffolds: new Map(),
+  scaffold(b) {
+    let m = this.scaffolds.get(b.id);
+    if (m) return m;
+    const [W, D] = BuildingService.dims(b.type, b.rot);
+    const H = Math.max(3, Models.get(b.type).height * 0.9);
+    const g = new GB(), c = P.woodL, c2 = P.wood;
+    const hw = W / 2 + 0.3, hd = D / 2 + 0.3;
+    const nx = Math.max(1, Math.round(W / 3)), nz = Math.max(1, Math.round(D / 3));
+    for (let i = 0; i <= nx; i++) for (const zz of [-hd, hd]) g.boxB(0.14, H, 0.14, c2, -hw + (i / nx) * hw * 2, 0, zz);
+    for (let i = 1; i < nz; i++) for (const xx of [-hw, hw]) g.boxB(0.14, H, 0.14, c2, xx, 0, -hd + (i / nz) * hd * 2);
+    for (let y = 1.4; y < H; y += 1.6) {
+      g.box(hw * 2 + 0.2, 0.1, 0.5, c, 0, y, -hd).box(hw * 2 + 0.2, 0.1, 0.5, c, 0, y, hd);
+      g.box(0.5, 0.1, hd * 2 + 0.2, c, -hw, y, 0).box(0.5, 0.1, hd * 2 + 0.2, c, hw, y, 0);
+    }
+    g.box(0.08, Math.hypot(hw * 2, H), 0.08, c2, 0, H / 2, hd + 0.05, 0, 0, Math.atan2(hw * 2, H));
+    m = new THREE.Mesh(g.build().main, Mats.bld); m.castShadow = true;
+    m.position.set(b.x, b.y, b.z);
+    this.scene.add(m); this.scaffolds.set(b.id, m);
+    return m;
+  },
+  dropScaffold(id) { const m = this.scaffolds.get(id); if (!m) return; this.scene.remove(m); m.geometry.dispose(); this.scaffolds.delete(id); },
   update(dt) {
+    // construction sites grow with their progress inside a scaffold
+    for (const [id] of this.scaffolds) { const b = BuildingService.byId(id); if (!b || !(b.build > 0)) this.dropScaffold(id); }
+    for (const b of S.buildings) {
+      if (!(b.build > 0) || this.anims.some((a) => a.b === b)) continue;
+      const p = 1 - b.build / (b.buildT || 1);
+      this.scaffold(b);
+      this.apply(b, 0.3 + 0.7 * p, 0.97);
+      if (b.helpers && Math.random() < dt * 3 && Math.hypot(b.x - Player.x, b.z - Player.z) < 50) { FX.dust(new THREE.Vector3(b.x + randRange(-2, 2), b.y + 0.4, b.z + randRange(-2, 2)), 2); if (Math.random() < 0.3 && Math.hypot(b.x - Player.x, b.z - Player.z) < 25) Audio.sfx('chop'); }
+    }
     for (let i = this.anims.length - 1; i >= 0; i--) {
       const a = this.anims[i];
       a.t += dt / 1.15;
