@@ -56,7 +56,7 @@ Gewone scripts (geen ES-modules), zodat `index.html` ook via `file://` werkt. Al
 ```
 index.html            pagina + volgorde van de scripts
 css/style.css         alle opmaak (responsive, reduced motion)
-assets/music/         achtergrondmuziek (.m4a/AAC en .webm/Opus als reserve)
+assets/music/         achtergrondmuziek (MP3)
 js/util.js            hulpfuncties, geldnotatie, seeded random, event bus
 js/data/              alle spelinhoud als data
   products.js         producten, zeldzaamheden, afdelingen en schappen

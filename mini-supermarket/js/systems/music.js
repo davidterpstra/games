@@ -1,13 +1,12 @@
 /* Music: looping background track ("The Sunlit Shelf"). Browsers only allow
  * sound after the player interacts, so it starts on the first click or tap
- * and fades in. AAC (.m4a) plays almost everywhere; Opus (.webm) is the
- * fallback for browsers without AAC support. */
+ * and fades in. MP3 plays in every current browser; add another entry to
+ * SOURCES to offer an alternative format. */
 (function (MS) {
   'use strict';
 
   const SOURCES = [
-    { src: 'assets/music/supermarkt-music.m4a', type: 'audio/mp4; codecs="mp4a.40.2"' },
-    { src: 'assets/music/supermarkt-music.webm', type: 'audio/webm; codecs="opus"' },
+    { src: 'assets/music/supermarkt-music.mp3', type: 'audio/mpeg' },
   ];
 
   class Music {
