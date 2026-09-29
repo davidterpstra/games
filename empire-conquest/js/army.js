@@ -253,9 +253,10 @@ const Army = {
     for (let t = to; t !== from; t = prev[t]) { path.unshift(t); if (prevSea[t]) sea = true; }
     return { path, days: cost[to], attack: hostileTo, sea };
   },
-  order(kid, id, to) {
+  order(kid, id, to, keepAuto = false) {
     const a = this.byId(id);
     if (!a || a.owner !== kid) return { ok: false, msg: 'Unknown army.' };
+    if (!keepAuto) a.auto = null;
     if (this.total(a.units) < 1) return { ok: false, msg: 'This army has no soldiers.' };
     const start = a.move ? a.move.to : a.loc;
     if (start === to) { a.path = []; return { ok: true, msg: `${a.name} holds position.` }; }
@@ -269,6 +270,7 @@ const Army = {
   stop(kid, id) {
     const a = this.byId(id);
     if (!a || a.owner !== kid) return { ok: false, msg: 'Unknown army.' };
+    a.auto = null;
     a.path = [];
     Bus.emit('armies');
     return { ok: true, msg: a.move ? `${a.name} will halt in ${Game.wt(a.move.to).name}.` : `${a.name} halts.` };
@@ -343,8 +345,77 @@ const Army = {
         a.move.t += dt / a.move.days;
         if (a.move.t >= 1) this.arrive(a);
       }
+      if (a.auto && !a.move && !a.path.length && !a.dead) this.autoStep(a);
     }
     this.cleanup();
+  },
+
+  /* ---------------- auto-conquest ----------------
+     a.auto = { target: kingdom id, -1 = independent lands, -2 = any enemy }
+     The army attacks the nearest territory of the target, then the next,
+     until the target is gone or the army is destroyed. */
+  autoTargetName(t) { return t === -1 ? 'independent lands' : t === -2 ? 'every enemy' : Game.k(t).short; },
+  setAuto(kid, id, target) {
+    const a = this.byId(id);
+    if (!a || a.owner !== kid) return { ok: false, msg: 'Unknown army.' };
+    if (target >= 0) {
+      if (!Game.k(target).alive) return { ok: false, msg: 'That kingdom no longer exists.' };
+      if (Diplomacy.allied(kid, target)) return { ok: false, msg: `${Game.k(target).short} is your ally. Break the alliance first.` };
+      if (!Diplomacy.atWar(kid, target)) Diplomacy.declareWar(kid, target);
+    }
+    a.auto = { target, since: Game.state.day, taken: 0 };
+    a.path = [];
+    this.autoStep(a);
+    Bus.emit('armies');
+    return { ok: true, msg: `${a.name} will keep attacking ${this.autoTargetName(target)} until they are gone or the army falls.` };
+  },
+  stopAuto(kid, id) {
+    const a = this.byId(id);
+    if (!a || a.owner !== kid) return { ok: false, msg: 'Unknown army.' };
+    a.auto = null;
+    Bus.emit('armies');
+    return { ok: true, msg: `${a.name} stops its campaign.` };
+  },
+  autoStep(a) {
+    const s = Game.state, kid = a.owner, t = a.auto.target;
+    const done = (msg) => {
+      a.auto = null;
+      if (kid === 0) Game.notify('Campaign over', `${a.name}: ${msg}`, { icon: '🏁', kind: 'good', sound: 'fanfare' });
+    };
+    if (t >= 0 && !Game.k(t).alive) return done(`${Game.k(t).name} has been destroyed!`);
+    if (t >= 0 && !Diplomacy.atWar(kid, t)) return done(`you are no longer at war with ${Game.k(t).short}.`);
+    const isTarget = (o) => (t === -2 ? Game.isHostile(kid, o) : o === t);
+    const here = Game.wt(a.loc);
+    const cands = [];
+    for (let tid = 0; tid < s.terr.length; tid++) if (isTarget(s.terr[tid].owner)) cands.push(tid);
+    if (!cands.length) return done(t === -1 ? 'no independent lands are left.' : 'no enemy lands are left.');
+    cands.sort((x, y) => dist(here.cx, here.cy, Game.wt(x).cx, Game.wt(x).cy) - dist(here.cx, here.cy, Game.wt(y).cx, Game.wt(y).cy));
+    const spd = this.speed(a);
+    for (const tid of cands.slice(0, 12)) {
+      const r = this.findPath(kid, a.loc, tid, spd);
+      if (r.error) continue;
+      a.path = r.path;
+      a.target = tid;
+      return;
+    }
+    // the target is not next to our lands: conquer the villages on the way there
+    let best = -1, bd = Infinity;
+    const goal = cands[0];
+    const G = Game.wt(goal);
+    for (let tid = 0; tid < s.terr.length; tid++) {
+      if (!Game.isHostile(kid, s.terr[tid].owner)) continue;
+      const w = Game.wt(tid);
+      if (!w.adj.some((x) => Game.isFriendly(kid, s.terr[x.t].owner) || x.t === a.loc)) continue;
+      const d = dist(w.cx, w.cy, G.cx, G.cy);
+      if (d < bd) { bd = d; best = tid; }
+    }
+    if (best >= 0) {
+      const r = this.findPath(kid, a.loc, best, spd);
+      if (!r.error) { a.path = r.path; a.target = best; return; }
+    }
+    // nothing reachable right now: try again in a while
+    a.auto.wait = (a.auto.wait || 0) + 1;
+    if (a.auto.wait > 40) done(`no route to ${this.autoTargetName(t)} could be found.`);
   },
 
   arrive(a) {
@@ -368,6 +439,7 @@ const Army = {
       Game.setOwner(to, a.owner, a.owner);
       const k = s.kingdoms[a.owner];
       k.captured++;
+      if (a.auto) { a.auto.taken++; a.auto.wait = 0; }
       Game.rulerXp(a.owner, a.owner === 0 ? 40 : 15);
       Diplomacy.onConquest(a.owner, oldOwner, to);
       const nm = Game.wt(to).name;

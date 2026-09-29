@@ -27,7 +27,7 @@ const Context = {
     const root = this.el();
     const sig = this.makeSig();
     if (force || sig !== this.sig) {
-      if (!force && (UI.pointerDown || (document.activeElement && root.contains(document.activeElement) && document.activeElement.tagName === 'INPUT'))) return;
+      if (!force && (UI.pointerDown || (document.activeElement && root.contains(document.activeElement) && /INPUT|SELECT/.test(document.activeElement.tagName)))) return;
       const body = root.querySelector('.ctx-body');
       const scroll = body ? body.scrollTop : 0;
       this.sig = sig;
@@ -49,7 +49,10 @@ const Context = {
     }
     const a = Army.byId(sel.id);
     if (!a) return 'gone';
-    return ['a', a.id, JSON.stringify(a.units), a.loc, a.move ? a.move.to : '', a.path.join(','), a.general ? a.general.level : 0, a.name, MapView.orderTarget, bucket, Math.floor(s.day / 2), s.armies.filter((x) => x.loc === a.loc).length].join('|');
+    // coarse on purpose: big armies and fast-changing treasuries must not rebuild the panel every tick
+    const coarse = (n) => { if (n < 100) return n; const p = Math.pow(10, Math.floor(Math.log10(n)) - 1); return Math.round(n / p) * p; };
+    const units = UNIT_ORDER.map((u) => coarse(a.units[u])).join(',');
+    return ['a', a.id, JSON.stringify(a.auto), a.target, units, a.loc, a.move ? a.move.to : '', a.path.join(','), a.general ? a.general.level : 0, a.name, MapView.orderTarget, Game.canAfford(0, { gold: Army.generalCost(0) }), Math.floor(s.day / 4), s.armies.filter((x) => x.loc === a.loc).length, Diplomacy.warsOf(0).length].join('|');
   },
 
   render() {
@@ -304,6 +307,7 @@ const Context = {
     // orders
     h += `<h3 class="sec">🧭 Orders</h3>`;
     if (a.move) h += `<div class="act-card"><div class="row between"><b>Marching${a.path.length > 1 ? ` → ${H.tname(a.path[a.path.length - 1])}` : ''}</b>${Live.text('move', a.id)}</div>${Live.bar('move', a.id)}<div>${H.btn('✋ Halt at next territory', 'stopArmy', { id: a.id }, { cls: 'small' })}</div></div>`;
+    h += this.autoCard(a);
     const tgt = MapView.orderTarget;
     if (tgt >= 0) h += this.orderPreview(a, tgt);
     else h += `<div class="card small"><b>Click a territory</b> on the map to plan a march or an attack.<br><span class="muted">Right-click orders the march immediately.</span></div>`;
@@ -319,6 +323,22 @@ const Context = {
     }
     h += `</div>`;
     return h;
+  },
+
+  autoCard(a) {
+    const s = Game.state;
+    if (a.auto) {
+      return `<div class="act-card" style="border-color:rgba(255,110,90,.55)"><div class="ah">🔁 Campaign against ${escapeHtml(Army.autoTargetName(a.auto.target))}</div>
+        <div class="ad">Attacks territory after territory until the enemy is gone or this army is destroyed. Lands taken: <b>${a.auto.taken}</b>${a.target >= 0 && a.path.length ? ` · next: <b>${H.tname(a.target)}</b>` : ''}</div>
+        ${H.btn('⏹ Stop campaign', 'stopAuto', { id: a.id }, { cls: 'small' })}</div>`;
+    }
+    const opts = s.kingdoms.filter((k) => k.id !== 0 && k.alive && !Diplomacy.allied(0, k.id))
+      .map((k) => `<option value="${k.id}">${escapeHtml(k.short)}${Diplomacy.atWar(0, k.id) ? ' (at war)' : ' (declares war)'}</option>`).join('');
+    return `<div class="act-card"><div class="ah">🔁 Endless campaign</div>
+      <div class="ad">Pick an enemy: the army attacks village after village by itself, until they are all conquered or the army falls.</div>
+      <div class="row"><select id="auto-target-${a.id}" class="grow" style="padding:6px;border-radius:6px;background:rgba(0,0,0,.35);color:var(--text);border:1px solid var(--line-2);font-weight:600">
+        <option value="-2">⚔️ Every enemy (nearest first)</option><option value="-1">🏳️ Independent lands</option>${opts}</select>
+        ${H.btn('▶ Start', 'startAuto', { id: a.id }, { cls: 'small danger' })}</div></div>`;
   },
 
   orderPreview(a, t) {
@@ -380,6 +400,14 @@ UI.act('attack', (d) => {
     if (Game.state.speed === 0) UI.hint('⏸ The game is paused — press <b>Space</b> to march', 4);
   }
 });
+UI.act('startAuto', (d) => {
+  const sel = document.getElementById('auto-target-' + d.id);
+  const target = sel ? +sel.value : -2;
+  const go = () => UI.result(Army.setAuto(0, +d.id, target), 'war');
+  if (target >= 0 && !Diplomacy.atWar(0, target)) UI.confirm({ title: 'Declare war?', icon: '⚔️', danger: true, ok: '⚔️ Declare war and attack', text: `You are at peace with <b>${escapeHtml(Game.k(target).name)}</b>. Starting this campaign declares war on them.`, onOk: go });
+  else go();
+});
+UI.act('stopAuto', (d) => UI.result(Army.stopAuto(0, +d.id)));
 UI.act('mergeArmy', (d) => UI.result(Army.merge(0, +d.id, +d.o)));
 UI.act('renameArmy', (d) => {
   const a = Army.byId(+d.id);
