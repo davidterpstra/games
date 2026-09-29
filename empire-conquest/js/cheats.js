@@ -25,7 +25,7 @@ const Cheats = {
 
   // cheats that can stay switched on ("∞"): they are applied again every quarter second
   INF: {
-    res: 'Resources never run out',
+    res: 'Unlimited gold, food, wood, iron and research',
     map: 'The map stays revealed',
     army: 'Your capital garrison refills itself',
     siege: 'Always 50 siege engines in your capital',
@@ -76,7 +76,7 @@ const Cheats = {
     if (!k.alive) return;
     const cap = k.capital, g = s.terr[cap].gar;
     switch (id) {
-      case 'res': for (const r of ['gold', 'food', 'wood', 'iron']) k.res[r] = Math.max(k.res[r], 999999); k.res.rp = Math.max(k.res.rp, 99999); k.starving = false; k.broke = false; break;
+      case 'res': for (const r of RES_KEYS) k.res[r] = INFINITE_RES; k.starving = false; k.broke = false; break;
       case 'map': if (s.explored.some((e) => !e)) this.run('map'); break;
       case 'army': g.infantry = Math.max(g.infantry, 500); g.archers = Math.max(g.archers, 300); g.cavalry = Math.max(g.cavalry, 200); g.knights = Math.max(g.knights, 100); break;
       case 'siege': g.siege = Math.max(g.siege, 50); break;

@@ -3,6 +3,8 @@
    ===================================================================== */
 'use strict';
 
+const INFINITE_RES = 1e12;
+
 const Economy = {
   happyFactor(h) { return 0.6 + 0.5 * (h / 100); },
 
@@ -209,6 +211,11 @@ const Economy = {
         const v = net[key] * dt;
         if (v < 0) r[key] += v;
         else if (r[key] < caps[key]) r[key] = Math.min(caps[key], r[key] + v);
+      }
+      // infinite-resources cheat: nothing is ever used up
+      if (kid === 0 && Game.state.cheats && Game.state.cheats.includes('res')) {
+        for (const key of RES_KEYS) r[key] = INFINITE_RES;
+        k.starving = false; k.broke = false;
       }
       if (r.food < 0) { r.food = 0; if (!k.starving) { k.starving = true; if (kid === 0) Game.notify('Famine!', 'Your granaries are empty. People are starving and leaving. Build farms or conquer fertile land.', { icon: '🌾', kind: 'bad', sound: 'alert' }); } }
       else if (r.food > 5) k.starving = false;

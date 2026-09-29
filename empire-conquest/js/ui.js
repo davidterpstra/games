@@ -124,7 +124,7 @@ const UI = {
       else if (id === 'happiness') {
         valEl.textContent = `${Math.round(v)}%`;
         this.$('res-happiness').querySelector('.res-icon').textContent = H.face(v);
-      } else valEl.textContent = fmt(v);
+      } else valEl.textContent = target >= INFINITE_RES ? '∞' : fmt(v);
     }
     const setRate = (id, val, suffix = '') => {
       const el = this.$('rate-' + id);

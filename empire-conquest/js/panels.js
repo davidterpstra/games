@@ -351,7 +351,7 @@ Panels.views.tech = {
   render() {
     const k = Game.player(), r = Game.cache.rates[0] || { rp: 0 };
     let h = `<div class="grid3">
-      <div class="stat"><div class="k">Research points</div><div class="v">📜 ${fmt(k.res.rp)}</div></div>
+      <div class="stat"><div class="k">Research points</div><div class="v">📜 ${k.res.rp >= INFINITE_RES ? "∞" : fmt(k.res.rp)}</div></div>
       <div class="stat"><div class="k">Per day</div><div class="v">${fmtRate(r.rp)}</div></div>
       <div class="stat"><div class="k">Researched</div><div class="v">${Tech.count(0)} <small>/ ${TECHS.length}</small></div></div>
     </div>`;
