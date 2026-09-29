@@ -49,7 +49,7 @@ const Diplomacy = {
     const r = this.rel(a, b);
     if (!r || r.st === 'war' || !this.alive(a) || !this.alive(b)) return { ok: false, msg: 'Cannot declare war.' };
     const truceBreak = r.truce > 0;
-    r.st = 'war'; r.trade = false; r.since = s.day; r.gain = { [a]: 0, [b]: 0 }; r.truce = 0;
+    r.st = 'war'; r.trade = false; r.since = s.day; r.gain = { [a]: 0, [b]: 0 }; r.truce = 0; r.by = a;
     r.v = Math.min(r.v - 35, -30);
     const A = Game.k(a), B = Game.k(b);
     for (const c of s.kingdoms) {
@@ -78,7 +78,7 @@ const Diplomacy = {
     const s = Game.state;
     const r = this.rel(c, enemy);
     if (!r) return;
-    r.st = 'war'; r.trade = false; r.since = s.day; r.gain = { [c]: 0, [enemy]: 0 }; r.truce = 0;
+    r.st = 'war'; r.trade = false; r.since = s.day; r.gain = { [c]: 0, [enemy]: 0 }; r.truce = 0; r.by = c;
     r.v = Math.min(r.v - 25, -25);
     Game.log(`${Game.k(c).short} joins the war against ${Game.k(enemy).short} to help ${Game.k(friend).short}.`, '🛡️', c === 0 || enemy === 0 ? 'bad' : 'war');
     if (enemy === 0) Game.notify('New enemy!', `${Game.k(c).name} joined the war against you as an ally of ${Game.k(friend).short}.`, { icon: '⚔️', kind: 'bad', sound: 'war' });

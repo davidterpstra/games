@@ -34,7 +34,7 @@ const Cheats = {
     finish: 'Construction, training and research finish instantly',
     ruler: 'Always 10 skill points',
     happy: 'Happiness always 100%',
-    peace: 'Nobody can stay at war with you',
+    peace: 'Wars others declare on you end at once (your own wars stay)',
     missions: 'Missions complete themselves',
   },
   on(id) { return !!(Game.state && Game.state.cheats && Game.state.cheats.includes(id)); },
@@ -92,7 +92,10 @@ const Cheats = {
       case 'finish': this.run('finish'); break;
       case 'ruler': k.ruler.points = Math.max(k.ruler.points, 10); break;
       case 'happy': this.run('happy'); break;
-      case 'peace': if (Diplomacy.warsOf(0).length) this.run('peace'); break;
+      case 'peace':
+        // only wars others started against you; wars you declare yourself stay on
+        for (const e of Diplomacy.warsOf(0)) if (Diplomacy.rel(0, e).by !== 0) Diplomacy.makePeace(0, e);
+        break;
       case 'missions': for (const m of MISSIONS) if (!s.missions[m.id]) s.missions[m.id] = 1; break;
     }
   },
