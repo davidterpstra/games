@@ -1,0 +1,120 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <title>Empire Conquest</title>
+  <meta name="description" content="Empire Conquest — build a kingdom, raise armies and conquer the world. A browser strategy game.">
+  <meta name="theme-color" content="#11141b">
+  <link rel="icon" href="assets/images/icon.svg" type="image/svg+xml">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Cinzel:wght@600;700;800&family=Inter:wght@400;500;600;700;800&display=swap">
+  <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+  <div id="app" class="app">
+    <header id="topbar" class="topbar">
+      <div class="brand" data-tip="Empire Conquest">
+        <img class="brand-crest" src="assets/images/icon.svg" alt="">
+        <span class="brand-name">Empire Conquest</span>
+      </div>
+      <div id="resources" class="resources"></div>
+      <div class="top-right">
+        <div id="date" class="date"></div>
+        <div id="speed" class="speed" role="group" aria-label="Game speed">
+          <button data-speed="0" data-tip="Pause (Space)" aria-label="Pause"><svg viewBox="0 0 10 12" width="10" height="12" aria-hidden="true"><rect x="1" y="1" width="3" height="10" rx="1" fill="currentColor"/><rect x="6" y="1" width="3" height="10" rx="1" fill="currentColor"/></svg></button>
+          <button data-speed="1" data-tip="Normal speed (1)">1×</button>
+          <button data-speed="2" data-tip="Fast (2)">2×</button>
+          <button data-speed="4" data-tip="Very fast (3)">4×</button>
+        </div>
+        <button id="btn-audio" class="icon-btn" data-tip="Sound on/off">🔇</button>
+        <button id="btn-menu" class="icon-btn" data-tip="Menu: save, load, settings (Esc)">⚙️</button>
+      </div>
+    </header>
+
+    <nav id="sidebar" class="sidebar" aria-label="Kingdom menu">
+      <button data-panel="kingdom" data-tip="Kingdom (K)"><span class="nav-ico">🏰</span><span class="nav-label">Kingdom</span></button>
+      <button data-panel="map" data-tip="Map (M)"><span class="nav-ico">🗺️</span><span class="nav-label">Map</span></button>
+      <button data-panel="army" data-tip="Army (R)"><span class="nav-ico">🪖</span><span class="nav-label">Army</span><span class="badge" id="badge-army"></span></button>
+      <button data-panel="war" data-tip="War (X)"><span class="nav-ico">⚔️</span><span class="nav-label">War</span><span class="badge danger" id="badge-war"></span></button>
+      <button data-panel="diplomacy" data-tip="Diplomacy (P)"><span class="nav-ico">🤝</span><span class="nav-label">Diplomacy</span><span class="badge" id="badge-diplomacy"></span></button>
+      <button data-panel="tech" data-tip="Technology (T)"><span class="nav-ico">🔬</span><span class="nav-label">Technology</span><span class="badge" id="badge-tech"></span></button>
+      <button data-panel="missions" data-tip="Missions (O)"><span class="nav-ico">🎯</span><span class="nav-label">Missions</span><span class="badge gold" id="badge-missions"></span></button>
+    </nav>
+
+    <main id="stage" class="stage">
+      <canvas id="map" class="map-canvas" aria-label="World map"></canvas>
+      <div class="vignette"></div>
+      <div class="map-controls modes-wrap">
+        <div class="map-modes">
+          <button data-mode="political" class="active" data-tip="Political map">🏳️ Political</button>
+          <button data-mode="terrain" data-tip="Terrain map">🌄 Terrain</button>
+        </div>
+      </div>
+      <div class="map-controls zoom-wrap">
+        <div class="zoom-btns">
+          <button data-zoom="in" data-tip="Zoom in (+)">＋</button>
+          <button data-zoom="out" data-tip="Zoom out (−)">－</button>
+          <button data-zoom="home" data-tip="Go to your capital (H)">🏰</button>
+          <button data-zoom="world" data-tip="Whole world">🌍</button>
+        </div>
+      </div>
+      <div class="minimap-wrap" data-tip="Minimap — click to jump">
+        <canvas id="minimap" width="240" height="156"></canvas>
+      </div>
+      <div id="chronicle" class="chronicle">
+        <button class="chronicle-head" data-act="toggleChronicle">📜 Chronicle <span class="chev">▾</span></button>
+        <div class="chronicle-list" id="chronicle-list"></div>
+      </div>
+      <div id="map-hint" class="map-hint"></div>
+      <section id="panel" class="panel" aria-live="polite"></section>
+    </main>
+
+    <aside id="context" class="context"></aside>
+  </div>
+
+  <div id="tooltip" class="tooltip" role="tooltip"></div>
+  <div id="toasts" class="toasts" aria-live="polite"></div>
+  <div id="banner" class="banner"></div>
+  <div id="modal-root"></div>
+
+  <div id="title-screen" class="title-screen hidden">
+    <div class="title-card">
+      <img class="title-crest" src="assets/images/icon.svg" alt="">
+      <h1 class="title-logo">Empire Conquest</h1>
+      <p class="title-sub">Build a kingdom · Command armies · Conquer the world</p>
+      <div class="title-buttons" id="title-buttons"></div>
+      <p class="title-foot">World conquest · Army commander · Kingdom manager</p>
+    </div>
+  </div>
+
+  <div id="loading" class="loading">
+    <img class="loading-crest" src="assets/images/icon.svg" alt="">
+    <div class="loading-title">Empire Conquest</div>
+    <div class="loading-bar"><i id="loading-fill"></i></div>
+    <div class="loading-text" id="loading-text">Charting the known world…</div>
+  </div>
+
+  <script src="js/util.js"></script>
+  <script src="js/data.js"></script>
+  <script src="js/mapgen.js"></script>
+  <script src="js/game.js"></script>
+  <script src="js/economy.js"></script>
+  <script src="js/kingdom.js"></script>
+  <script src="js/battle.js"></script>
+  <script src="js/army.js"></script>
+  <script src="js/diplomacy.js"></script>
+  <script src="js/technology.js"></script>
+  <script src="js/ai.js"></script>
+  <script src="js/missions.js"></script>
+  <script src="js/save.js"></script>
+  <script src="js/audio.js"></script>
+  <script src="js/map.js"></script>
+  <script src="js/ui.js"></script>
+  <script src="js/panels.js"></script>
+  <script src="js/context.js"></script>
+  <script src="js/screens.js"></script>
+  <script src="js/main.js"></script>
+</body>
+</html>
