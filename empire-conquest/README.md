@@ -27,6 +27,7 @@ A browser strategy game that combines **world conquest**, **army command** and *
 | Go to capital | `H` | 🏰 button |
 | Close · deselect · menu | `Esc` | ✕ / ⚙️ |
 | Save | `Ctrl` + `S` | ⚙️ → Save game |
+| Cheat menu | type `cheats` or `Ctrl` + `Shift` + `C` | ⚙️ → Cheats |
 
 ## What is in the game
 
@@ -71,6 +72,7 @@ Plain scripts (no modules, no bundler) so the game also runs from `file://`. Eve
 | `js/ui.js` | top bar, tooltips, toasts, modals, banners, chronicle, shortcuts, action dispatch |
 | `js/panels.js` | Kingdom, Army, War, Diplomacy, Technology and Missions panels |
 | `js/context.js` | the right-hand panel for the selected territory or army |
+| `js/cheats.js` | cheat menu (resources, reveal map, army, technology, …) |
 | `js/screens.js` | title screen, new game, menu, save/load, army composer, battle report, victory/defeat, help |
 | `js/main.js` | boot, game loop, autosave |
 | `assets/images/icon.svg` | logo / favicon |

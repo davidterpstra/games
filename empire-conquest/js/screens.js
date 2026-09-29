@@ -108,6 +108,7 @@ const Screens = {
         <button class="btn big" data-act="menuLoad">📂 Load game</button>
         <button class="btn big" data-act="menuNew">⚔️ New game</button>
         <button class="btn big" data-act="help">📖 How to play</button>
+        <button class="btn big" data-act="cheats">🧙 Cheats</button>
       </div>
       <h3 class="sec">🔊 Audio</h3>
       <div class="row between"><span>Sound & music</span><span class="seg"><button class="${st.audio ? 'on' : ''}" data-act="setAudio" data-v="1">On</button><button class="${st.audio ? '' : 'on'}" data-act="setAudio" data-v="0">Off</button></span></div>
@@ -341,6 +342,7 @@ UI.act('titleAudio', () => {
   Screens.title();
 });
 UI.act('help', () => Screens.help());
+UI.act('cheats', () => { if (Screens.menuModal) Screens.menuModal.close(); Cheats.open(); });
 UI.act('menuSave', () => Screens.slots('save'));
 UI.act('menuLoad', () => Screens.slots('load'));
 UI.act('menuNew', () => {
