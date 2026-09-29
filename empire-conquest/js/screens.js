@@ -299,11 +299,12 @@ const Screens = {
   },
   defeat() {
     Sound.play('defeat');
-    const latest = Save.latestSlot();
+    const k = Game.player();
     UI.modal({
       title: 'Your kingdom has fallen', icon: '💀', cls: 'wide', closable: false,
-      body: `<div class="battle-head"><div class="battle-result lose">Defeat</div><p>Your last territory has been conquered. History will remember your name — briefly.</p></div>`,
-      foot: `${latest && latest !== 'auto' ? `<button class="btn" data-act="titleContinue" data-slot="${latest}" data-close>📂 Load last save</button>` : ''}<button class="btn primary" data-act="menuNew" data-close>⚔️ New game</button>`,
+      body: `<div class="battle-head"><div class="battle-result lose">Defeat</div><p>Your last territory has been conquered. History will remember your name — briefly.</p></div>
+        <div class="grid3"><div class="stat"><div class="k">Days ruled</div><div class="v">${Math.floor(Game.state.day)}</div></div><div class="stat"><div class="k">Battles won</div><div class="v">${k.battlesWon}</div></div><div class="stat"><div class="k">Lands conquered</div><div class="v">${k.captured}</div></div></div>`,
+      foot: `<button class="btn" data-act="menuTitle">🏠 Title screen</button><button class="btn" data-act="titleLoad">📂 Load game</button><button class="btn primary" data-act="menuNew">⚔️ New game</button>`,
     });
   },
 
@@ -343,8 +344,9 @@ UI.act('help', () => Screens.help());
 UI.act('menuSave', () => Screens.slots('save'));
 UI.act('menuLoad', () => Screens.slots('load'));
 UI.act('menuNew', () => {
-  const go = () => { for (const m of UI.modalStack.slice()) m.close(); Screens.newGame(); };
-  if (Game.state && !Game.state.over) UI.confirm({ title: 'Start a new game?', text: 'Your current game stays in its save slots (the autosave will be replaced once the new game saves).', ok: 'New game', onOk: go });
+  // new games always start from the title screen; the running game is autosaved first
+  const go = () => { for (const m of UI.modalStack.slice()) m.close(); Main.toTitle(true); Screens.newGame(); };
+  if (Game.state && !Game.state.over) UI.confirm({ title: 'Start a new game?', text: 'Your current game is saved first. It stays in its save slots (the autosave will be replaced once the new game starts).', ok: 'New game', onOk: go });
   else go();
 });
 UI.act('menuReset', () => UI.confirm({

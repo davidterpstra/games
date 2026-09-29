@@ -384,7 +384,11 @@ const UI = {
   openPanel(name) {
     if (name === 'map' || !name) { Panels.close(); }
     else if (Panels.current === name) Panels.close();
-    else Panels.open(name);
+    else {
+      Panels.open(name);
+      // on narrow screens the side panel and the context sheet share the space
+      if (window.innerWidth < 1080) this.$('context').classList.remove('open');
+    }
     for (const b of document.querySelectorAll('#sidebar button')) b.classList.toggle('active', b.dataset.panel === (Panels.current || 'map'));
   },
 
@@ -522,7 +526,10 @@ const UI = {
     });
     Bus.on('select', () => {
       Context.show();
-      if (window.innerWidth < 1080) this.$('context').classList.toggle('open', !!MapView.sel);
+      if (window.innerWidth < 1080) {
+        this.$('context').classList.toggle('open', !!MapView.sel);
+        if (MapView.sel && Panels.current) this.openPanel('map');
+      }
     });
     Bus.on('orderPreview', () => { Context.refresh(true); if (window.innerWidth < 1080) this.$('context').classList.add('open'); });
     Bus.on('orderArmy', (o) => {
@@ -556,6 +563,12 @@ const UI = {
       this.banner('Reward!', parts);
       const cap = Game.player().capital;
       if (cap >= 0) MapView.floatText(cap, parts);
+    });
+    Bus.on('projectDone', (p) => {
+      if (p.kid !== 0) return;
+      this.refresh(true);
+      const key = p.p.type === 'build' ? `${p.tid}:${p.p.id}` : null;
+      if (key) for (const el of document.querySelectorAll(`[data-bcard="${key}"]`)) { el.classList.remove('flash'); void el.offsetWidth; el.classList.add('flash'); }
     });
     Bus.on('victory', () => Screens.victory());
     Bus.on('defeat', () => Screens.defeat());

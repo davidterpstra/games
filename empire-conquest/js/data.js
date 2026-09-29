@@ -297,8 +297,8 @@ const MISSIONS = [
     goal: (P) => [P.territories.length, 25], reward: { gold: 2500, iron: 600, wood: 600 }, xp: 250 },
   { id: 'eliminate', name: 'Fall of a Kingdom', icon: '💀', desc: 'Destroy a rival kingdom completely.',
     goal: (P) => [P.k.kingdomsDestroyed, 1], reward: { gold: 2000 }, xp: 200 },
-  { id: 'strongest', name: 'World Power', icon: '🌍', desc: 'Become the strongest kingdom in the world (highest power score).',
-    goal: (P) => [P.rank === 1 ? 1 : 0, 1], reward: { gold: 3000, iron: 800 }, xp: 300 },
+  { id: 'strongest', name: 'World Power', icon: '🌍', desc: 'Become the strongest kingdom in the world (highest power score) while ruling at least 20 territories.',
+    goal: (P) => [P.rank === 1 && P.territories.length >= 20 ? 1 : 0, 1], reward: { gold: 3000, iron: 800 }, xp: 300 },
   { id: 'emperor', name: 'Emperor of the World', icon: '🌟', desc: 'Control 60% of all territories.',
     goal: (P) => [P.territories.length, P.victoryTarget], reward: { gold: 10000 }, xp: 500 },
 ];

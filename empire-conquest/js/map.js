@@ -1121,6 +1121,8 @@ const MapView = {
     for (const a of s.armies) {
       const visible = a.owner === 0 || (a.move ? s.explored[a.move.to] || s.explored[a.move.from] : s.explored[a.loc]);
       if (!visible) continue;
+      // keep the zoomed-out world view readable: only marching foreign armies
+      if (z < 0.42 && a.owner !== 0 && !a.move && !(this.sel && this.sel.type === 'army' && this.sel.id === a.id)) continue;
       const key = a.move ? 'm' + a.id : 'l' + a.loc;
       if (!groups.has(key)) groups.set(key, []);
       groups.get(key).push(a);

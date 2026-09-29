@@ -180,7 +180,7 @@ const Context = {
       const inf = Kingdom.buildInfo(0, t, b);
       const lvl = ts.b[b];
       const building = ts.proj && ts.proj.type === 'build' && ts.proj.id === b;
-      h += `<div class="unit-row" data-tip="${escapeHtml(B.desc)}"><div class="ui">${B.icon}</div>
+      h += `<div class="unit-row" data-bcard="${t}:${b}" data-tip="${escapeHtml(B.desc)}"><div class="ui">${B.icon}</div>
         <div><div class="row"><span class="un">${B.name}</span>${H.pips(lvl, B.maxLevel || 5)}</div><div class="small muted">${lvl ? B.effect(lvl) : 'Not built'}${!inf.maxed ? ` → <span style="color:var(--text-2)">${B.effect(lvl + 1)}</span>` : ''}</div>
         ${building ? `<div class="row small mt"><span class="grow">${Live.bar('proj', t)}</span>${Live.text('proj', t)}</div>` : inf.maxed ? '' : `<div class="row mt small">${H.cost(inf.cost)}<span class="muted">⏱ ${inf.time}d</span></div>`}</div>
         <div>${building ? '🔨' : inf.maxed ? '<span class="chip gold">Max</span>' : H.btn(lvl ? '⬆' : 'Build', 'build', { tid: t, b }, { cls: 'small ' + (inf.ok ? 'primary' : ''), disabled: !inf.ok, why: inf.reason, tip: lvl ? `Upgrade to level ${lvl + 1}` : '' })}</div></div>`;
