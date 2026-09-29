@@ -43,6 +43,7 @@ const MapView = {
   setWorld(world) {
     this.world = world;
     this.tiles.clear();
+    this.miniBase = null;
     this.sprites.clear();
     const S = world.S;
     // territory outlines
@@ -514,6 +515,7 @@ const MapView = {
     }
     x.restore();
     this.overlayDirty = false;
+    this.overlayVer = (this.overlayVer || 0) + 1;
   },
 
   rebuildBorders() {
@@ -1262,15 +1264,33 @@ const MapView = {
     const x = mc.getContext('2d');
     const w = mc.width, h = mc.height;
     const sx = w / W.W, sy = h / W.H;
-    x.setTransform(1, 0, 0, 1, 0, 0);
-    x.fillStyle = '#1d4868'; x.fillRect(0, 0, w, h);
-    x.setTransform(sx, 0, 0, sy, 0, 0);
-    const ws0 = this.TILE / this.LEVELS[0];
-    for (const k of this.tileKeysForLevel(0)) {
-      const t = this.tiles.get('0:' + k.tx + ':' + k.ty);
-      if (t) x.drawImage(t.cv, k.tx * ws0, k.ty * ws0, ws0 + 2, ws0 + 2);
+    // terrain and political layers are cached; only armies and the viewport change every update
+    if (!this.miniBase || this.miniBase.width !== w || this.miniBase.world !== W) {
+      const b = document.createElement('canvas');
+      b.width = w; b.height = h; b.world = W;
+      const bx = b.getContext('2d');
+      bx.fillStyle = '#1d4868'; bx.fillRect(0, 0, w, h);
+      bx.setTransform(sx, 0, 0, sy, 0, 0);
+      const ws0 = this.TILE / this.LEVELS[0];
+      for (const k of this.tileKeysForLevel(0)) {
+        const t = this.tiles.get('0:' + k.tx + ':' + k.ty);
+        if (t) bx.drawImage(t.cv, k.tx * ws0, k.ty * ws0, ws0 + 2, ws0 + 2);
+      }
+      this.miniBase = b;
+      this.miniOverlayVer = -1;
     }
-    x.drawImage(this.overlay, 0, 0, W.W, W.H);
+    if (this.miniOverlayVer !== this.overlayVer || !this.miniOverlay) {
+      const o = this.miniOverlay && this.miniOverlay.width === w ? this.miniOverlay : document.createElement('canvas');
+      o.width = w; o.height = h;
+      const ox = o.getContext('2d');
+      ox.drawImage(this.miniBase, 0, 0);
+      ox.drawImage(this.overlay, 0, 0, w, h);
+      this.miniOverlay = o;
+      this.miniOverlayVer = this.overlayVer;
+    }
+    x.setTransform(1, 0, 0, 1, 0, 0);
+    x.drawImage(this.miniOverlay, 0, 0);
+    x.setTransform(sx, 0, 0, sy, 0, 0);
     // armies
     for (const a of Game.state.armies) {
       if (a.owner !== 0 && !Game.state.explored[a.loc]) continue;

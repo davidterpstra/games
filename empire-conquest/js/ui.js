@@ -464,12 +464,11 @@ const UI = {
     // keyboard
     window.addEventListener('keydown', (e) => {
       if (e.target && /INPUT|TEXTAREA|SELECT/.test(e.target.tagName)) return;
-      if (!Game.state || !document.getElementById('title-screen').classList.contains('hidden')) return;
       const key = e.key.toLowerCase();
+      if (key === 'escape' && this.topModal()) { if (this.topModal().closable) this.topModal().close(); return; }
+      if (!Game.state || !document.getElementById('title-screen').classList.contains('hidden')) return;
       if ((e.ctrlKey || e.metaKey) && key === 's') { e.preventDefault(); this.result(Save.write('auto')); return; }
       if (key === 'escape') {
-        const m = this.topModal();
-        if (m) { if (m.closable) m.close(); return; }
         if (MapView.orderTarget >= 0) { MapView.orderTarget = -1; Context.refresh(true); return; }
         if (Panels.current) { this.openPanel('map'); return; }
         if (MapView.sel) { MapView.select(null); return; }
