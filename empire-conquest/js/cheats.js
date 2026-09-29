@@ -23,15 +23,83 @@ const Cheats = {
     ['missions', '🎯 Complete missions', 'Mark every mission as complete (claim the rewards yourself)'],
   ],
 
+  // cheats that can stay switched on ("∞"): they are applied again every quarter second
+  INF: {
+    res: 'Resources never run out',
+    map: 'The map stays revealed',
+    army: 'Your capital garrison refills itself',
+    siege: 'Always 50 siege engines in your capital',
+    tech: 'Every technology stays researched',
+    build: 'Every territory you own is fully built',
+    finish: 'Construction, training and research finish instantly',
+    ruler: 'Always 10 skill points',
+    happy: 'Happiness always 100%',
+    peace: 'Nobody can stay at war with you',
+    missions: 'Missions complete themselves',
+  },
+  on(id) { return !!(Game.state && Game.state.cheats && Game.state.cheats.includes(id)); },
+  toggle(id) {
+    const s = Game.state;
+    s.cheats = s.cheats || [];
+    if (this.on(id)) s.cheats = s.cheats.filter((x) => x !== id);
+    else s.cheats.push(id);
+    return this.on(id);
+  },
+
   open() {
     if (!Game.state || Game.state.over) return;
-    const body = `<p class="small muted" style="margin-top:0">Cheats change your current game. The autosave keeps the result.</p>
-      <div class="grid2">${this.list.map(([id, name, desc]) => `<button class="btn block" data-cheat="${id}" data-tip="${escapeHtml(desc)}" style="justify-content:flex-start">${name}</button>`).join('')}</div>`;
+    const row = ([id, name, desc]) => `<div class="row" style="gap:6px">
+        <button class="btn block grow" data-cheat="${id}" data-tip="${escapeHtml(desc)}" style="justify-content:flex-start">${name}</button>
+        ${this.INF[id] ? `<button class="btn ${this.on(id) ? 'primary' : ''}" data-inf="${id}" data-tip="${escapeHtml('Infinite: ' + this.INF[id] + (this.on(id) ? ' (on — click to switch off)' : ''))}" style="min-width:46px;font-size:18px">∞</button>` : '<span style="min-width:46px"></span>'}
+      </div>`;
+    const body = `<p class="small muted" style="margin-top:0">Cheats change your current game. The autosave keeps the result. Switch on <b>∞</b> to keep a cheat active all the time.</p>
+      <div class="grid2">${this.list.map(row).join('')}</div>`;
     const m = UI.modal({ title: 'Cheats', icon: '🧙', body, cls: 'wide', foot: '<button class="btn primary" data-close>Close</button>' });
     m.root.querySelectorAll('[data-cheat]').forEach((b) => b.addEventListener('click', () => {
       const msg = this.run(b.dataset.cheat);
       UI.result({ ok: !msg.startsWith('!'), msg: msg.replace(/^!/, '') }, 'coin');
     }));
+    m.root.querySelectorAll('[data-inf]').forEach((b) => b.addEventListener('click', () => {
+      const id = b.dataset.inf;
+      const now = this.toggle(id);
+      if (now) this.apply(id);
+      b.classList.toggle('primary', now);
+      b.dataset.tip = 'Infinite: ' + this.INF[id] + (now ? ' (on — click to switch off)' : '');
+      UI.hideTip();
+      UI.result({ ok: true, msg: `∞ ${this.INF[id]}: ${now ? 'on' : 'off'}.` }, 'coin');
+    }));
+  },
+
+  /* keep the infinite cheats applied */
+  apply(id) {
+    const s = Game.state, k = Game.player();
+    if (!k.alive) return;
+    const cap = k.capital, g = s.terr[cap].gar;
+    switch (id) {
+      case 'res': for (const r of ['gold', 'food', 'wood', 'iron']) k.res[r] = Math.max(k.res[r], 999999); k.res.rp = Math.max(k.res.rp, 99999); k.starving = false; k.broke = false; break;
+      case 'map': if (s.explored.some((e) => !e)) this.run('map'); break;
+      case 'army': g.infantry = Math.max(g.infantry, 500); g.archers = Math.max(g.archers, 300); g.cavalry = Math.max(g.cavalry, 200); g.knights = Math.max(g.knights, 100); break;
+      case 'siege': g.siege = Math.max(g.siege, 50); break;
+      case 'tech': if (TECHS.some((t) => !k.techs[t.id])) this.run('tech'); break;
+      case 'build':
+        for (const tid of Game.territoriesOf(0)) {
+          const ts = s.terr[tid];
+          ts.tier = Math.max(ts.tier, tid === cap ? 4 : 3);
+          for (const b of BUILDING_ORDER) if (b !== 'castle' || tid === cap) ts.b[b] = BUILDINGS[b].maxLevel || 5;
+          ts.fort = Math.max(ts.fort, Kingdom.maxFort(0)); ts.dev = 10;
+        }
+        break;
+      case 'finish': this.run('finish'); break;
+      case 'ruler': k.ruler.points = Math.max(k.ruler.points, 10); break;
+      case 'happy': this.run('happy'); break;
+      case 'peace': if (Diplomacy.warsOf(0).length) this.run('peace'); break;
+      case 'missions': for (const m of MISSIONS) if (!s.missions[m.id]) s.missions[m.id] = 1; break;
+    }
+  },
+  tick() {
+    const s = Game.state;
+    if (!s || s.over || !s.cheats || !s.cheats.length) return;
+    for (const id of s.cheats) { try { this.apply(id); } catch (e) { console.error('cheat', id, e); } }
   },
 
   run(id) {
@@ -117,3 +185,4 @@ window.addEventListener('keydown', (e) => {
   if (Cheats.typed === 'cheats') { Cheats.typed = ''; Cheats.open(); }
 });
 window.Cheats = Cheats;
+setInterval(() => Cheats.tick(), 250);

@@ -27,7 +27,7 @@ A browser strategy game that combines **world conquest**, **army command** and *
 | Go to capital | `H` | 🏰 button |
 | Close · deselect · menu | `Esc` | ✕ / ⚙️ |
 | Save | `Ctrl` + `S` | ⚙️ → Save game |
-| Cheat menu | type `cheats` or `Ctrl` + `Shift` + `C` | ⚙️ → Cheats |
+| Cheat menu (∞ keeps a cheat on) | type `cheats` or `Ctrl` + `Shift` + `C` | ⚙️ → Cheats |
 
 ## What is in the game
 
