@@ -65,7 +65,7 @@ class Vehicle {
 
     // ---- wheel contacts & surfaces ----
     let muF = 0, muR = 0, rr = 0;
-    const off = sp.offroad, wet = Sky.wet;
+    const off = sp.offroad, wet = Math.min(1, Sky.wet + (Sky.snowCover || 0) * 1.4);
     for (let i = 0; i < 4; i++) {
       const lx = (i & 1 ? -1 : 1) * sp.track / 2, lz = i < 2 ? this.a : -this.b;
       const wx = this.x + fc * lx + fs * lz, wz = this.z - fs * lx + fc * lz;

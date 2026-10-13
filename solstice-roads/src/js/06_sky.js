@@ -101,15 +101,19 @@ function initSky(scene, renderer) {
   g.setAttribute('tip', new THREE.BufferAttribute(rnd, 1));
   const rm = new THREE.ShaderMaterial({
     transparent: true, depthWrite: false, fog: false,
-    uniforms: { uCam: { value: new THREE.Vector3() }, uTime: Props.uTime, uAmt: { value: 0 }, uVel: { value: new THREE.Vector3() }, uCol: { value: new THREE.Color(0xaab4c0) } },
-    vertexShader: `attribute float tip; uniform vec3 uCam, uVel; uniform float uTime, uAmt; varying float vA;
+    uniforms: { uCam: { value: new THREE.Vector3() }, uTime: Props.uTime, uAmt: { value: 0 }, uVel: { value: new THREE.Vector3() }, uCol: { value: new THREE.Color(0xaab4c0) }, uSnowMode: { value: 0 } },
+    vertexShader: `attribute float tip; uniform vec3 uCam, uVel; uniform float uTime, uAmt, uSnowMode; varying float vA;
       void main(){
         vec3 p = position;
-        p.y = mod(p.y - uTime * 22.0 + position.x * 3.1, 34.0);
+        float spd = mix(22.0, 2.2, uSnowMode);
+        p.y = mod(p.y - uTime * spd + position.x * 3.1, 34.0);
+        // snow flakes drift sideways
+        p.x += sin(uTime * 0.9 + position.z * 0.7) * 0.8 * uSnowMode;
+        p.z += cos(uTime * 0.7 + position.x * 0.5) * 0.8 * uSnowMode;
         vec3 w = vec3(mod(p.x - uCam.x + 35.0, 70.0) - 35.0, p.y - 12.0, mod(p.z - uCam.z + 35.0, 70.0) - 35.0) + uCam;
         vec3 fall = normalize(vec3(-uVel.x * 0.03 + 0.15, -1.0, -uVel.z * 0.03 + 0.05));
-        w += fall * tip * -0.6;
-        vA = step(fract(position.z * 7.31 + position.x * 3.7), uAmt) * (0.12 + 0.2 * tip) * smoothstep(1.5, 6.0, length(w - uCam));
+        w += fall * tip * -mix(0.6, 0.07, uSnowMode);
+        vA = step(fract(position.z * 7.31 + position.x * 3.7), uAmt) * mix(0.12 + 0.2 * tip, 0.85, uSnowMode) * smoothstep(1.5, 6.0, length(w - uCam));
         gl_Position = projectionMatrix * viewMatrix * vec4(w, 1.0);
       }`,
     fragmentShader: `uniform vec3 uCol; varying float vA; void main(){ if (vA < 0.01) discard; gl_FragColor = vec4(uCol, vA); }`,
@@ -117,13 +121,15 @@ function initSky(scene, renderer) {
   Sky.rain = new THREE.LineSegments(g, rm);
   Sky.rain.frustumCulled = false;
   Sky.rain.visible = false;
+  Sky.rain.material.linewidth = 1;
   scene.add(Sky.rain);
 }
 
 function setWeather(id, instant = false) {
   const w = WEATHERS.find((x) => x.id === id) || WEATHERS[0];
   Sky.target = { ...w };
-  if (instant) { Object.assign(Sky.cur, w); Sky.wet = w.rain; }
+  Sky.target.snow = w.snow || 0;
+  if (instant) { Object.assign(Sky.cur, w); Sky.cur.snow = w.snow || 0; Sky.wet = w.rain; Sky.snapSnow = true; }
   Sky.envDirty = true;
 }
 
@@ -155,10 +161,12 @@ function computeAtmosphere() {
   const greyH = new THREE.Color(0xb7bdc2).lerp(new THREE.Color(0x10141a), Sky.night).lerp(new THREE.Color(0xc89a7a), golden * 0.3);
   zen.lerp(grey, clouds * 0.75 + rain * 0.2);
   hor.lerp(greyH, clouds * 0.6 + rain * 0.2);
+  const snowy = Sky.cur.snow || 0;
+  if (snowy > 0) { zen.lerp(new THREE.Color(0x8fa4bd).lerp(new THREE.Color(0x05070c), Sky.night), snowy * 0.35); hor.lerp(new THREE.Color(0xdde6ee).lerp(new THREE.Color(0x141a24), Sky.night), snowy * 0.45); }
   if (fog > 0) { const fc = new THREE.Color(0xd6dce0).lerp(new THREE.Color(0x0e1218), Sky.night); hor.lerp(fc, fog * 0.85); zen.lerp(fc, fog * 0.45); }
   u.uZenith.value.copy(zen); u.uHorizon.value.copy(hor);
   u.uGround.value.set(0x45503a).multiplyScalar(0.35 + 0.65 * day);
-  const sunCol = new THREE.Color(0xfff1dc).lerp(new THREE.Color(0xff8a3a), golden);
+  const sunCol = new THREE.Color(0xfff1dc).lerp(new THREE.Color(0xff8a3a), golden).lerp(new THREE.Color(0xe6f0ff), (Sky.cur.snow || 0) * 0.5);
   u.uSunCol.value.copy(sunCol);
   u.uCloudCol.value.set(0xffffff).lerp(new THREE.Color(0xffc49a), golden * 0.7).lerp(new THREE.Color(0x9aa1a8), clouds * 0.5 + rain * 0.3).multiplyScalar(0.12 + 0.88 * day);
   u.uCloudShade.value.set(0x9aa3ae).lerp(new THREE.Color(0x6c6f78), clouds * 0.6 + rain * 0.3).lerp(new THREE.Color(0xa06a5a), golden * 0.4).multiplyScalar(0.08 + 0.92 * day);
@@ -188,6 +196,7 @@ function updateSky(dt, scene, renderer, camera, focus, settings) {
     if (settings.dynamicTime) c.time = (T.time + 24) % 24;
     else c.time = (c.time + dtm * k + 24) % 24;
     c.clouds = lerp(c.clouds, T.clouds, k); c.rain = lerp(c.rain, T.rain, k); c.fog = lerp(c.fog, T.fog, k);
+    c.snow = lerp(c.snow || 0, T.snow || 0, k);
   }
   Sky.wet = c.rain > Sky.wet ? Math.min(c.rain, Sky.wet + dt * 0.08) : Math.max(c.rain, Sky.wet - dt * 0.01);
   const a = computeAtmosphere();
@@ -206,10 +215,12 @@ function updateSky(dt, scene, renderer, camera, focus, settings) {
   s.target.updateMatrixWorld();
   // rain
   const rm = Sky.rain.material.uniforms;
-  rm.uAmt.value = c.rain * (Sky.q ? Sky.q.rain / 16000 : 0.5);
-  Sky.rain.visible = c.rain > 0.02;
+  const fall = Math.max(c.rain, (c.snow || 0) * clamp(c.clouds * 1.3 - 0.2, 0, 1));
+  rm.uAmt.value = fall * (Sky.q ? Sky.q.rain / 16000 : 0.5);
+  rm.uSnowMode.value = c.snow || 0;
+  Sky.rain.visible = fall > 0.02;
   rm.uCam.value.copy(camera.position);
-  rm.uCol.value.setScalar(0.55 + 0.35 * (1 - Sky.night));
+  rm.uCol.value.setScalar(lerp(0.55 + 0.35 * (1 - Sky.night), 0.6 + 0.4 * (1 - Sky.night), c.snow || 0));
   // materials that react to wetness / night
   for (const m of RoadGfx.materials) m.userData.u.uWet.value = Sky.wet;
   if (Terrain.material) { Terrain.material.userData.u.uWet.value = Sky.wet * 0.8; }
@@ -217,6 +228,7 @@ function updateSky(dt, scene, renderer, camera, focus, settings) {
   for (const m of Props.buildingMats) m.emissiveIntensity = nightGlow * 1.1;
   PropMat.lamp.emissiveIntensity = nightGlow * 4;
   Props.uWind.value = 0.6 + c.rain * 1.2 + c.clouds * 0.4;
+  updateSnow(dt);
   // environment map refresh
   Sky.envTimer -= dt;
   const changing = settings.dynamicTime || Math.abs(T.clouds - c.clouds) > 0.01 || Math.abs(wrapAngle((T.time - c.time) / 24 * TAU)) > 0.005;

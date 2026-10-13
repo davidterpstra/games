@@ -133,9 +133,10 @@ function carEffects(car, dt, near) {
       emit(wp[0], wp[1] + 0.3, wp[2], car.vx * 0.25 + (Math.random() - 0.5) * 2, 0.6 + Math.random() * 1.2, car.vz * 0.25 + (Math.random() - 0.5) * 2, 1.6 + Math.random() * 1.4, 0.9, 5.5 * k, 0xe8e8ea, 0.32 * k, -0.25, 0.9);
     }
     // dust / dirt / snow roost
-    if (!paved && s !== S_WATER && !car.air && v > 6 && rear && Math.random() < Math.min(1, v / 25) * dt * 60 * 0.8) {
+    const snowy = (Sky.snowCover || 0) > 0.5;
+    if ((!paved || (snowy && v > 15)) && s !== S_WATER && !car.air && v > 6 && rear && Math.random() < Math.min(1, v / 25) * dt * 60 * 0.8) {
       const back = -1.5;
-      emit(wp[0], wp[1] + 0.25, wp[2], car.vx * 0.15 - fs * back * 2 + (Math.random() - 0.5) * 2.5, 1 + Math.random() * 2, car.vz * 0.15 - fc * back * 2 + (Math.random() - 0.5) * 2.5, 1.2 + Math.random() * 1.6, 0.8, 4.5 + v * 0.05, WS.dust ?? S.dust ?? 0x9a7a55, 0.35, -0.15, 1.1);
+      emit(wp[0], wp[1] + 0.25, wp[2], car.vx * 0.15 - fs * back * 2 + (Math.random() - 0.5) * 2.5, 1 + Math.random() * 2, car.vz * 0.15 - fc * back * 2 + (Math.random() - 0.5) * 2.5, 1.2 + Math.random() * 1.6, 0.8, 4.5 + v * 0.05, snowy ? 0xf4f8ff : WS.dust ?? S.dust ?? 0x9a7a55, snowy ? 0.5 : 0.35, -0.15, 1.1);
       if (Math.random() < 0.4) emit(wp[0], wp[1] + 0.2, wp[2], -fs * v * 0.1 + (Math.random() - 0.5) * 3, 2 + Math.random() * 3, -fc * v * 0.1 + (Math.random() - 0.5) * 3, 0.8, 0.12, 0.12, s === S_SNOW ? 0xffffff : 0x4a3a2a, 0.9, 9.8, 0.4);
     }
     // wet spray

@@ -103,6 +103,8 @@ const WEATHERS = [
   { id: 'fog', name: 'Morning fog', time: 8.2, clouds: 0.55, rain: 0, fog: 1 },
   { id: 'sunset', name: 'Golden sunset', time: 19.15, clouds: 0.35, rain: 0, fog: 0.1 },
   { id: 'night', name: 'Night', time: 23.2, clouds: 0.25, rain: 0, fog: 0.08 },
+  { id: 'winter', name: 'Winter snow', time: 12.6, clouds: 0.68, rain: 0, fog: 0.28, snow: 1 },
+  { id: 'winternight', name: 'Winter night', time: 21.8, clouds: 0.4, rain: 0, fog: 0.15, snow: 1 },
 ];
 
 /* ---------- graphics presets ---------- */

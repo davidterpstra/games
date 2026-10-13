@@ -251,6 +251,7 @@ async function boot() {
     }
   });
   Terrain.material.envMapIntensity = 0.22;
+  applySnowToWorld(Game.scene);
   for (const m of RoadGfx.materials) m.envMapIntensity = 0.45;
   for (const m of Props.waterMats) m.envMapIntensity = 1.3;
   Game.applySettings();

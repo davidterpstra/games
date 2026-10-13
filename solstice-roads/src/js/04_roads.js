@@ -92,17 +92,26 @@ function makeRoadTexture(type) {
 
 function patchWetShader(mat, worldScale = 0.08) {
   mat.userData.u = mat.userData.u || {};
-  Object.assign(mat.userData.u, { uWet: { value: 0 }, tPuddle: { value: RoadGfx.puddleTex } });
+  Object.assign(mat.userData.u, { uWet: { value: 0 }, uSnowRoad: { value: 0 }, tPuddle: { value: RoadGfx.puddleTex } });
   mat.onBeforeCompile = (sh) => {
     Object.assign(sh.uniforms, mat.userData.u);
     sh.vertexShader = sh.vertexShader
       .replace('#include <common>', '#include <common>\nvarying vec3 vWPr;')
       .replace('#include <project_vertex>', '#include <project_vertex>\nvWPr = (modelMatrix * vec4(transformed, 1.0)).xyz;');
     sh.fragmentShader = sh.fragmentShader
-      .replace('#include <common>', '#include <common>\nuniform float uWet; uniform sampler2D tPuddle; varying vec3 vWPr;')
+      .replace('#include <common>', '#include <common>\nuniform float uWet, uSnowRoad; uniform sampler2D tPuddle; varying vec3 vWPr;')
       .replace('#include <map_fragment>', `#include <map_fragment>
 float pud = smoothstep(0.52, 0.7, texture2D(tPuddle, vWPr.xz * ${worldScale.toFixed(3)}).r);
-diffuseColor.rgb *= mix(1.0, 0.5 - pud * 0.15, uWet);`)
+diffuseColor.rgb *= mix(1.0, 0.5 - pud * 0.15, uWet);
+// packed snow: patches on the tarmac, drifts along the verges, wheel tracks stay darker
+float snp = smoothstep(0.5, 0.78, texture2D(tPuddle, vWPr.xz * 0.031 + 0.4).r);
+#ifdef USE_MAP
+float verge = smoothstep(0.41, 0.49, abs(vMapUv.x - 0.5));
+#else
+float verge = 0.0;
+#endif
+float sn = uSnowRoad * clamp(snp * 0.45 + verge, 0.0, 1.0);
+diffuseColor.rgb = mix(diffuseColor.rgb, vec3(0.88, 0.91, 0.96), sn * 0.9);`)
       .replace('#include <roughnessmap_fragment>', `#include <roughnessmap_fragment>
 roughnessFactor = mix(roughnessFactor, mix(0.3, 0.04, pud), uWet);`);
   };
