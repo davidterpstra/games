@@ -335,6 +335,11 @@ class Vehicle {
     for (let it = 0; it < 2; it++) for (const c of _colList) {
       const r = boxVsCollider(this.x, this.z, this.h, this.hw, this.hl, c);
       if (!r) continue;
+      // hedgerows give way at speed: plough through and lose some pace
+      if (c.kind === 'hedge' && this.vx * this.vx + this.vz * this.vz > 36) {
+        if (it === 0) { this.vx *= 0.985; this.vz *= 0.985; if (!this.hedgeT) Bus.emit('hit', { car: this, v: 3, hedge: true }); this.hedgeT = 0.4; }
+        continue;
+      }
       const nx = r.n[0], nz = r.n[1];
       this.x += nx * r.d; this.z += nz * r.d;
       const vn = this.vx * nx + this.vz * nz;
@@ -353,6 +358,7 @@ class Vehicle {
       }
     }
     if (maxImp > 2.5) Bus.emit('hit', { car: this, v: maxImp });
+    if (this.hedgeT) this.hedgeT = Math.max(0, this.hedgeT - 1 / 120);
   }
 
   sync(model, alpha, camMode) {

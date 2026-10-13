@@ -311,6 +311,7 @@ async function boot() {
     if (e.car === Game.player || e.other === Game.player) {
       SFX.hit(e.v); Cam.trauma = Math.min(1, Cam.trauma + e.v / 25);
       if (e.v > 6) { sparks(Game.player.x, Game.player.y + 0.5, Game.player.z, Math.min(30, e.v * 2)); breakChain(); }
+      if (e.hedge) { const P = Game.player; for (let i = 0; i < 26; i++) emit(P.x, P.y + 0.6 + Math.random(), P.z, P.vx * 0.35 + (Math.random() - 0.5) * 5, 1 + Math.random() * 3, P.vz * 0.35 + (Math.random() - 0.5) * 5, 0.8 + Math.random() * 0.7, 0.22, 0.1, i % 3 ? 0x3f6a26 : 0x6b8a34, 1, 5, 2.2); }
     }
   });
   Bus.on('land', (e) => { if (e.car === Game.player) { SFX.land(e.v); Cam.trauma = Math.min(1, Cam.trauma + e.v / 30); } });

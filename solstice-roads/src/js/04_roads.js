@@ -230,7 +230,7 @@ function initPropMaterials() {
   PropMat.stone2 = new THREE.MeshStandardMaterial({ map: stone, roughness: 0.95, side: THREE.DoubleSide });
   PropMat.concrete = new THREE.MeshStandardMaterial({ color: 0x9a978f, roughness: 0.9, map: canvasTex(256, 256, (x, w, h) => noiseFill(x, w, h, 8, (n) => { const v = 0.8 + n * 0.3; return [180 * v, 178 * v, 170 * v]; })) });
   PropMat.metal = new THREE.MeshStandardMaterial({ color: 0xb8bec6, metalness: 0.85, roughness: 0.35 });
-  PropMat.dark = new THREE.MeshStandardMaterial({ color: 0x24262b, roughness: 0.7, metalness: 0.3 });
+  PropMat.dark = new THREE.MeshStandardMaterial({ color: 0x3d444b, roughness: 0.55, metalness: 0.45 });
   PropMat.wood = new THREE.MeshStandardMaterial({ color: 0x6e5236, roughness: 0.9 });
   PropMat.white = new THREE.MeshStandardMaterial({ color: 0xeeeeea, roughness: 0.6 });
   PropMat.lamp = new THREE.MeshStandardMaterial({ color: 0xfff1d0, emissive: 0xffc36b, emissiveIntensity: 0 });

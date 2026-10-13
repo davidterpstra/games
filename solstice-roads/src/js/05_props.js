@@ -163,7 +163,7 @@ function makeTreeGeoms() {
     g.translate(0, 0.5, 0);
     g.deleteAttribute('uv');
     g.computeVertexNormals();
-    colorize(g, (col, x, y, z) => { col.setRGB(0.16, 0.3, 0.11).multiplyScalar(0.55 + 0.6 * y); if (hash2(Math.floor(x * 9 + 40), Math.floor(z * 9 + y * 7 + 40)) > 0.97) col.setRGB(0.95, 0.92, 0.85); });
+    colorize(g, (col, x, y, z) => { col.setRGB(0.21, 0.4, 0.13).multiplyScalar(0.72 + 0.5 * y); if (hash2(Math.floor(x * 9 + 40), Math.floor(z * 9 + y * 7 + 40)) > 0.97) col.setRGB(0.95, 0.92, 0.85); });
     return g;
   })();
   T.rock = (() => { const b = blob(1, 1, 21, 1.3, 0.75, 1.1); b.translate(0, 0.25, 0); colorize(b, (col, x, y) => col.setRGB(0.5, 0.49, 0.46).multiplyScalar(0.7 + 0.35 * clamp(y + 0.3, 0, 1))); return stripUV(b); })();
@@ -293,23 +293,35 @@ function buildVegetation(q) {
     chunks[cidx(x, z)].rock.push([x, hAt(x, z) - 0.15 * s, z, s, rng() * TAU]);
     if (s > 0.9) Col.circle(x, z, s * 1.05, 'rock');
   }
-  // hedgerows along field edges
-  for (let z = -HALF + 20; z < HALF - 20; z += 3.6) for (let x = -HALF + 20; x < HALF - 20; x += 3.6) {
-    if (farmMask(x, z) < 0.45) continue;
-    const f = fieldAt(x, z);
-    if (f.edge > 1.8) continue;
+  // hedgerows: walk the field boundaries themselves so every row is continuous,
+  // with the odd gateway left open
+  const HSEG = 4.8;
+  const hedgeAt = (u, v, dirAng, gate) => {
+    const x = u * FCOS + v * FSIN, z = -u * FSIN + v * FCOS;
+    if (Math.abs(x) > HALF - 20 || Math.abs(z) > HALF - 20 || gate) return;
+    if (farmMask(x, z) < 0.45) return;
     const id = cellId(x, z);
-    if (World.RD[id] < 3 || World.WL[id] > World.H[id] - 0.5 || World.RIVD[id] < 4) continue;
-    let nearV = false;
-    for (const p of PLACES) if (p.kind === 'village' && Math.hypot(x - p.x, z - p.z) < p.r * 0.7) nearV = true;
-    if (nearV || Math.hypot(x - PLAZA.x, z - PLAZA.z) < PLAZA.r + 30) continue;
-    // orientation: along the field edge (grid axes are rotated by FIELD_A)
-    const u = x * FCOS - z * FSIN, v = x * FSIN + z * FCOS;
-    const fe = fieldAt(x + 1.5 * FCOS, z - 1.5 * FSIN).id !== f.id || fieldAt(x - 1.5 * FCOS, z + 1.5 * FSIN).id !== f.id;
-    const ang = fe ? -FIELD_A : Math.PI / 2 - FIELD_A;
-    void u; void v;
-    chunks[cidx(x, z)].hedge.push([x, hAt(x, z) - 0.15, z, 1, ang]);
-    Col.circle(x, z, 1.1, 'hedge');
+    if (World.RD[id] < 3.2 || World.WL[id] > World.H[id] - 0.5 || World.RIVD[id] < 4) return;
+    for (const p of PLACES) if (p.kind === 'village' && Math.hypot(x - p.x, z - p.z) < p.r * 0.7) return;
+    if (Math.hypot(x - PLAZA.x, z - PLAZA.z) < PLAZA.r + 30) return;
+    const sx = Math.sin(dirAng) * HSEG * 0.5, sz = Math.cos(dirAng) * HSEG * 0.5;
+    const y0 = hAt(x - sx, z - sz), y1 = hAt(x + sx, z + sz);
+    chunks[cidx(x, z)].hedge.push([x, Math.min((y0 + y1) / 2, hAt(x, z)) - 0.3, z, 1, dirAng, -Math.atan2(y1 - y0, HSEG)]);
+    Col.wall(x - sx, z - sz, x + sx, z + sz, 0.8, 'hedge');
+  };
+  const SPAN = WORLD * 0.75;
+  // boundaries between rows of fields (constant v)
+  for (let iv = Math.floor(-SPAN / 78); iv <= Math.ceil(SPAN / 78); iv++) {
+    const v = iv * 78, ang = Math.atan2(FCOS, -FSIN);
+    for (let k = 0, u = -SPAN; u < SPAN; u += HSEG, k++) hedgeAt(u, v, ang, hash2(iv * 13 + 1, Math.floor(k / 3)) < 0.06 && k % 3 === 1);
+  }
+  // boundaries between fields within a row (constant u in the row's offset frame)
+  for (let iv = Math.floor(-SPAN / 78); iv < Math.ceil(SPAN / 78); iv++) {
+    const w = 95 + 40 * hash2(iv, 3), off = hash2(iv, 7) * 120;
+    for (let iu = Math.floor((-SPAN + off) / w); iu <= Math.ceil((SPAN + off) / w); iu++) {
+      const u = iu * w - off;
+      for (let k = 0, v = iv * 78 + HSEG * 0.5; v < (iv + 1) * 78; v += HSEG, k++) hedgeAt(u, v, FIELD_A, hash2(iu * 7 + iv, 11) < 0.35 && k === 8);
+    }
   }
   const o = new THREE.Object3D();
   const inst = (geo, mat, list, cast, scaleXYZ) => {
@@ -317,7 +329,7 @@ function buildVegetation(q) {
     const m = new THREE.InstancedMesh(geo, mat, list.length);
     const col = new THREE.Color();
     list.forEach((p, i) => {
-      o.position.set(p[0], p[1], p[2]); o.rotation.set(0, p[4], 0);
+      o.position.set(p[0], p[1], p[2]); o.rotation.order = 'YXZ'; o.rotation.set(p[5] || 0, p[4], 0);
       if (scaleXYZ) o.scale.set(...scaleXYZ(p)); else o.scale.setScalar(p[3]);
       o.updateMatrix(); m.setMatrixAt(i, o.matrix);
       m.setColorAt(i, col.setScalar(0.82 + hash2(i, list.length) * 0.36));
@@ -338,7 +350,7 @@ function buildVegetation(q) {
     }
     const bu = inst(G.bush, matLeaf, c.bush, false); if (bu) vc.small.push(bu);
     const ro = inst(G.rock, matStill, c.rock, true); if (ro) vc.small.push(ro);
-    const he = inst(G.hedge, matLeaf, c.hedge, true, () => [1.7, 1.6 + 0.3 * rng(), 3.9]); if (he) vc.small.push(he);
+    const he = inst(G.hedge, matLeaf, c.hedge, true, () => [1.8, 1.75 + 0.35 * rng(), HSEG + 0.5]); if (he) vc.small.push(he);
     Props.vegChunks.push(vc);
   }
   updateVegetation(0, 0, q, true);
