@@ -72,7 +72,7 @@ class Vehicle {
       const s = surfAt(wx, wz);
       this.wheelSurf[i] = s;
       const wp = this.wheelPos[i];
-      wp[0] = wx; wp[2] = wz; wp[1] = groundAt(wx, wz, this.y + 1.5);
+      wp[0] = wx; wp[2] = wz; wp[1] = groundAt(wx, wz, this.y + 0.3);
       const S = SURF[s];
       let mu = s === S_ASPHALT || s === S_PAVED ? S.mu * (1 - 0.12 * off) * (1 - 0.17 * wet) : lerp(S.mu, 0.95, off * 0.65) * (1 - 0.1 * wet);
       if (s === S_SNOW) mu = lerp(S.mu, 0.8, off * 0.5);
@@ -84,7 +84,9 @@ class Vehicle {
 
     // ---- vertical: follow the ground, or fly ----
     const gy = (this.wheelPos[0][1] + this.wheelPos[1][1] + this.wheelPos[2][1] + this.wheelPos[3][1]) / 4;
-    const gvy = (gy - this.groundY) / dt;
+    // the ground can only rise/fall as fast as the slope allows at this speed (filters grid seams)
+    const gvLim = v * 0.45 + 1.5;
+    const gvy = clamp((gy - this.groundY) / dt, -gvLim, gvLim);
     this.groundY = gy;
     if (!this.air) {
       const prevVy = this.gvy;
@@ -268,7 +270,23 @@ class Vehicle {
     }
 
     // ---- move ----
+    const ox = this.x, oz = this.z;
     this.x += this.vx * dt; this.z += this.vz * dt;
+    // terrain too steep to climb (cliffs, cutting walls, river banks) acts as a wall
+    if (!this.air) {
+      const nh = groundAt(this.x, this.z, this.y + 0.3);
+      const mv = Math.hypot(this.x - ox, this.z - oz);
+      if (nh - this.y > 0.25 + mv * 1.6) {
+        this.x = ox; this.z = oz;
+        groundNormal(this.x, this.z, this.y + 0.3, _n);
+        const hl = Math.hypot(_n.x, _n.z) || 1, nx = _n.x / hl, nz = _n.z / hl; // points downhill
+        const into = -(this.vx * nx + this.vz * nz);
+        if (into > 0) {
+          this.vx += nx * into * 1.25; this.vz += nz * into * 1.25;
+          if (into > 3) Bus.emit('hit', { car: this, v: into });
+        }
+      }
+    }
     this.odo += Math.hypot(this.vx, this.vz) * dt;
     // world bounds
     const lim = HALF - 12;
@@ -344,6 +362,7 @@ class Vehicle {
     model.brake.emissiveIntensity = this.brakeOn ? 4.5 : 0.5 + Sky.night * 0.9;
     model.rev.emissiveIntensity = this.reverse ? 3 : 0;
     model.head.emissiveIntensity = 0.6 + Sky.night * 3;
+    if (model.lampMats) for (const m of model.lampMats) m.emissiveIntensity = 0.35 + Sky.night * 2.2;
     for (const s of model.beams) s.intensity = Sky.night > 0.3 || Sky.cur.fog > 0.5 ? 220 * Math.max(Sky.night, Sky.cur.fog * 0.6) : 0;
     model.blob.visible = camMode !== 3;
   }

@@ -15,9 +15,9 @@ const STYLES = {
   hyper: { fo: 1.08, gc: 0.1, top: [[0.5, 0.3], [0.485, 0.46], [0.42, 0.56], [0.3, 0.66], [0.18, 0.77], [-0.3, 0.9], [-0.43, 0.93], [-0.49, 0.9], [-0.5, 0.55]], low: [0.24, 0.33], cab: [0.18, 0.0, -0.13, -0.3], tw: 0.6, pillar: 'black', intakes: true, exh: 'quad' },
   gt: { fo: 0.92, gc: 0.13, top: [[0.5, 0.42], [0.48, 0.64], [0.4, 0.76], [0.25, 0.83], [0.04, 0.9], [-0.42, 0.97], [-0.47, 0.96], [-0.495, 0.9], [-0.5, 0.6]], low: [0.3, 0.38], cab: [0.04, -0.14, -0.27, -0.43], tw: 0.62, pillar: 'paint', intakes: false, exh: 'quad' },
   coupe: { fo: 0.86, gc: 0.14, top: [[0.5, 0.48], [0.485, 0.68], [0.4, 0.78], [0.3, 0.8], [0.18, 0.86], [-0.33, 0.93], [-0.46, 0.95], [-0.495, 0.9], [-0.5, 0.62]], low: [0.32, 0.4], cab: [0.18, 0.06, -0.2, -0.33], tw: 0.7, pillar: 'paint', intakes: false, exh: 'single' },
-  muscle: { fo: 0.98, gc: 0.15, top: [[0.5, 0.52], [0.488, 0.8], [0.43, 0.88], [0.3, 0.9], [0.1, 0.98], [-0.4, 1.0], [-0.47, 1.0], [-0.495, 0.96], [-0.5, 0.66]], low: [0.34, 0.42], cab: [0.1, -0.05, -0.21, -0.4], tw: 0.7, pillar: 'paint', intakes: false, exh: 'dual', scoop: true },
-  hatch: { fo: 0.85, gc: 0.16, top: [[0.5, 0.5], [0.485, 0.7], [0.4, 0.82], [0.33, 0.86], [0.2, 0.96], [-0.47, 1.0], [-0.495, 0.94], [-0.5, 0.62]], low: [0.34, 0.42], cab: [0.2, 0.07, -0.43, -0.49], tw: 0.74, pillar: 'paint', intakes: false, exh: 'single', scoop: true },
-  truck: { fo: 0.95, gc: 0.42, top: [[0.5, 0.7], [0.48, 1.08], [0.4, 1.2], [0.3, 1.26], [0.15, 1.34], [-0.14, 1.36], [-0.2, 1.28], [-0.48, 1.26], [-0.5, 1.0]], low: [0.62, 0.66], cab: [0.15, 0.04, -0.1, -0.14], tw: 0.8, pillar: 'paint', intakes: false, exh: 'side', bed: true },
+  muscle: { lamps: 'round', fo: 0.98, gc: 0.15, top: [[0.5, 0.52], [0.488, 0.8], [0.43, 0.88], [0.3, 0.9], [0.1, 0.98], [-0.4, 1.0], [-0.47, 1.0], [-0.495, 0.96], [-0.5, 0.66]], low: [0.34, 0.42], cab: [0.1, -0.05, -0.21, -0.4], tw: 0.7, pillar: 'paint', intakes: false, exh: 'dual', scoop: true },
+  hatch: { lamps: 'round', fo: 0.85, gc: 0.16, top: [[0.5, 0.5], [0.485, 0.7], [0.4, 0.82], [0.33, 0.86], [0.2, 0.96], [-0.47, 1.0], [-0.495, 0.94], [-0.5, 0.62]], low: [0.34, 0.42], cab: [0.2, 0.07, -0.43, -0.49], tw: 0.74, pillar: 'paint', intakes: false, exh: 'single', scoop: true },
+  truck: { lamps: 'round', fo: 0.95, gc: 0.42, top: [[0.5, 0.7], [0.48, 1.08], [0.4, 1.2], [0.3, 1.26], [0.15, 1.34], [-0.14, 1.36], [-0.2, 1.28], [-0.48, 1.26], [-0.5, 1.0]], low: [0.62, 0.66], cab: [0.15, 0.04, -0.1, -0.14], tw: 0.8, pillar: 'paint', intakes: false, exh: 'side', bed: true },
 };
 
 const CarMats = {
@@ -250,19 +250,32 @@ function makeCar(spec, color, opts = {}) {
 
   /* ---------- lamps, grille, intakes ---------- */
   const noseZ = L / 2;
+  const hood = S.lamps !== 'round';
   for (const sd of [-1, 1]) {
-    // headlight units sit in the bonnet surface: dark housing, bright projector + LED brow
-    const hz = noseZ - 0.3, hx = sd * widthAt(hz) * 0.64;
-    const yS = topY(hz) - 0.035;
-    const slope = Math.atan2(topY(hz - 0.15) - topY(hz + 0.15), 0.3);
-    const housing = add(new THREE.BoxGeometry(0.44, 0.05, 0.3), CarMats.black, body, false);
-    housing.position.set(hx, yS, hz); housing.rotation.set(slope, sd * 0.16, 0);
-    for (const k of [-1, 1]) {
-      const proj = add(new THREE.CylinderGeometry(0.052, 0.052, 0.03, 16), head, body, false);
-      proj.position.set(hx + k * 0.1 * sd, yS + 0.026, hz + 0.02); proj.rotation.set(slope, 0, 0);
+    if (hood) {
+      // headlight graphic lying in the bonnet surface (projectors + LED brow, emissive)
+      const hz = noseZ - 0.3, hx = sd * widthAt(hz) * 0.62;
+      const slope = Math.atan2(topY(hz - 0.15) - topY(hz + 0.15), 0.3);
+      const lamp = add(new THREE.PlaneGeometry(0.5, 0.3), CarLamp.head(head), body, false);
+      lamp.position.set(hx, topY(hz) + 0.012, hz);
+      lamp.rotation.set(-Math.PI / 2 + slope, sd * 0.16, 0, 'YXZ');
+      if (sd < 0) lamp.scale.x = -1;
+    } else {
+      // classic round lamps on the nose
+      const n = spec.style === 'muscle' ? 2 : 1;
+      for (let k = 0; k < n; k++) {
+        const r = spec.style === 'truck' ? 0.11 : 0.085;
+        const lx = sd * (widthAt(noseZ - 0.1) * (0.7 - k * 0.24));
+        const ly = lerp(S.low[0], topY(noseZ - 0.1), 0.62);
+        const unit = new THREE.Group();
+        const ring = new THREE.Mesh(new THREE.CylinderGeometry(r + 0.02, r + 0.02, 0.14, 20, 1, true).rotateX(Math.PI / 2), CarMats.chrome);
+        const face = new THREE.Mesh(new THREE.CircleGeometry(r, 20), CarLamp.round(head));
+        face.position.z = 0.07;
+        unit.add(ring, face);
+        unit.position.set(lx, ly, noseZ - 0.02);
+        body.add(unit);
+      }
     }
-    const brow = add(new THREE.BoxGeometry(0.4, 0.014, 0.03), head, body, false);
-    brow.position.set(hx, yS + 0.03, hz + 0.13); brow.rotation.set(slope, sd * 0.16, 0);
     const drl = add(new THREE.BoxGeometry(0.3, 0.016, 0.04), head, body, false);
     drl.position.set(sd * widthAt(noseZ - 0.1) * 0.6, topY(noseZ - 0.1) - 0.12, noseZ - 0.1); drl.rotation.y = sd * 0.4;
   }
@@ -305,10 +318,13 @@ function makeCar(spec, color, opts = {}) {
     }
     // mirrors
     const mz = cW - 0.12, my = hullTopAt(mz) + 0.12;
-    const stalk = add(new THREE.BoxGeometry(0.16, 0.025, 0.05), CarMats.black, body, false);
-    stalk.position.set(sd * (widthAt(mz) * 0.86 + 0.06), my - 0.03, mz);
-    const mirror = add(new THREE.BoxGeometry(0.1, 0.11, 0.18), paint);
-    mirror.position.set(sd * (widthAt(mz) * 0.86 + 0.16), my, mz - 0.02);
+    const sideX = widthAt(mz) * 0.97;
+    const stalk = add(new THREE.BoxGeometry(0.14, 0.025, 0.05), CarMats.black, body, false);
+    stalk.position.set(sd * (sideX + 0.05), my - 0.05, mz - 0.05);
+    const mirror = add(new THREE.BoxGeometry(0.08, 0.1, 0.17), paint);
+    mirror.position.set(sd * (sideX + 0.13), my - 0.02, mz - 0.07);
+    const glassM = add(new THREE.PlaneGeometry(0.14, 0.08), CarMats.chrome, body, false);
+    glassM.position.set(sd * (sideX + 0.13), my - 0.02, mz - 0.157); glassM.rotation.y = Math.PI;
     // door seam + handle
     const dz = lerp(cW, cRR, 0.62), dy = lerp(S.gc, hullTopAt(dz), 0.72);
     add(new THREE.BoxGeometry(0.02, 0.025, 0.16), CarMats.chrome, body, false).position.set(sd * (widthAt(dz) * 0.985), dy, dz);
@@ -436,10 +452,12 @@ function makeCar(spec, color, opts = {}) {
   }
 
   // collapse static parts into one mesh per material (draw calls: ~90 -> ~25 per car)
+  const lampMats = [];
+  body.traverse((o) => { if (o.material && o.material.userData && o.material.userData.lamp && !lampMats.includes(o.material)) lampMats.push(o.material); });
   mergeByMaterial(body, [steer, gauge]);
   for (const w of wheels) mergeByMaterial(w.spin.children[0], []);
   return {
-    root, body, wheels, paint, brake, head, rev, steer: steerSpin, interior, beams, blob,
+    root, body, wheels, paint, brake, head, rev, steer: steerSpin, interior, beams, blob, lampMats,
     eye: new THREE.Vector3(seatX * 0.98, beltY + 0.4, seatZ - 0.15),
     hood: new THREE.Vector3(0, hullTopAt(cW + 0.2) + 0.32, cW + 0.25),
     tyreR: R, len: L, wid: spec.wid,
@@ -485,6 +503,52 @@ function mergeByMaterial(group, keep) {
   }
   return group;
 }
+/* Lamp graphics (canvas textures, cached). The emissive map makes them glow; the
+   material's emissiveIntensity is driven by the car (day running vs. night). */
+const CarLamp = {
+  _h: null, _r: null,
+  head(base) {
+    if (!this._h) {
+      const draw = (glow) => (x, w, h) => {
+        x.clearRect(0, 0, w, h);
+        x.save();
+        // rounded, swept lamp outline
+        x.beginPath(); x.moveTo(10, h * 0.62); x.quadraticCurveTo(14, 12, w * 0.45, 10); x.lineTo(w - 12, 22); x.quadraticCurveTo(w - 4, h * 0.6, w - 30, h - 16); x.lineTo(40, h - 10); x.closePath();
+        x.clip();
+        if (glow) { x.fillStyle = '#000'; x.fillRect(0, 0, w, h); }
+        else { const g = x.createLinearGradient(0, 0, 0, h); g.addColorStop(0, '#5d6670'); g.addColorStop(1, '#151a20'); x.fillStyle = g; x.fillRect(0, 0, w, h); }
+        // LED brow
+        x.fillStyle = glow ? '#ffffff' : '#e9f2ff'; x.fillRect(24, 16, w - 52, 9);
+        // projectors
+        for (const cx of [w * 0.34, w * 0.62]) {
+          const r = h * 0.2;
+          if (!glow) { const rg = x.createRadialGradient(cx, h * 0.6, 2, cx, h * 0.6, r * 1.4); rg.addColorStop(0, '#ffffff'); rg.addColorStop(0.5, '#9aa6b2'); rg.addColorStop(1, '#2a3038'); x.fillStyle = rg; x.beginPath(); x.arc(cx, h * 0.6, r * 1.4, 0, TAU); x.fill(); }
+          x.fillStyle = glow ? '#fff6e0' : '#fdfdff'; x.beginPath(); x.arc(cx, h * 0.6, r * 0.75, 0, TAU); x.fill();
+        }
+        x.restore();
+        if (!glow) { x.strokeStyle = 'rgba(200,210,220,0.7)'; x.lineWidth = 3; x.beginPath(); x.moveTo(10, h * 0.62); x.quadraticCurveTo(14, 12, w * 0.45, 10); x.lineTo(w - 12, 22); x.stroke(); }
+      };
+      const map = canvasTex(256, 128, draw(false), { repeat: false });
+      const em = canvasTex(256, 128, draw(true), { repeat: false });
+      this._h = { map, em };
+    }
+    return new THREE.MeshStandardMaterial({ map: this._h.map, emissiveMap: this._h.em, emissive: base.emissive, emissiveIntensity: base.emissiveIntensity, transparent: true, alphaTest: 0.4, roughness: 0.15, metalness: 0.4, polygonOffset: true, polygonOffsetFactor: -4, polygonOffsetUnits: -8, userData: { lamp: base } });
+  },
+  round(base) {
+    if (!this._r) {
+      const draw = (glow) => (x, w, h) => {
+        const g = x.createRadialGradient(w / 2, h / 2, 2, w / 2, h / 2, w / 2);
+        if (glow) { g.addColorStop(0, '#fff7e6'); g.addColorStop(0.7, '#d8d2c0'); g.addColorStop(1, '#000'); }
+        else { g.addColorStop(0, '#ffffff'); g.addColorStop(0.45, '#c9d2dc'); g.addColorStop(0.9, '#5a6470'); g.addColorStop(1, '#30363d'); }
+        x.fillStyle = g; x.fillRect(0, 0, w, h);
+        x.strokeStyle = glow ? 'rgba(0,0,0,0.3)' : 'rgba(255,255,255,0.35)'; x.lineWidth = 2;
+        for (let i = 1; i < 6; i++) { x.beginPath(); x.moveTo(0, i * h / 6); x.lineTo(w, i * h / 6); x.stroke(); }
+      };
+      this._r = { map: canvasTex(64, 64, draw(false), { repeat: false }), em: canvasTex(64, 64, draw(true), { repeat: false }) };
+    }
+    return new THREE.MeshStandardMaterial({ map: this._r.map, emissiveMap: this._r.em, emissive: base.emissive, emissiveIntensity: base.emissiveIntensity, roughness: 0.1, metalness: 0.2, userData: { lamp: base } });
+  },
+};
 const Car3D = {
   _blob: null,
   blobTex() {

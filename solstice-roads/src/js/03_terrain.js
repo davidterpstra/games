@@ -136,6 +136,25 @@ function buildRoads() {
     W.nodeH[k] = vals.length ? vals.reduce((a, b) => a + b, 0) / vals.length : natural(NODES[k][0], NODES[k][1]);
   }
 
+  // relax junction heights until every road can link its two ends within its grade
+  for (let it = 0; it < 40; it++) {
+    let worst = 0;
+    for (const r of raws) {
+      const a = r.def.a, b = r.def.b;
+      const maxD = r.T.grade * Math.max(5, r.L - 20 - 45) * 0.97;
+      const diff = W.nodeH[b] - W.nodeH[a];
+      const ex = Math.abs(diff) - maxD;
+      if (ex <= 0) continue;
+      worst = Math.max(worst, ex);
+      const fa = inPlaza(a) ? 0 : 1, fb = inPlaza(b) ? 0 : 1;
+      if (!fa && !fb) continue;
+      const sg = Math.sign(diff);
+      W.nodeH[a] += sg * ex * fa / (fa + fb);
+      W.nodeH[b] -= sg * ex * fb / (fa + fb);
+    }
+    if (worst < 0.01) break;
+  }
+
   // pass 2: final profile — pinned at both junctions, hard grade limit, rounded vertical curves
   for (const r of raws) {
     const { def, T, P, N, s, L, flag } = r;
@@ -149,21 +168,28 @@ function buildRoads() {
       }
     };
     // cone constraint from both pinned ends (flat for the first 12 m)
+    // allowed height change away from a junction: flat, then a parabolic vertical curve, then the grade
+    const LC = 45;
+    const bound = (d) => (d <= 0 ? 0 : d < LC ? g * d * d / (2 * LC) : g * (d - LC / 2));
     const cone = () => {
       for (let i = 0; i < N; i++) {
-        const da = Math.max(0, s[i] - 12), db = Math.max(0, L - s[i] - 12);
-        const lo = Math.max(hA - g * da, hB - g * db), hi = Math.min(hA + g * da, hB + g * db);
-        y[i] = lo <= hi ? clamp(y[i], lo, hi) : lerp(hA, hB, s[i] / L);
+        const da = bound(s[i] - 10), db = bound(L - s[i] - 10);
+        const lo = Math.max(hA - da, hB - db), hi = Math.min(hA + da, hB + db);
+        y[i] = lo <= hi ? clamp(y[i], lo, hi) : lerp(hA, hB, smoothstep(0, 1, s[i] / L));
       }
     };
     const lipschitz = () => {
       for (let k = 1; k < N; k++) { const d = g * (s[k] - s[k - 1]); y[k] = clamp(y[k], y[k - 1] - d, y[k - 1] + d); }
       for (let k = N - 2; k >= 0; k--) { const d = g * (s[k + 1] - s[k]); y[k] = clamp(y[k], y[k + 1] - d, y[k + 1] + d); }
     };
-    pin(); cone(); lipschitz();
+    // bridge decks must clear the water: lift them, then let the grade limit build the approach ramps
+    const deck = new Float32Array(N).fill(-1e9);
+    for (let k = 0; k < N; k++) if (flag[k] === 1) deck[k] = riverQuery(P[k][0], P[k][1]).wl + 3.2;
+    const lift = () => { for (let k = 0; k < N; k++) if (y[k] < deck[k]) y[k] = deck[k]; };
+    pin(); lift(); lipschitz(); cone();
     const R2 = def.t === 'M' ? 6 : def.t === 'D' ? 6 : 12;
-    for (let it = 0; it < 3; it++) { y = smoothArr(y, R2); cone(); }
-    for (let k = 0; k < N; k++) if (flag[k] === 1) { const q = riverQuery(P[k][0], P[k][1]); y[k] = Math.max(y[k], q.wl + 3.2); }
+    for (let it = 0; it < 3; it++) { y = smoothArr(y, R2); lift(); lipschitz(); cone(); }
+    y = smoothArr(y, 3); lift();
 
     const road = { def, id: def.id, name: def.name, type: def.t, T, hw: T.hw, n: N, x: new Float32Array(N), z: new Float32Array(N), y, s, flag, len: L, i0: W.SX.length, idx: W.roads.length };
     let maxG = 0;
@@ -328,7 +354,7 @@ async function generateWorld(progress) {
         const d = W.RD[id];
         const fl = W.SFLAG[k] | W.SFLAG[k + 1];
         if (fl & 1) {
-          if (d < 0.9) W.BR[id] = 1;
+          if (d < 2.2) W.BR[id] = 1;
           // keep the river channel under the bridge; banks still meet the deck ends
           const rw = 1 - smoothstep(0, 10, rd);
           const w = (1 - smoothstep(1.5, 9 + Math.abs(ry - h) * 1.2, d)) * (1 - rw);
@@ -365,7 +391,8 @@ async function generateWorld(progress) {
       let fld = 0;
       if (fm > 0.35) { const f = fieldAt(x, z); if (f.edge > 3) fld = f.crop + 1; }
       W.FLD[id] = fld;
-      if (W.WL[id] > h + 0.25) s = S_WATER;
+      if (W.BR[id] && d < 0.35) s = W.roads[W.SROAD[k]].T.surf; // bridge deck over the water
+      else if (W.WL[id] > h + 0.25) s = S_WATER;
       else if (k >= 0 && d < 0.35) s = W.roads[W.SROAD[k]].T.surf;
       else if (Math.hypot(x - PLAZA.x, z - PLAZA.z) < PLAZA.r) s = S_PAVED;
       else if (slope > 0.75) s = S_ROCK;
@@ -393,7 +420,7 @@ function groundAt(x, z, yHint = 1e9) {
   const id = cellId(x, z);
   if (World.BR[id]) {
     const ry = gridBilinear(World.RY, x, z);
-    if (yHint > ry - 3) return ry + 0.06;
+    if (yHint > ry - 1.2) return ry + 0.06; // on the deck (yHint is the car's own height)
   }
   return gridBilinear(World.H, x, z);
 }

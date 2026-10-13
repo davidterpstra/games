@@ -163,7 +163,7 @@ function resetPlayer() {
 function interact() {
   const p = Game.player;
   if (Race.ev) return;
-  const m = nearestMarker(p, 16);
+  const m = nearestMarker(p, 30);
   if (!m) return;
   if (m.garage) { Game.paused = true; openGarage(); return; }
   if (m.ev && m.ev.route) fadeTo(() => raceSetup(m.ev));
@@ -174,6 +174,17 @@ function nearestMarker(p, R) {
   return best;
 }
 
+/* First run: pick a preset from the GPU and device class (players can change it in Settings). */
+function guessQuality(r) {
+  let name = '';
+  try { const gl = r.getContext(); const ext = gl.getExtension('WEBGL_debug_renderer_info'); name = ext ? gl.getParameter(ext.UNMASKED_RENDERER_WEBGL) : gl.getParameter(gl.RENDERER); } catch (e) { /* ignore */ }
+  name = String(name).toLowerCase();
+  const mobile = matchMedia('(pointer: coarse)').matches && Math.min(screen.width, screen.height) < 900;
+  if (mobile || /swiftshader|llvmpipe|software|mali|adreno|powervr/.test(name)) return 'low';
+  if (/intel|uhd|iris|hd graphics|apple m1|radeon\(tm\) graphics|vega/.test(name)) return 'medium';
+  return 'high';
+}
+
 /* ---------- boot ---------- */
 async function boot() {
   Save.load();
@@ -182,6 +193,7 @@ async function boot() {
   const bar = $('loadBar'), txt = $('loadTxt');
   const progress = (f, t) => { bar.style.width = Math.round(f * 100) + '%'; if (t) txt.textContent = t; };
   setupRenderer();
+  if (!Save.data.settings) Game.settings.quality = guessQuality(Game.renderer);
   initSky(Game.scene, Game.renderer);
   setWeather(Game.settings.weather, true);
   initPropMaterials();
@@ -266,8 +278,10 @@ async function boot() {
   const firstGesture = () => { audioStart(); musicPlay(); removeEventListener('pointerdown', firstGesture); removeEventListener('keydown', firstGesture); };
   addEventListener('pointerdown', firstGesture);
   addEventListener('keydown', firstGesture);
+  addEventListener('pagehide', () => Save.write());
+  document.addEventListener('visibilitychange', () => { if (document.hidden) Save.write(); });
   window.SR = Game; // debugging/automation hook
-  Object.assign(window.SR, { makeCar, Festival, Menu, EVENTS, raceUpdate, AIDriver, collideCars, racePositions, raceEnd, Vehicle, World, Race, Events, CARS, Sky, Cam, Skill, raceSetup, resetPlayer, setWeather, startFreeRoam, openGarage, openEvents, openSettings, openPause, resumeGame, Save, camSetMode });
+  Object.assign(window.SR, { updateStunts, updateSkills, Skill, makeCar, Festival, Menu, EVENTS, raceUpdate, AIDriver, collideCars, racePositions, raceEnd, Vehicle, World, Race, Events, CARS, Sky, Cam, Skill, raceSetup, resetPlayer, setWeather, startFreeRoam, openGarage, openEvents, openSettings, openPause, resumeGame, Save, camSetMode });
   requestAnimationFrame(loop);
 }
 
@@ -314,6 +328,8 @@ function frame() {
     if (p.water > 0.9) { Game.waterT += dt; if (Game.waterT > 1.4) { SFX.splash(); notify('Splash!', 'Recovered to the road', 'bad'); resetPlayer(); Game.waterT = 0; } } else Game.waterT = 0;
     if (p.speed < 1 && p.input.throttle > 0 && !Race.ev) { Game.stuckT += dt; if (Game.stuckT > 3.5) { notify('Stuck?', 'Press R to return to the road', 'info'); Game.stuckT = -6; } } else if (Game.stuckT > 0) Game.stuckT = 0;
     Save.data.stats.km = (Save.data.stats.km || 0) + p.speed * dt / 1000;
+    Game.saveT = (Game.saveT || 0) + dt;
+    if (Game.saveT > 15) { Game.saveT = 0; Save.write(); }
   } else if (Game.mode === 'menu') {
     // cinematic orbit around the player's car on the plaza
     const s = Game.menuSpot;
