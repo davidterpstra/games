@@ -108,6 +108,21 @@ const EVENTS = [
     desc: 'Mixed-surface rally loop: farm tracks between the fields, then tarmac back past the festival.',
     route: ['SO', 'FX', 'FJ', 'SO'], start: 20,
   },
+  {
+    id: 'loopR', type: 'circuit', name: 'Solstice Loop Reverse', laps: 2, ai: 5, reward: 9500,
+    desc: 'The signature circuit run backwards: Kettle Lane first, then the long sweepers of Hollin Way.',
+    route: ['FE', 'KT', 'NE', 'FX', 'FJ', 'FS', 'FE'], start: 35,
+  },
+  {
+    id: 'lakeside', type: 'race', name: 'Lakeside Dash', laps: 1, ai: 5, reward: 7500,
+    desc: 'Gravel along the shore of Mere Water, then tarmac through Ashcombe to the festival.',
+    route: ['TH', 'ML', 'AS', 'FW'], start: 20,
+  },
+  {
+    id: 'moorsprint', type: 'sprint', name: 'Brackenmoor Sprint', laps: 1, ai: 4, reward: 6500,
+    desc: 'Narrow moorland lanes from the festival through Thornbury to the foot of the fells.',
+    route: ['FN', 'MO', 'TH', 'PW'], start: 25,
+  },
   // PR stunts — always live in free roam, just drive through them.
   { id: 'trap1', type: 'trap', name: 'Hollin Straight Speed Trap', road: 'A2', at: [972, -40], stars: [170, 215, 255], desc: 'Hit the camera as fast as you can.' },
   { id: 'trap2', type: 'trap', name: 'Festival Road Speed Trap', road: 'A1b', at: [560, 560], stars: [150, 190, 230], desc: 'Fly over the Wend bridge.' },

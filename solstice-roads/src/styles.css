@@ -225,3 +225,8 @@ body.photo #hud, body.photo #touch { opacity: 0; visibility: hidden; }
 #photoUi label { display: flex; align-items: center; gap: 8px; font-size: 13px; }
 #photoUi input { accent-color: var(--pink); width: 120px; }
 #photoUi button { padding: 8px 14px; font-size: 15px; cursor: pointer; }
+
+.wallet { font: 700 16px var(--cond); color: var(--amber); margin-left: 8px; font-style: normal; }
+.gcar .price { margin-left: auto; font: 700 14px var(--cond); color: var(--amber); white-space: nowrap; }
+.gcar { position: relative; }
+#gDrive:disabled { opacity: 0.55; cursor: not-allowed; filter: grayscale(0.6); }

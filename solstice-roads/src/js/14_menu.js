@@ -117,9 +117,11 @@ function renderGarage() {
     const pi = carPI(c);
     const b = document.createElement('button');
     b.className = 'gcar' + (i === Menu.garageSel ? ' sel' : '');
-    b.innerHTML = `<span class="cls c-${pi.cls}">${pi.cls}<i>${pi.v}</i></span><span class="gname"><b></b><small></small></span>`;
+    const own = ownsCar(c);
+    b.innerHTML = `<span class="cls c-${pi.cls}">${pi.cls}<i>${pi.v}</i></span><span class="gname"><b></b><small></small></span>${own ? '' : '<span class="price"></span>'}`;
     b.querySelector('b').textContent = c.name;
     b.querySelector('small').textContent = `${c.year} · ${c.drive} · ${c.power} kW`;
+    if (!own) b.querySelector('.price').textContent = c.price.toLocaleString('en-GB') + ' CR';
     b.onclick = () => { Menu.garageSel = i; Menu.garagePaint = Save.data.paint[c.id] ?? c.col; renderGarage(); };
     list.appendChild(b);
   });
@@ -146,7 +148,10 @@ function renderGarage() {
     sw.appendChild(b);
   }
   bindButtons(sw);
-  $('gDrive').textContent = Menu.garageSel === Game.carIdx && cur === Game.paint ? 'Drive' : 'Select & drive';
+  const own = ownsCar(c);
+  $('gDrive').disabled = !own && Save.data.credits < c.price;
+  $('gDrive').textContent = !own ? (Save.data.credits >= c.price ? `Buy · ${c.price.toLocaleString('en-GB')} CR` : `Need ${(c.price - Save.data.credits).toLocaleString('en-GB')} more CR`) : Menu.garageSel === Game.carIdx && cur === Game.paint ? 'Drive' : 'Select & drive';
+  $('gWallet').textContent = Save.data.credits.toLocaleString('en-GB') + ' CR';
   setPreview(Menu.garageSel, cur);
 }
 function setPreview(idx, paint) {
@@ -162,8 +167,23 @@ function setPreview(idx, paint) {
 function clearPreview() {
   if (Menu.preview) { Game.scene.remove(Menu.preview.model.root); Menu.preview.model.dispose(); Menu.preview = null; }
 }
+function ownsCar(c) {
+  if (!Save.data.owned) Save.data.owned = CARS.filter((k) => !k.price).map((k) => k.id).concat(CARS[Save.data.car | 0].id);
+  return Save.data.owned.includes(c.id);
+}
 function garageConfirm() {
   const c = CARS[Menu.garageSel];
+  if (!ownsCar(c)) {
+    if (Save.data.credits < c.price) return;
+    Save.data.credits -= c.price;
+    Save.data.owned.push(c.id);
+    Save.write();
+    SFX.finish();
+    notify('New car!', `${c.name} is now in your garage`, 'skill', 3500);
+    updateProfile();
+    renderGarage();
+    return;
+  }
   Save.data.paint[c.id] = Menu.garagePaint;
   Save.data.car = Menu.garageSel;
   Save.write();

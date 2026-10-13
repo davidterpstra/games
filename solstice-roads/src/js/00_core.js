@@ -126,7 +126,7 @@ const Bus = {
 /* ---------- persistent save ---------- */
 const SAVE_KEY = 'solstice-roads-v1';
 const Save = {
-  data: { credits: 0, xp: 0, car: 0, paint: {}, best: {}, settings: null, stats: { km: 0, drift: 0, wins: 0 } },
+  data: { credits: 5000, xp: 0, car: 0, paint: {}, best: {}, owned: null, settings: null, stats: { km: 0, drift: 0, wins: 0 } },
   load() {
     try {
       const d = JSON.parse(localStorage.getItem(SAVE_KEY) || 'null');

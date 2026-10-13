@@ -501,6 +501,18 @@ function updateSkills(dt, car) {
       Skill.pts = 0; Skill.t = 0; Skill.mult = 1; Skill.chain = false;
     }
   }
+  // near misses with traffic
+  if (!Race.ev && v > 19) for (const t of Traffic.cars) {
+    const dx = t.x - car.x, dz = t.z - car.z, d = Math.hypot(dx, dz);
+    if (d < 4.3 && d > 2.2 && !t.nearT && t.pause <= 0) {
+      t.nearT = 2.5;
+      const p = Math.round(250 + v * 6);
+      Skill.total += p; Save.data.credits += Math.round(p / 40);
+      notify('NEAR MISS  +' + p, 'Skill', 'skill', 1600);
+      SFX.hover();
+    }
+  }
+  for (const t of Traffic.cars) if (t.nearT) t.nearT = Math.max(0, t.nearT - dt);
   // air time
   if (car.air) Skill.air += dt;
   else if (Skill.air > 0) {

@@ -237,6 +237,11 @@ body.photo #hud, body.photo #touch { opacity: 0; visibility: hidden; }
 #photoUi input { accent-color: var(--pink); width: 120px; }
 #photoUi button { padding: 8px 14px; font-size: 15px; cursor: pointer; }
 
+.wallet { font: 700 16px var(--cond); color: var(--amber); margin-left: 8px; font-style: normal; }
+.gcar .price { margin-left: auto; font: 700 14px var(--cond); color: var(--amber); white-space: nowrap; }
+.gcar { position: relative; }
+#gDrive:disabled { opacity: 0.55; cursor: not-allowed; filter: grayscale(0.6); }
+
 </style>
 </head>
 <body>
@@ -305,7 +310,7 @@ body.photo #hud, body.photo #touch { opacity: 0; visibility: hidden; }
 
 <section id="garage" class="screen">
   <div class="g-left glass scroll">
-    <h2>Garage</h2>
+    <h2>Garage <small id="gWallet" class="wallet"></small></h2>
     <div id="gList"></div>
   </div>
   <div class="g-right glass scroll">
@@ -527,7 +532,7 @@ const Bus = {
 /* ---------- persistent save ---------- */
 const SAVE_KEY = 'solstice-roads-v1';
 const Save = {
-  data: { credits: 0, xp: 0, car: 0, paint: {}, best: {}, settings: null, stats: { km: 0, drift: 0, wins: 0 } },
+  data: { credits: 5000, xp: 0, car: 0, paint: {}, best: {}, owned: null, settings: null, stats: { km: 0, drift: 0, wins: 0 } },
   load() {
     try {
       const d = JSON.parse(localStorage.getItem(SAVE_KEY) || 'null');
@@ -595,49 +600,49 @@ addEventListener('unhandledrejection', (e) => showErr(e.reason));
    the low-speed steering lock in radians. */
 const CARS = [
   {
-    id: 'kestrel', name: 'Kestrel RS', maker: 'Kestrel Automotive', year: 2024, style: 'wedge',
+    id: 'kestrel', price: 0, name: 'Kestrel RS', maker: 'Kestrel Automotive', year: 2024, style: 'wedge',
     desc: 'Mid-engined V10 wedge. Sharp turn-in, all-wheel drive traction.',
     power: 470, mass: 1450, vmax: 325, mu: 1.16, rearGrip: 1.0, steer: 0.56, brake: 1.15,
     drive: 'AWD', front: 0.32, offroad: 0.25, len: 4.55, wid: 1.98, hgt: 1.17, wb: 2.62, track: 1.68,
     cg: 0.46, tyreR: 0.355, wing: 0, col: 0xf2b705, eng: { cyl: 10, idle: 1000, red: 8500 },
   },
   {
-    id: 'aurelia', name: 'Aurelia Strada GT', maker: 'Aurelia', year: 2022, style: 'gt',
+    id: 'aurelia', price: 38000, name: 'Aurelia Strada GT', maker: 'Aurelia', year: 2022, style: 'gt',
     desc: 'Long-bonnet V12 grand tourer. Stable, fast, a little heavy.',
     power: 440, mass: 1680, vmax: 318, mu: 1.06, rearGrip: 0.97, steer: 0.52, brake: 1.05,
     drive: 'RWD', front: 0, offroad: 0.15, len: 4.75, wid: 1.96, hgt: 1.28, wb: 2.8, track: 1.66,
     cg: 0.5, tyreR: 0.36, wing: 0, col: 0x8c1020, eng: { cyl: 12, idle: 850, red: 7800 },
   },
   {
-    id: 'furia', name: 'Halcyon Furia', maker: 'Halcyon', year: 2025, style: 'hyper',
+    id: 'furia', price: 85000, name: 'Halcyon Furia', maker: 'Halcyon', year: 2025, style: 'hyper',
     desc: 'Hypercar with active aero. Brutal power, huge downforce wing.',
     power: 730, mass: 1380, vmax: 362, mu: 1.24, rearGrip: 1.0, steer: 0.52, brake: 1.3,
     drive: 'RWD', front: 0, offroad: 0.1, len: 4.7, wid: 2.04, hgt: 1.12, wb: 2.7, track: 1.72,
     cg: 0.42, tyreR: 0.36, wing: 1, col: 0x1e6bff, eng: { cyl: 8, idle: 1100, red: 9200 },
   },
   {
-    id: 'brisa', name: 'Brisa 86', maker: 'Brisa', year: 1988, style: 'coupe',
+    id: 'brisa', price: 0, name: 'Brisa 86', maker: 'Brisa', year: 1988, style: 'coupe',
     desc: 'Light, rear-drive classic coupe. Low power, endless drifts.',
     power: 175, mass: 1120, vmax: 228, mu: 0.98, rearGrip: 0.9, steer: 0.62, brake: 0.95,
     drive: 'RWD', front: 0, offroad: 0.2, len: 4.25, wid: 1.7, hgt: 1.3, wb: 2.42, track: 1.46,
     cg: 0.5, tyreR: 0.31, wing: 0, col: 0xf4f4f0, eng: { cyl: 4, idle: 900, red: 7600 },
   },
   {
-    id: 'marauder', name: 'Marauder 69', maker: 'Marauder Motor Co.', year: 1969, style: 'muscle',
+    id: 'marauder', price: 16000, name: 'Marauder 69', maker: 'Marauder Motor Co.', year: 1969, style: 'muscle',
     desc: 'Big-block muscle car. Massive torque and a lively tail.',
     power: 350, mass: 1620, vmax: 268, mu: 0.93, rearGrip: 0.88, steer: 0.55, brake: 0.85,
     drive: 'RWD', front: 0, offroad: 0.2, len: 4.85, wid: 1.92, hgt: 1.32, wb: 2.75, track: 1.58,
     cg: 0.55, tyreR: 0.35, wing: 0, col: 0x1b7a3c, eng: { cyl: 8, idle: 750, red: 6400 },
   },
   {
-    id: 'taiga', name: 'Taiga Rally Evo', maker: 'Taiga', year: 2008, style: 'hatch',
+    id: 'taiga', price: 0, name: 'Taiga Rally Evo', maker: 'Taiga', year: 2008, style: 'hatch',
     desc: 'Turbo rally hatch. All-wheel drive, at home on gravel and grass.',
     power: 240, mass: 1260, vmax: 238, mu: 1.04, rearGrip: 0.96, steer: 0.6, brake: 1.0,
     drive: 'AWD', front: 0.45, offroad: 0.8, len: 4.15, wid: 1.82, hgt: 1.44, wb: 2.55, track: 1.56,
     cg: 0.55, tyreR: 0.33, wing: 1, col: 0xe8e8ee, eng: { cyl: 4, idle: 950, red: 7400 },
   },
   {
-    id: 'ridgeback', name: 'Ridgeback T1', maker: 'Ridgeback', year: 2021, style: 'truck',
+    id: 'ridgeback', price: 24000, name: 'Ridgeback T1', maker: 'Ridgeback', year: 2021, style: 'truck',
     desc: 'Desert trophy truck. Long-travel suspension, unstoppable off-road.',
     power: 340, mass: 1900, vmax: 205, mu: 0.98, rearGrip: 0.95, steer: 0.58, brake: 0.9,
     drive: 'AWD', front: 0.4, offroad: 1.0, len: 4.9, wid: 2.12, hgt: 1.85, wb: 3.0, track: 1.86,
@@ -818,6 +823,21 @@ const EVENTS = [
     id: 'harrow', type: 'offroad', name: 'Harrowfield Rally', laps: 2, ai: 4, reward: 7000,
     desc: 'Mixed-surface rally loop: farm tracks between the fields, then tarmac back past the festival.',
     route: ['SO', 'FX', 'FJ', 'SO'], start: 20,
+  },
+  {
+    id: 'loopR', type: 'circuit', name: 'Solstice Loop Reverse', laps: 2, ai: 5, reward: 9500,
+    desc: 'The signature circuit run backwards: Kettle Lane first, then the long sweepers of Hollin Way.',
+    route: ['FE', 'KT', 'NE', 'FX', 'FJ', 'FS', 'FE'], start: 35,
+  },
+  {
+    id: 'lakeside', type: 'race', name: 'Lakeside Dash', laps: 1, ai: 5, reward: 7500,
+    desc: 'Gravel along the shore of Mere Water, then tarmac through Ashcombe to the festival.',
+    route: ['TH', 'ML', 'AS', 'FW'], start: 20,
+  },
+  {
+    id: 'moorsprint', type: 'sprint', name: 'Brackenmoor Sprint', laps: 1, ai: 4, reward: 6500,
+    desc: 'Narrow moorland lanes from the festival through Thornbury to the foot of the fells.',
+    route: ['FN', 'MO', 'TH', 'PW'], start: 25,
   },
   // PR stunts — always live in free roam, just drive through them.
   { id: 'trap1', type: 'trap', name: 'Hollin Straight Speed Trap', road: 'A2', at: [972, -40], stars: [170, 215, 255], desc: 'Hit the camera as fast as you can.' },
@@ -5561,6 +5581,18 @@ function updateSkills(dt, car) {
       Skill.pts = 0; Skill.t = 0; Skill.mult = 1; Skill.chain = false;
     }
   }
+  // near misses with traffic
+  if (!Race.ev && v > 19) for (const t of Traffic.cars) {
+    const dx = t.x - car.x, dz = t.z - car.z, d = Math.hypot(dx, dz);
+    if (d < 4.3 && d > 2.2 && !t.nearT && t.pause <= 0) {
+      t.nearT = 2.5;
+      const p = Math.round(250 + v * 6);
+      Skill.total += p; Save.data.credits += Math.round(p / 40);
+      notify('NEAR MISS  +' + p, 'Skill', 'skill', 1600);
+      SFX.hover();
+    }
+  }
+  for (const t of Traffic.cars) if (t.nearT) t.nearT = Math.max(0, t.nearT - dt);
   // air time
   if (car.air) Skill.air += dt;
   else if (Skill.air > 0) {
@@ -6139,9 +6171,11 @@ function renderGarage() {
     const pi = carPI(c);
     const b = document.createElement('button');
     b.className = 'gcar' + (i === Menu.garageSel ? ' sel' : '');
-    b.innerHTML = `<span class="cls c-${pi.cls}">${pi.cls}<i>${pi.v}</i></span><span class="gname"><b></b><small></small></span>`;
+    const own = ownsCar(c);
+    b.innerHTML = `<span class="cls c-${pi.cls}">${pi.cls}<i>${pi.v}</i></span><span class="gname"><b></b><small></small></span>${own ? '' : '<span class="price"></span>'}`;
     b.querySelector('b').textContent = c.name;
     b.querySelector('small').textContent = `${c.year} · ${c.drive} · ${c.power} kW`;
+    if (!own) b.querySelector('.price').textContent = c.price.toLocaleString('en-GB') + ' CR';
     b.onclick = () => { Menu.garageSel = i; Menu.garagePaint = Save.data.paint[c.id] ?? c.col; renderGarage(); };
     list.appendChild(b);
   });
@@ -6168,7 +6202,10 @@ function renderGarage() {
     sw.appendChild(b);
   }
   bindButtons(sw);
-  $('gDrive').textContent = Menu.garageSel === Game.carIdx && cur === Game.paint ? 'Drive' : 'Select & drive';
+  const own = ownsCar(c);
+  $('gDrive').disabled = !own && Save.data.credits < c.price;
+  $('gDrive').textContent = !own ? (Save.data.credits >= c.price ? `Buy · ${c.price.toLocaleString('en-GB')} CR` : `Need ${(c.price - Save.data.credits).toLocaleString('en-GB')} more CR`) : Menu.garageSel === Game.carIdx && cur === Game.paint ? 'Drive' : 'Select & drive';
+  $('gWallet').textContent = Save.data.credits.toLocaleString('en-GB') + ' CR';
   setPreview(Menu.garageSel, cur);
 }
 function setPreview(idx, paint) {
@@ -6184,8 +6221,23 @@ function setPreview(idx, paint) {
 function clearPreview() {
   if (Menu.preview) { Game.scene.remove(Menu.preview.model.root); Menu.preview.model.dispose(); Menu.preview = null; }
 }
+function ownsCar(c) {
+  if (!Save.data.owned) Save.data.owned = CARS.filter((k) => !k.price).map((k) => k.id).concat(CARS[Save.data.car | 0].id);
+  return Save.data.owned.includes(c.id);
+}
 function garageConfirm() {
   const c = CARS[Menu.garageSel];
+  if (!ownsCar(c)) {
+    if (Save.data.credits < c.price) return;
+    Save.data.credits -= c.price;
+    Save.data.owned.push(c.id);
+    Save.write();
+    SFX.finish();
+    notify('New car!', `${c.name} is now in your garage`, 'skill', 3500);
+    updateProfile();
+    renderGarage();
+    return;
+  }
   Save.data.paint[c.id] = Menu.garagePaint;
   Save.data.car = Menu.garageSel;
   Save.write();
