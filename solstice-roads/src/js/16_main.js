@@ -2,17 +2,60 @@
    Boot, render loop, quality presets, game state.
    ===================================================================== */
 const GRADE_SHADER = {
-  uniforms: { tDiffuse: { value: null }, uSat: { value: 1.08 }, uCon: { value: 1.05 }, uVig: { value: 0.28 }, uWarm: { value: 0.02 }, uTime: { value: 0 } },
+  uniforms: {
+    tDiffuse: { value: null }, uSat: { value: 1.1 }, uCon: { value: 1.06 }, uVig: { value: 0.3 }, uWarm: { value: 0.02 }, uTime: { value: 0 },
+    uSun: { value: new THREE.Vector3(0.5, 0.5, 0) }, uSunTint: { value: new THREE.Color(1, 0.9, 0.7) }, uAspect: { value: 1 }, uSteps: { value: 24 }, uFlare: { value: 0 }, uCA: { value: 0.0018 },
+  },
   vertexShader: 'varying vec2 vUv; void main(){ vUv = uv; gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0); }',
-  fragmentShader: `uniform sampler2D tDiffuse; uniform float uSat, uCon, uVig, uWarm, uTime; varying vec2 vUv;
+  fragmentShader: `uniform sampler2D tDiffuse; uniform float uSat, uCon, uVig, uWarm, uTime, uAspect, uFlare, uCA; uniform int uSteps; uniform vec3 uSun, uSunTint; varying vec2 vUv;
+    float bright(vec3 s){ return smoothstep(0.86, 0.99, max(max(s.r, s.g), s.b)); }
+    float disc(vec2 p, vec2 c, float r, float soft){ vec2 d = (p - c) * vec2(uAspect, 1.0); return 1.0 - smoothstep(r * (1.0 - soft), r, length(d)); }
     void main(){
+      vec2 d = vUv - 0.5;
+      // slight lens dispersion towards the frame edges
+      vec2 ca = d * dot(d, d) * uCA * 3.0;
       vec4 c = texture2D(tDiffuse, vUv);
+      if (uCA > 0.0) { c.r = texture2D(tDiffuse, vUv + ca).r; c.b = texture2D(tDiffuse, vUv - ca).b; }
+      // sun shafts: march towards the sun through the bright sky, trees and hills cut the light into rays
+      if (uSun.z > 0.002) {
+        vec2 sp = uSun.xy;
+        vec2 delta = (vUv - sp) / float(uSteps) * 0.85;
+        vec2 tc = vUv; float ill = 0.0, dec = 1.0, wsum = 0.0;
+        for (int i = 0; i < 48; i++) {
+          if (i >= uSteps) break;
+          tc -= delta;
+          float fall = 1.0 - smoothstep(0.0, 0.45, length((tc - sp) * vec2(uAspect, 1.0)));
+          ill += bright(texture2D(tDiffuse, tc).rgb) * fall * dec;
+          wsum += dec; dec *= 0.965;
+        }
+        ill /= max(wsum, 1.0);
+        float near = 1.0 - smoothstep(0.0, 0.9, length((vUv - sp) * vec2(uAspect, 1.0)));
+        c.rgb += uSunTint * ill * uSun.z * (0.55 + 0.9 * near);
+        // lens flare, scaled by how much of the sun is actually unblocked
+        if (uFlare > 0.002) {
+          float vis = 0.0;
+          for (int k = 0; k < 5; k++) { float a = float(k) * 1.2566; vec2 o = k == 0 ? vec2(0.0) : vec2(cos(a) / uAspect, sin(a)) * 0.012; vis += bright(texture2D(tDiffuse, sp + o).rgb); }
+          vis = vis / 5.0 * uFlare * min(1.0, uSun.z * 2.5);
+          vec2 axis = vec2(0.5) - sp;
+          vec3 fl = vec3(0.0);
+          fl += vec3(0.9, 0.55, 0.25) * disc(vUv, sp + axis * 0.55, 0.035, 0.6) * 0.18;
+          fl += vec3(0.35, 0.8, 0.5) * disc(vUv, sp + axis * 0.95, 0.06, 0.7) * 0.1;
+          fl += vec3(0.4, 0.5, 1.0) * disc(vUv, sp + axis * 1.35, 0.1, 0.85) * 0.08;
+          fl += vec3(1.0, 0.45, 0.6) * disc(vUv, sp + axis * 1.7, 0.025, 0.4) * 0.14;
+          // anamorphic streak through the sun
+          vec2 q = (vUv - sp) * vec2(uAspect, 1.0);
+          fl += uSunTint * exp(-abs(q.y) * 220.0) * exp(-abs(q.x) * 3.2) * 0.3;
+          c.rgb += fl * vis;
+        }
+      }
       float l = dot(c.rgb, vec3(0.2126, 0.7152, 0.0722));
       c.rgb = mix(vec3(l), c.rgb, uSat);
-      c.rgb = (c.rgb - 0.5) * uCon + 0.5;
+      // gentle S-curve around mid grey
+      c.rgb = clamp(c.rgb, 0.0, 1.0);
+      c.rgb = mix(c.rgb, c.rgb * c.rgb * (3.0 - 2.0 * c.rgb), uCon - 1.0);
+      c.rgb = (c.rgb - 0.5) * (1.0 + (uCon - 1.0) * 0.5) + 0.5;
       // split-tone: warm highlights, cool shadows
-      c.rgb += vec3(uWarm, uWarm * 0.4, -uWarm) * smoothstep(0.45, 1.0, l) + vec3(-0.01, 0.0, 0.015) * (1.0 - smoothstep(0.0, 0.35, l));
-      vec2 d = vUv - 0.5;
+      c.rgb += vec3(uWarm, uWarm * 0.4, -uWarm) * smoothstep(0.45, 1.0, l) + vec3(-0.012, 0.0, 0.018) * (1.0 - smoothstep(0.0, 0.35, l));
       c.rgb *= 1.0 - uVig * smoothstep(0.25, 0.85, dot(d, d) * 2.2);
       // fine film grain against banding
       float n = fract(sin(dot(vUv * 1000.0 + uTime, vec2(12.9898, 78.233))) * 43758.5453);
@@ -206,6 +249,7 @@ async function boot() {
   initPropMaterials();
   initCarMaterials();
   await generateWorld(progress);
+  initAtmosphere();
   progress(0.7, 'Mapping woodland'); await frameYield();
   buildTreeDensityGrid();
   progress(0.72, 'Building terrain'); await frameYield();
@@ -394,11 +438,38 @@ function frame() {
   updateMarkers(cam.position, !!Race.ev || Game.mode === 'garage');
   updateFX(dt, Game.scene);
   audioUpdate(dt, p, cam, Game.ai);
-  if (Game.grade) { Game.grade.uniforms.uTime.value = Props.uTime.value % 10; Game.grade.uniforms.uWarm.value = 0.02 + (Sky.cur.time > 17 && Sky.cur.time < 21 ? 0.02 : 0); }
+  if (Game.grade) updateGrade(cam);
   if (Game.bloom) Game.bloom.strength = 0.28 + Sky.night * 0.35;
   // render
   if (Game.composer) Game.composer.render(); else Game.renderer.render(Game.scene, cam);
   autoResolution(dt);
+}
+const _sunP = new THREE.Vector3(), _camF = new THREE.Vector3();
+function updateGrade(cam) {
+  const u = Game.grade.uniforms, q = Game.q;
+  u.uTime.value = Props.uTime.value % 10;
+  u.uWarm.value = 0.02 + (Sky.cur.time > 17 && Sky.cur.time < 21 ? 0.025 : 0);
+  u.uAspect.value = innerWidth / innerHeight;
+  u.uSteps.value = q.rays || 0;
+  u.uCA.value = Photo.on ? 0 : 0.0016;
+  // project the sun; shafts fade out as it leaves the frame or sinks behind the camera
+  const c = Sky.cur, sd = Sky.sunDir;
+  cam.getWorldDirection(_camF);
+  const facing = _camF.dot(sd);
+  let k = 0;
+  if (q.rays && facing > 0.05 && Sky.night < 0.5) {
+    _sunP.copy(cam.position).addScaledVector(sd, 1000).project(cam);
+    const x = _sunP.x * 0.5 + 0.5, y = _sunP.y * 0.5 + 0.5;
+    u.uSun.value.x = x; u.uSun.value.y = y;
+    const off = Math.max(0, Math.abs(x - 0.5) - 0.5, Math.abs(y - 0.5) - 0.5);
+    const golden = smoothstep(0.45, 0.05, sd.y);
+    k = (1 - smoothstep(0, 0.45, off)) * smoothstep(0.05, 0.3, facing) * smoothstep(-0.02, 0.06, sd.y) * (1 - c.clouds * 0.7) * (1 - c.fog * 0.5) * (1 - c.rain * 0.8) * (0.2 + golden * 0.24);
+    u.uSunTint.value.setRGB(1, 0.86 - golden * 0.18, 0.62 - golden * 0.3);
+  }
+  u.uSun.value.z = k;
+  // flare ghosts only while the sun disc itself is in frame
+  const inX = Math.min(u.uSun.value.x, 1 - u.uSun.value.x), inY = Math.min(u.uSun.value.y, 1 - u.uSun.value.y);
+  u.uFlare.value = q.flare && k > 0 ? smoothstep(0.0, 0.06, Math.min(inX, inY)) : 0;
 }
 function autoResolution(dt) {
   const s = Game.settings;

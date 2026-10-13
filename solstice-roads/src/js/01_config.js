@@ -109,10 +109,10 @@ const WEATHERS = [
 
 /* ---------- graphics presets ---------- */
 const QUALITY = {
-  low: { name: 'Low', traffic: 5, dpr: 0.75, shadows: 0, post: false, msaa: 0, grass: 0, treeFar: 1000, view: 3400, rain: 2500, treeShadows: false, terrainLod: [250, 700] },
-  medium: { name: 'Medium', traffic: 8, dpr: 1.0, shadows: 1024, post: true, msaa: 0, grass: 14000, treeFar: 1600, view: 3600, rain: 5000, treeShadows: false, terrainLod: [320, 800] },
-  high: { name: 'High', traffic: 12, dpr: 1.5, shadows: 2048, post: true, msaa: 4, grass: 32000, treeFar: 2400, view: 3800, rain: 9000, treeShadows: true, terrainLod: [420, 1000] },
-  ultra: { name: 'Ultra', traffic: 16, dpr: 2.0, shadows: 4096, post: true, msaa: 4, grass: 60000, treeFar: 3400, view: 4000, rain: 14000, treeShadows: true, terrainLod: [560, 1300] },
+  low: { name: 'Low', traffic: 5, dpr: 0.75, shadows: 0, post: false, rays: 0, flare: false, msaa: 0, grass: 0, treeFar: 1000, view: 3400, rain: 2500, treeShadows: false, terrainLod: [250, 700] },
+  medium: { name: 'Medium', traffic: 8, dpr: 1.0, shadows: 1024, post: true, rays: 12, flare: true, msaa: 2, grass: 14000, treeFar: 1600, view: 3600, rain: 5000, treeShadows: false, terrainLod: [320, 800] },
+  high: { name: 'High', traffic: 12, dpr: 1.5, shadows: 2048, post: true, rays: 24, flare: true, msaa: 4, grass: 32000, treeFar: 2400, view: 3800, rain: 9000, treeShadows: true, terrainLod: [420, 1000] },
+  ultra: { name: 'Ultra', traffic: 16, dpr: 2.0, shadows: 4096, post: true, rays: 36, flare: true, msaa: 4, grass: 60000, treeFar: 3400, view: 4000, rain: 14000, treeShadows: true, terrainLod: [560, 1300] },
 };
 
 const DEFAULT_SETTINGS = {

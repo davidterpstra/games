@@ -100,6 +100,7 @@ The files in `src/js/*.js` are joined in name order into one ES module by `build
 | `05b_festival.js` | the festival hub |
 | `06_sky.js` | sky shader, sun and moon, fog, environment reflections, weather, rain, pooled lights |
 | `06b_snow.js` | winter snow layer on every material |
+| `06c_atmo.js` | aerial perspective (valley haze, sun glow) and drifting cloud shadows for every lit material |
 | `07_carmodel.js` | procedural car models |
 | `08_vehicle.js` | vehicle physics |
 | `09_fx.js` | particles and tyre marks |

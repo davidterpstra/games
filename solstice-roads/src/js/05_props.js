@@ -739,15 +739,33 @@ function makeWaterMaterial() {
     }
     x.putImageData(img, 0, 0);
   }, { srgb: false });
-  const m = new THREE.MeshStandardMaterial({ color: 0x1f4a52, roughness: 0.06, metalness: 0.0, normalMap: nm, normalScale: new THREE.Vector2(0.35, 0.35), transparent: true, opacity: 0.88, envMapIntensity: 1.3 });
-  m.userData.u = { uTime: Props.uTime, uFlow: { value: new THREE.Vector2(0, 0) } };
+  const m = new THREE.MeshStandardMaterial({ color: 0xffffff, roughness: 0.05, metalness: 0.0, normalMap: nm, normalScale: new THREE.Vector2(0.35, 0.35), transparent: true, opacity: 0.92, envMapIntensity: 1.45 });
+  m.userData.u = { uTime: Props.uTime, uFlow: { value: new THREE.Vector2(0, 0) }, tHM: { value: Props.heightTex } };
+  const N = GN / 2 + 1;
   m.onBeforeCompile = (sh) => {
     Object.assign(sh.uniforms, m.userData.u);
     sh.vertexShader = sh.vertexShader
       .replace('#include <common>', '#include <common>\nvarying vec3 vWPw;')
       .replace('#include <project_vertex>', '#include <project_vertex>\nvWPw = (modelMatrix * vec4(transformed, 1.0)).xyz;');
     sh.fragmentShader = sh.fragmentShader
-      .replace('#include <common>', '#include <common>\nuniform float uTime; varying vec3 vWPw;')
+      .replace('#include <common>', `#include <common>
+uniform float uTime; uniform sampler2D tHM; varying vec3 vWPw;
+float bedHeight(vec2 p) {
+  vec2 f = (p + ${HALF.toFixed(1)}) / 4.0; ivec2 i = clamp(ivec2(floor(f)), ivec2(0), ivec2(${N - 2})); vec2 t = fract(f);
+  float a = texelFetch(tHM, i, 0).r, b = texelFetch(tHM, i + ivec2(1, 0), 0).r, c = texelFetch(tHM, i + ivec2(0, 1), 0).r, d = texelFetch(tHM, i + ivec2(1, 1), 0).r;
+  return mix(mix(a, b, t.x), mix(c, d, t.x), t.y);
+}`)
+      .replace('#include <color_fragment>', `#include <color_fragment>
+// depth tint: clear and green-brown in the shallows, dark peat-blue in deep water
+float wDepth = max(vWPw.y - bedHeight(vWPw.xz), 0.0);
+float dk = 1.0 - exp(-wDepth * 0.5);
+diffuseColor.rgb = mix(vec3(0.2, 0.34, 0.27), mix(vec3(0.03, 0.12, 0.14), vec3(0.015, 0.06, 0.09), smoothstep(2.0, 7.0, wDepth)), dk);
+// lapping foam along the banks
+float fn = texture2D(normalMap, vWPw.xz * 0.19 + vec2(uTime * 0.03, uTime * 0.011)).r;
+float foam = (1.0 - smoothstep(0.04, 0.6, wDepth)) * smoothstep(0.42, 0.72, fn + 0.22 * sin(uTime * 1.4 - wDepth * 12.0));
+diffuseColor.rgb = mix(diffuseColor.rgb, vec3(0.86, 0.9, 0.9), foam * 0.75);
+diffuseColor.a *= mix(0.45, 1.0, smoothstep(0.0, 1.4, wDepth)) + foam * 0.4;`)
+      .replace('#include <roughnessmap_fragment>', '#include <roughnessmap_fragment>\nroughnessFactor = mix(roughnessFactor, 0.55, foam);')
       .replace('#include <normal_fragment_maps>', `
 vec3 n1 = texture2D(normalMap, vWPw.xz * 0.045 + vec2(uTime * 0.012, uTime * 0.02)).xyz * 2.0 - 1.0;
 vec3 n2 = texture2D(normalMap, vWPw.xz * 0.11 - vec2(uTime * 0.025, -uTime * 0.01)).xyz * 2.0 - 1.0;

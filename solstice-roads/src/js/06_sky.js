@@ -32,6 +32,14 @@ void main(){
     float st = step(0.9965, h21(floor(sp))) * h21(floor(sp) + 3.1);
     col += vec3(st) * uNight * (1.0 - uClouds) * smoothstep(0.0, 0.25, h) * 1.4;
   }
+  // high cirrus streaks, mostly in fair weather
+  if (h > 0.0) {
+    vec2 cu = d.xz / (h + 0.05) * 0.45 + vec2(uTime * 0.004, uTime * 0.001);
+    float ci = fbm(vec2(cu.x * 0.7 + cu.y * 0.3, cu.y * 3.2) * 1.4);
+    float cir = smoothstep(0.56, 0.86, ci) * smoothstep(0.02, 0.3, h) * (1.0 - uClouds * 0.85) * 0.42;
+    vec3 cirCol = uCloudCol * 1.04 + uSunCol * pow(sd, 4.0) * 0.35 * uSunVis;
+    col = mix(col, cirCol, cir);
+  }
   // clouds on a plane
   if (h > -0.02) {
     vec2 uv = d.xz / (h + 0.12) * 1.6 + vec2(uTime * 0.008, uTime * 0.003);
@@ -41,6 +49,7 @@ void main(){
     float thick = smoothstep(cov, cov + 0.6, fbm(uv * 1.3 + 0.08 * uSunDir.xz));
     vec3 cc = mix(uCloudCol, uCloudShade, thick * 0.9);
     cc += uSunCol * pow(sd, 8.0) * 0.5 * (1.0 - thick) * uSunVis;
+    cc += uSunCol * pow(sd, 24.0) * 1.2 * (1.0 - c) * c * 4.0 * uSunVis;
     float fade = smoothstep(-0.02, 0.18, h);
     col = mix(col, cc, c * fade * 0.97);
   }
@@ -202,6 +211,7 @@ function updateSky(dt, scene, renderer, camera, focus, settings) {
   const a = computeAtmosphere();
   scene.fog.color.copy(Sky.fogColor);
   scene.fog.density = a.dens;
+  updateAtmosphere(dt, a.golden);
   renderer.toneMappingExposure = lerp(1.0, 1.35, Sky.night) * lerp(1, 1.08, c.clouds) * lerp(1, 0.95, a.golden);
   Sky.mesh.position.copy(camera.position);
   // shadows follow the focus point, snapped to texels to avoid shimmering

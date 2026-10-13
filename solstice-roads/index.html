@@ -715,10 +715,10 @@ const WEATHERS = [
 
 /* ---------- graphics presets ---------- */
 const QUALITY = {
-  low: { name: 'Low', traffic: 5, dpr: 0.75, shadows: 0, post: false, msaa: 0, grass: 0, treeFar: 1000, view: 3400, rain: 2500, treeShadows: false, terrainLod: [250, 700] },
-  medium: { name: 'Medium', traffic: 8, dpr: 1.0, shadows: 1024, post: true, msaa: 0, grass: 14000, treeFar: 1600, view: 3600, rain: 5000, treeShadows: false, terrainLod: [320, 800] },
-  high: { name: 'High', traffic: 12, dpr: 1.5, shadows: 2048, post: true, msaa: 4, grass: 32000, treeFar: 2400, view: 3800, rain: 9000, treeShadows: true, terrainLod: [420, 1000] },
-  ultra: { name: 'Ultra', traffic: 16, dpr: 2.0, shadows: 4096, post: true, msaa: 4, grass: 60000, treeFar: 3400, view: 4000, rain: 14000, treeShadows: true, terrainLod: [560, 1300] },
+  low: { name: 'Low', traffic: 5, dpr: 0.75, shadows: 0, post: false, rays: 0, flare: false, msaa: 0, grass: 0, treeFar: 1000, view: 3400, rain: 2500, treeShadows: false, terrainLod: [250, 700] },
+  medium: { name: 'Medium', traffic: 8, dpr: 1.0, shadows: 1024, post: true, rays: 12, flare: true, msaa: 2, grass: 14000, treeFar: 1600, view: 3600, rain: 5000, treeShadows: false, terrainLod: [320, 800] },
+  high: { name: 'High', traffic: 12, dpr: 1.5, shadows: 2048, post: true, rays: 24, flare: true, msaa: 4, grass: 32000, treeFar: 2400, view: 3800, rain: 9000, treeShadows: true, terrainLod: [420, 1000] },
+  ultra: { name: 'Ultra', traffic: 16, dpr: 2.0, shadows: 4096, post: true, rays: 36, flare: true, msaa: 4, grass: 60000, treeFar: 3400, view: 4000, rain: 14000, treeShadows: true, terrainLod: [560, 1300] },
 };
 
 const DEFAULT_SETTINGS = {
@@ -2928,15 +2928,33 @@ function makeWaterMaterial() {
     }
     x.putImageData(img, 0, 0);
   }, { srgb: false });
-  const m = new THREE.MeshStandardMaterial({ color: 0x1f4a52, roughness: 0.06, metalness: 0.0, normalMap: nm, normalScale: new THREE.Vector2(0.35, 0.35), transparent: true, opacity: 0.88, envMapIntensity: 1.3 });
-  m.userData.u = { uTime: Props.uTime, uFlow: { value: new THREE.Vector2(0, 0) } };
+  const m = new THREE.MeshStandardMaterial({ color: 0xffffff, roughness: 0.05, metalness: 0.0, normalMap: nm, normalScale: new THREE.Vector2(0.35, 0.35), transparent: true, opacity: 0.92, envMapIntensity: 1.45 });
+  m.userData.u = { uTime: Props.uTime, uFlow: { value: new THREE.Vector2(0, 0) }, tHM: { value: Props.heightTex } };
+  const N = GN / 2 + 1;
   m.onBeforeCompile = (sh) => {
     Object.assign(sh.uniforms, m.userData.u);
     sh.vertexShader = sh.vertexShader
       .replace('#include <common>', '#include <common>\nvarying vec3 vWPw;')
       .replace('#include <project_vertex>', '#include <project_vertex>\nvWPw = (modelMatrix * vec4(transformed, 1.0)).xyz;');
     sh.fragmentShader = sh.fragmentShader
-      .replace('#include <common>', '#include <common>\nuniform float uTime; varying vec3 vWPw;')
+      .replace('#include <common>', `#include <common>
+uniform float uTime; uniform sampler2D tHM; varying vec3 vWPw;
+float bedHeight(vec2 p) {
+  vec2 f = (p + ${HALF.toFixed(1)}) / 4.0; ivec2 i = clamp(ivec2(floor(f)), ivec2(0), ivec2(${N - 2})); vec2 t = fract(f);
+  float a = texelFetch(tHM, i, 0).r, b = texelFetch(tHM, i + ivec2(1, 0), 0).r, c = texelFetch(tHM, i + ivec2(0, 1), 0).r, d = texelFetch(tHM, i + ivec2(1, 1), 0).r;
+  return mix(mix(a, b, t.x), mix(c, d, t.x), t.y);
+}`)
+      .replace('#include <color_fragment>', `#include <color_fragment>
+// depth tint: clear and green-brown in the shallows, dark peat-blue in deep water
+float wDepth = max(vWPw.y - bedHeight(vWPw.xz), 0.0);
+float dk = 1.0 - exp(-wDepth * 0.5);
+diffuseColor.rgb = mix(vec3(0.2, 0.34, 0.27), mix(vec3(0.03, 0.12, 0.14), vec3(0.015, 0.06, 0.09), smoothstep(2.0, 7.0, wDepth)), dk);
+// lapping foam along the banks
+float fn = texture2D(normalMap, vWPw.xz * 0.19 + vec2(uTime * 0.03, uTime * 0.011)).r;
+float foam = (1.0 - smoothstep(0.04, 0.6, wDepth)) * smoothstep(0.42, 0.72, fn + 0.22 * sin(uTime * 1.4 - wDepth * 12.0));
+diffuseColor.rgb = mix(diffuseColor.rgb, vec3(0.86, 0.9, 0.9), foam * 0.75);
+diffuseColor.a *= mix(0.45, 1.0, smoothstep(0.0, 1.4, wDepth)) + foam * 0.4;`)
+      .replace('#include <roughnessmap_fragment>', '#include <roughnessmap_fragment>\nroughnessFactor = mix(roughnessFactor, 0.55, foam);')
       .replace('#include <normal_fragment_maps>', `
 vec3 n1 = texture2D(normalMap, vWPw.xz * 0.045 + vec2(uTime * 0.012, uTime * 0.02)).xyz * 2.0 - 1.0;
 vec3 n2 = texture2D(normalMap, vWPw.xz * 0.11 - vec2(uTime * 0.025, -uTime * 0.01)).xyz * 2.0 - 1.0;
@@ -3373,6 +3391,14 @@ void main(){
     float st = step(0.9965, h21(floor(sp))) * h21(floor(sp) + 3.1);
     col += vec3(st) * uNight * (1.0 - uClouds) * smoothstep(0.0, 0.25, h) * 1.4;
   }
+  // high cirrus streaks, mostly in fair weather
+  if (h > 0.0) {
+    vec2 cu = d.xz / (h + 0.05) * 0.45 + vec2(uTime * 0.004, uTime * 0.001);
+    float ci = fbm(vec2(cu.x * 0.7 + cu.y * 0.3, cu.y * 3.2) * 1.4);
+    float cir = smoothstep(0.56, 0.86, ci) * smoothstep(0.02, 0.3, h) * (1.0 - uClouds * 0.85) * 0.42;
+    vec3 cirCol = uCloudCol * 1.04 + uSunCol * pow(sd, 4.0) * 0.35 * uSunVis;
+    col = mix(col, cirCol, cir);
+  }
   // clouds on a plane
   if (h > -0.02) {
     vec2 uv = d.xz / (h + 0.12) * 1.6 + vec2(uTime * 0.008, uTime * 0.003);
@@ -3382,6 +3408,7 @@ void main(){
     float thick = smoothstep(cov, cov + 0.6, fbm(uv * 1.3 + 0.08 * uSunDir.xz));
     vec3 cc = mix(uCloudCol, uCloudShade, thick * 0.9);
     cc += uSunCol * pow(sd, 8.0) * 0.5 * (1.0 - thick) * uSunVis;
+    cc += uSunCol * pow(sd, 24.0) * 1.2 * (1.0 - c) * c * 4.0 * uSunVis;
     float fade = smoothstep(-0.02, 0.18, h);
     col = mix(col, cc, c * fade * 0.97);
   }
@@ -3543,6 +3570,7 @@ function updateSky(dt, scene, renderer, camera, focus, settings) {
   const a = computeAtmosphere();
   scene.fog.color.copy(Sky.fogColor);
   scene.fog.density = a.dens;
+  updateAtmosphere(dt, a.golden);
   renderer.toneMappingExposure = lerp(1.0, 1.35, Sky.night) * lerp(1, 1.08, c.clouds) * lerp(1, 0.95, a.golden);
   Sky.mesh.position.copy(camera.position);
   // shadows follow the focus point, snapped to texels to avoid shimmering
@@ -3670,6 +3698,95 @@ function updateSnow(dt) {
   for (const m of RoadGfx.materials) if (m.userData.u.uSnowRoad) m.userData.u.uSnowRoad.value = k;
   if (Props.grass && Props.grass.mesh) Props.grass.mesh.visible = Props.grass.count > 0 && k < 0.45;
   Sky.snowCover = k;
+}
+
+/* ==== 06c_atmo.js ==== */
+/* =====================================================================
+   Atmosphere for every lit material, patched into three.js' own shader
+   chunks so no material needs its own hook:
+   - aerial perspective: haze pools in the valleys and thins with height,
+     and glows warm towards the sun (in-scattering)
+   - drifting cloud shadows sweeping over the countryside
+   The shared uniform values are plain {x,y,z,w} objects: three.js copies
+   them by reference when it clones ShaderLib uniforms, so one update per
+   frame reaches every program.
+   ===================================================================== */
+const Atmo = {
+  cloud: { x: 0, y: 0, z: 1, w: 0 }, // xy: wind drift (m), z: coverage threshold, w: shadow strength
+  fog: { x: 20, y: 150, z: 1, w: 0 }, // x: valley floor height, y: haze scale height, z: sun glow strength
+  drift: new THREE.Vector2(),
+};
+
+(function patchChunks() {
+  const SC = THREE.ShaderChunk;
+  SC.lights_pars_begin = SC.lights_pars_begin + `
+uniform vec4 atmoCloud, atmoFog;
+float atmoHash(vec2 p){ p = fract(p * vec2(123.34, 456.21)); p += dot(p, p + 45.32); return fract(p.x * p.y); }
+float atmoNoise(vec2 p){ vec2 i = floor(p), f = fract(p); f = f * f * (3.0 - 2.0 * f);
+  return mix(mix(atmoHash(i), atmoHash(i + vec2(1.0, 0.0)), f.x), mix(atmoHash(i + vec2(0.0, 1.0)), atmoHash(i + vec2(1.0, 1.0)), f.x), f.y); }
+float atmoCloudShadow(vec3 viewPos){
+  if (atmoCloud.w < 0.001) return 1.0;
+  vec3 wp = cameraPosition + (vec4(viewPos, 0.0) * viewMatrix).xyz;
+  vec2 p = (wp.xz + atmoCloud.xy) * 0.0021;
+  float n = atmoNoise(p) * 0.58 + atmoNoise(p * 2.3 + 7.1) * 0.29 + atmoNoise(p * 5.3 + 3.7) * 0.13;
+  return 1.0 - smoothstep(atmoCloud.z, atmoCloud.z + 0.16, n) * atmoCloud.w;
+}
+`;
+  SC.lights_fragment_begin = '#define ATMO_LIT\n' + SC.lights_fragment_begin.replace(
+    'getDirectionalLightInfo( directionalLight, directLight );',
+    'getDirectionalLightInfo( directionalLight, directLight );\n\t\tdirectLight.color *= atmoCloudShadow( - vViewPosition );');
+  SC.fog_fragment = `#ifdef USE_FOG
+  #ifdef FOG_EXP2
+    float fogFactor = 1.0 - exp( - fogDensity * fogDensity * vFogDepth * vFogDepth );
+  #else
+    float fogFactor = smoothstep( fogNear, fogFar, vFogDepth );
+  #endif
+  vec3 fogC = fogColor;
+  #if defined( ATMO_LIT ) && defined( FOG_EXP2 )
+  if (atmoFog.y > 1.0) {
+    vec3 vp = - vViewPosition;
+    float dy = (vec4(vp, 0.0) * viewMatrix).y;
+    float k = dy / atmoFog.y;
+    float base = exp(- clamp(cameraPosition.y - atmoFog.x, -60.0, 600.0) / atmoFog.y);
+    float avg = base * (abs(k) > 0.01 ? (1.0 - exp(- k)) / k : 1.0 - 0.5 * k);
+    float od = fogDensity * vFogDepth;
+    fogFactor = 1.0 - exp(- od * od * clamp(avg, 0.25, 2.2));
+    #if NUM_DIR_LIGHTS > 0
+    float mu = max(dot(normalize(vp), directionalLights[ 0 ].direction), 0.0);
+    fogC += directionalLights[ 0 ].color * (pow(mu, 6.0) * 0.045 + pow(mu, 40.0) * 0.06) * atmoFog.z;
+    #endif
+  }
+  #endif
+  gl_FragColor.rgb = mix( gl_FragColor.rgb, fogC, fogFactor );
+#endif`;
+  for (const id of ['standard', 'physical', 'lambert', 'phong', 'toon']) {
+    const s = THREE.ShaderLib[id];
+    if (!s) continue;
+    s.uniforms.atmoCloud = { value: Atmo.cloud };
+    s.uniforms.atmoFog = { value: Atmo.fog };
+  }
+})();
+
+/* Called once the heightfield exists: the haze settles on the low ground. */
+function initAtmosphere() {
+  const H = World.H, s = [];
+  for (let i = 0; i < H.length; i += 97) s.push(H[i]);
+  s.sort((a, b) => a - b);
+  Atmo.fog.x = s[Math.floor(s.length * 0.3)] || 20;
+}
+
+function updateAtmosphere(dt, golden) {
+  const c = Sky.cur, day = 1 - Sky.night;
+  // wind pushes the cloud field across the map
+  Atmo.drift.x += dt * (7 + c.clouds * 6 + c.rain * 8);
+  Atmo.drift.y += dt * (3 + c.clouds * 2);
+  Atmo.cloud.x = Atmo.drift.x; Atmo.cloud.y = Atmo.drift.y;
+  // broken cloud gives the strongest moving shadows; overcast already dims the sun as a whole
+  const broken = smoothstep(0.02, 0.35, c.clouds) * (1 - smoothstep(0.7, 0.95, c.clouds));
+  Atmo.cloud.z = lerp(0.74, 0.44, smoothstep(0.0, 0.6, c.clouds));
+  Atmo.cloud.w = (0.18 + 0.47 * broken) * day * (1 - c.fog * 0.8) * (1 - c.rain * 0.5);
+  Atmo.fog.y = lerp(150, 260, c.fog) + c.rain * 80;
+  Atmo.fog.z = (0.6 + golden * 1.6) * day * (1 - c.clouds * 0.75) * (1 - c.fog * 0.6);
 }
 
 /* ==== 07_carmodel.js ==== */
@@ -7201,17 +7318,60 @@ function readControls(dt, car) {
    Boot, render loop, quality presets, game state.
    ===================================================================== */
 const GRADE_SHADER = {
-  uniforms: { tDiffuse: { value: null }, uSat: { value: 1.08 }, uCon: { value: 1.05 }, uVig: { value: 0.28 }, uWarm: { value: 0.02 }, uTime: { value: 0 } },
+  uniforms: {
+    tDiffuse: { value: null }, uSat: { value: 1.1 }, uCon: { value: 1.06 }, uVig: { value: 0.3 }, uWarm: { value: 0.02 }, uTime: { value: 0 },
+    uSun: { value: new THREE.Vector3(0.5, 0.5, 0) }, uSunTint: { value: new THREE.Color(1, 0.9, 0.7) }, uAspect: { value: 1 }, uSteps: { value: 24 }, uFlare: { value: 0 }, uCA: { value: 0.0018 },
+  },
   vertexShader: 'varying vec2 vUv; void main(){ vUv = uv; gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0); }',
-  fragmentShader: `uniform sampler2D tDiffuse; uniform float uSat, uCon, uVig, uWarm, uTime; varying vec2 vUv;
+  fragmentShader: `uniform sampler2D tDiffuse; uniform float uSat, uCon, uVig, uWarm, uTime, uAspect, uFlare, uCA; uniform int uSteps; uniform vec3 uSun, uSunTint; varying vec2 vUv;
+    float bright(vec3 s){ return smoothstep(0.86, 0.99, max(max(s.r, s.g), s.b)); }
+    float disc(vec2 p, vec2 c, float r, float soft){ vec2 d = (p - c) * vec2(uAspect, 1.0); return 1.0 - smoothstep(r * (1.0 - soft), r, length(d)); }
     void main(){
+      vec2 d = vUv - 0.5;
+      // slight lens dispersion towards the frame edges
+      vec2 ca = d * dot(d, d) * uCA * 3.0;
       vec4 c = texture2D(tDiffuse, vUv);
+      if (uCA > 0.0) { c.r = texture2D(tDiffuse, vUv + ca).r; c.b = texture2D(tDiffuse, vUv - ca).b; }
+      // sun shafts: march towards the sun through the bright sky, trees and hills cut the light into rays
+      if (uSun.z > 0.002) {
+        vec2 sp = uSun.xy;
+        vec2 delta = (vUv - sp) / float(uSteps) * 0.85;
+        vec2 tc = vUv; float ill = 0.0, dec = 1.0, wsum = 0.0;
+        for (int i = 0; i < 48; i++) {
+          if (i >= uSteps) break;
+          tc -= delta;
+          float fall = 1.0 - smoothstep(0.0, 0.45, length((tc - sp) * vec2(uAspect, 1.0)));
+          ill += bright(texture2D(tDiffuse, tc).rgb) * fall * dec;
+          wsum += dec; dec *= 0.965;
+        }
+        ill /= max(wsum, 1.0);
+        float near = 1.0 - smoothstep(0.0, 0.9, length((vUv - sp) * vec2(uAspect, 1.0)));
+        c.rgb += uSunTint * ill * uSun.z * (0.55 + 0.9 * near);
+        // lens flare, scaled by how much of the sun is actually unblocked
+        if (uFlare > 0.002) {
+          float vis = 0.0;
+          for (int k = 0; k < 5; k++) { float a = float(k) * 1.2566; vec2 o = k == 0 ? vec2(0.0) : vec2(cos(a) / uAspect, sin(a)) * 0.012; vis += bright(texture2D(tDiffuse, sp + o).rgb); }
+          vis = vis / 5.0 * uFlare * min(1.0, uSun.z * 2.5);
+          vec2 axis = vec2(0.5) - sp;
+          vec3 fl = vec3(0.0);
+          fl += vec3(0.9, 0.55, 0.25) * disc(vUv, sp + axis * 0.55, 0.035, 0.6) * 0.18;
+          fl += vec3(0.35, 0.8, 0.5) * disc(vUv, sp + axis * 0.95, 0.06, 0.7) * 0.1;
+          fl += vec3(0.4, 0.5, 1.0) * disc(vUv, sp + axis * 1.35, 0.1, 0.85) * 0.08;
+          fl += vec3(1.0, 0.45, 0.6) * disc(vUv, sp + axis * 1.7, 0.025, 0.4) * 0.14;
+          // anamorphic streak through the sun
+          vec2 q = (vUv - sp) * vec2(uAspect, 1.0);
+          fl += uSunTint * exp(-abs(q.y) * 220.0) * exp(-abs(q.x) * 3.2) * 0.3;
+          c.rgb += fl * vis;
+        }
+      }
       float l = dot(c.rgb, vec3(0.2126, 0.7152, 0.0722));
       c.rgb = mix(vec3(l), c.rgb, uSat);
-      c.rgb = (c.rgb - 0.5) * uCon + 0.5;
+      // gentle S-curve around mid grey
+      c.rgb = clamp(c.rgb, 0.0, 1.0);
+      c.rgb = mix(c.rgb, c.rgb * c.rgb * (3.0 - 2.0 * c.rgb), uCon - 1.0);
+      c.rgb = (c.rgb - 0.5) * (1.0 + (uCon - 1.0) * 0.5) + 0.5;
       // split-tone: warm highlights, cool shadows
-      c.rgb += vec3(uWarm, uWarm * 0.4, -uWarm) * smoothstep(0.45, 1.0, l) + vec3(-0.01, 0.0, 0.015) * (1.0 - smoothstep(0.0, 0.35, l));
-      vec2 d = vUv - 0.5;
+      c.rgb += vec3(uWarm, uWarm * 0.4, -uWarm) * smoothstep(0.45, 1.0, l) + vec3(-0.012, 0.0, 0.018) * (1.0 - smoothstep(0.0, 0.35, l));
       c.rgb *= 1.0 - uVig * smoothstep(0.25, 0.85, dot(d, d) * 2.2);
       // fine film grain against banding
       float n = fract(sin(dot(vUv * 1000.0 + uTime, vec2(12.9898, 78.233))) * 43758.5453);
@@ -7405,6 +7565,7 @@ async function boot() {
   initPropMaterials();
   initCarMaterials();
   await generateWorld(progress);
+  initAtmosphere();
   progress(0.7, 'Mapping woodland'); await frameYield();
   buildTreeDensityGrid();
   progress(0.72, 'Building terrain'); await frameYield();
@@ -7593,11 +7754,38 @@ function frame() {
   updateMarkers(cam.position, !!Race.ev || Game.mode === 'garage');
   updateFX(dt, Game.scene);
   audioUpdate(dt, p, cam, Game.ai);
-  if (Game.grade) { Game.grade.uniforms.uTime.value = Props.uTime.value % 10; Game.grade.uniforms.uWarm.value = 0.02 + (Sky.cur.time > 17 && Sky.cur.time < 21 ? 0.02 : 0); }
+  if (Game.grade) updateGrade(cam);
   if (Game.bloom) Game.bloom.strength = 0.28 + Sky.night * 0.35;
   // render
   if (Game.composer) Game.composer.render(); else Game.renderer.render(Game.scene, cam);
   autoResolution(dt);
+}
+const _sunP = new THREE.Vector3(), _camF = new THREE.Vector3();
+function updateGrade(cam) {
+  const u = Game.grade.uniforms, q = Game.q;
+  u.uTime.value = Props.uTime.value % 10;
+  u.uWarm.value = 0.02 + (Sky.cur.time > 17 && Sky.cur.time < 21 ? 0.025 : 0);
+  u.uAspect.value = innerWidth / innerHeight;
+  u.uSteps.value = q.rays || 0;
+  u.uCA.value = Photo.on ? 0 : 0.0016;
+  // project the sun; shafts fade out as it leaves the frame or sinks behind the camera
+  const c = Sky.cur, sd = Sky.sunDir;
+  cam.getWorldDirection(_camF);
+  const facing = _camF.dot(sd);
+  let k = 0;
+  if (q.rays && facing > 0.05 && Sky.night < 0.5) {
+    _sunP.copy(cam.position).addScaledVector(sd, 1000).project(cam);
+    const x = _sunP.x * 0.5 + 0.5, y = _sunP.y * 0.5 + 0.5;
+    u.uSun.value.x = x; u.uSun.value.y = y;
+    const off = Math.max(0, Math.abs(x - 0.5) - 0.5, Math.abs(y - 0.5) - 0.5);
+    const golden = smoothstep(0.45, 0.05, sd.y);
+    k = (1 - smoothstep(0, 0.45, off)) * smoothstep(0.05, 0.3, facing) * smoothstep(-0.02, 0.06, sd.y) * (1 - c.clouds * 0.7) * (1 - c.fog * 0.5) * (1 - c.rain * 0.8) * (0.2 + golden * 0.24);
+    u.uSunTint.value.setRGB(1, 0.86 - golden * 0.18, 0.62 - golden * 0.3);
+  }
+  u.uSun.value.z = k;
+  // flare ghosts only while the sun disc itself is in frame
+  const inX = Math.min(u.uSun.value.x, 1 - u.uSun.value.x), inY = Math.min(u.uSun.value.y, 1 - u.uSun.value.y);
+  u.uFlare.value = q.flare && k > 0 ? smoothstep(0.0, 0.06, Math.min(inX, inY)) : 0;
 }
 function autoResolution(dt) {
   const s = Game.settings;
