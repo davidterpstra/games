@@ -348,8 +348,9 @@ function frame() {
     Menu.preview.model.root.rotation.y = Menu.preview.a;
     // camera on the plaza side, looking out at the car with the hangars behind it
     const ix = PLAZA.x - spot.x, iz = PLAZA.z - spot.z, l = Math.hypot(ix, iz), ux = ix / l, uz = iz / l;
-    cam.position.set(spot.x + ux * 8.2, spot.y + 1.5, spot.z + uz * 8.2);
-    cam.lookAt(spot.x, spot.y + 0.55, spot.z);
+    const d = innerWidth / innerHeight > 1.2 ? 11 : 13;
+    cam.position.set(spot.x + ux * d, spot.y + 2.1, spot.z + uz * d);
+    cam.lookAt(spot.x, spot.y + 0.45, spot.z);
     if (innerWidth > 900) cam.rotateY(-0.02);
     if (cam.fov !== 38) { cam.fov = 38; cam.near = 0.25; cam.updateProjectionMatrix(); }
     pm.root.visible = false;

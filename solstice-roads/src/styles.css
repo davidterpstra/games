@@ -188,11 +188,14 @@ body.touch #touch { display: block; }
 #touch .tr { position: absolute; right: 18px; bottom: 22px; display: flex; gap: 12px; align-items: flex-end; }
 #touch .gas { width: 96px; height: 120px; border-radius: 22px; }
 #touch .small { width: 60px; height: 60px; font-size: 16px; }
-#touch .ttop { position: absolute; right: 16px; top: 50%; transform: translateY(-50%); display: flex; flex-direction: column; gap: 10px; }
+#touch .ttop { position: absolute; right: 14px; top: 12px; display: flex; gap: 10px; }
 #touch .ttop button { width: 52px; height: 52px; font-size: 15px; }
 body.touch #mapbox { bottom: 120px; transform: scale(0.75); transform-origin: left bottom; }
 body.touch #dash { right: 50%; transform: translateX(50%) scale(0.7); transform-origin: bottom center; bottom: 0; }
 body.touch #prompt { bottom: 140px; }
+body.touch #notes { top: 76px; }
+body.touch #racePanel { transform: scale(0.8); transform-origin: left top; }
+@media (max-height: 500px) { body.touch #mapbox { bottom: auto; top: 8px; transform: scale(0.62); transform-origin: left top; } body.touch #racePanel { left: 160px; } }
 
 /* ---------- responsive ---------- */
 @media (max-width: 900px) {

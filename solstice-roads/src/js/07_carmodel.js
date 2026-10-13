@@ -29,7 +29,7 @@ function initCarMaterials() {
   CarMats.gun = new THREE.MeshStandardMaterial({ color: 0x40444b, roughness: 0.3, metalness: 0.9 });
   CarMats.black = new THREE.MeshStandardMaterial({ color: 0x0b0c0e, roughness: 0.45, metalness: 0.2 });
   CarMats.dark = new THREE.MeshStandardMaterial({ color: 0x18191c, roughness: 0.8 });
-  CarMats.interior = new THREE.MeshStandardMaterial({ color: 0x1c1d21, roughness: 0.85, side: THREE.DoubleSide });
+  CarMats.interior = new THREE.MeshStandardMaterial({ color: 0x2a2b31, roughness: 0.8, side: THREE.DoubleSide });
   CarMats.disc = new THREE.MeshStandardMaterial({ color: 0x8d9096, roughness: 0.4, metalness: 0.9 });
   CarMats.grille = new THREE.MeshStandardMaterial({
     roughness: 0.6, metalness: 0.3,
@@ -230,15 +230,21 @@ function makeCar(spec, color, opts = {}) {
     interior.add(back, headrest);
   }
   const dashZ = cW - 0.12;
-  const dash = new THREE.Mesh(new THREE.BoxGeometry(W * 1.6, 0.16, 0.5).translate(0, 0, -0.25), CarMats.interior);
-  dash.position.set(0, hullTopAt(dashZ) + 0.02, dashZ);
+  const eyeY = Math.min(beltY + 0.5, roofH - 0.13), eyeZ = seatZ - 0.15;
+  // slim dashboard with a hooded binnacle in front of the driver
+  const dash = new THREE.Mesh(new THREE.BoxGeometry(W * 1.6, 0.09, 0.42).translate(0, 0, -0.21), CarMats.interior);
+  dash.position.set(0, hullTopAt(dashZ) + 0.01, dashZ);
   interior.add(dash);
-  const gauge = new THREE.Mesh(new THREE.PlaneGeometry(0.3, 0.12), new THREE.MeshStandardMaterial({ color: 0x111, emissive: 0xffb02e, emissiveIntensity: 0.6 }));
-  gauge.position.set(seatX, hullTopAt(dashZ) + 0.12, dashZ - 0.36); gauge.rotation.x = -0.3; gauge.rotation.y = Math.PI;
+  const wheelZ = eyeZ + 0.5, wheelY = eyeY - 0.3;
+  const binn = new THREE.Mesh(new THREE.BoxGeometry(0.34, 0.07, 0.18), CarMats.interior);
+  binn.position.set(seatX, wheelY + 0.2, wheelZ + 0.18);
+  interior.add(binn);
+  const gauge = new THREE.Mesh(new THREE.PlaneGeometry(0.28, 0.1), new THREE.MeshStandardMaterial({ color: 0x111, emissive: 0xffb02e, emissiveIntensity: 0.8 }));
+  gauge.position.set(seatX, wheelY + 0.155, wheelZ + 0.1); gauge.rotation.x = -0.5; gauge.rotation.y = Math.PI;
   interior.add(gauge);
   const steer = new THREE.Group();
-  steer.position.set(seatX, hullTopAt(dashZ) + 0.02, dashZ - 0.55);
-  steer.rotation.x = -0.35;
+  steer.position.set(seatX, wheelY, wheelZ);
+  steer.rotation.x = -0.3;
   const rim = new THREE.Mesh(new THREE.TorusGeometry(0.18, 0.022, 8, 28), CarMats.interior);
   const spokeA = new THREE.Mesh(new THREE.BoxGeometry(0.34, 0.03, 0.02), CarMats.interior);
   const spokeB = new THREE.Mesh(new THREE.BoxGeometry(0.03, 0.16, 0.02), CarMats.interior); spokeB.position.y = -0.08;
@@ -458,7 +464,7 @@ function makeCar(spec, color, opts = {}) {
   for (const w of wheels) mergeByMaterial(w.spin.children[0], []);
   return {
     root, body, wheels, paint, brake, head, rev, steer: steerSpin, interior, beams, blob, lampMats,
-    eye: new THREE.Vector3(seatX * 0.98, beltY + 0.4, seatZ - 0.15),
+    eye: new THREE.Vector3(seatX * 0.98, eyeY, eyeZ),
     hood: new THREE.Vector3(0, hullTopAt(cW + 0.2) + 0.32, cW + 0.25),
     tyreR: R, len: L, wid: spec.wid,
     dispose() {

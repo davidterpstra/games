@@ -83,9 +83,15 @@ function camUpdate(dt, camera, car, model, settings) {
     if (!Cam.anchor || d > 85 || behind || Cam.anchorT < -9) {
       const dir = v > 3 ? Math.atan2(car.vx, car.vz) : car.h;
       const ahead = 35 + Math.min(45, v * 1.3);
-      const side = (Math.random() < 0.5 ? -1 : 1) * (8 + Math.random() * 10);
-      const ax = rp.x + Math.sin(dir) * ahead + Math.cos(dir) * side, az = rp.z + Math.cos(dir) * ahead - Math.sin(dir) * side;
-      Cam.anchor = new THREE.Vector3(ax, groundAt(ax, az, rp.y + 3) + 1.2 + Math.random() * 3.5, az);
+      let ax = rp.x + Math.sin(dir) * ahead, az = rp.z + Math.cos(dir) * ahead;
+      // stand at the roadside of whatever road is ahead, high enough to see over walls and crops
+      const k = nearestRoadSample(ax, az);
+      const road = World.roads[World.SROAD[k]], i = k - road.i0;
+      if (Math.hypot(road.x[i] - ax, road.z[i] - az) < 40) {
+        const sd = Math.random() < 0.5 ? -1 : 1, off = road.hw + 3 + Math.random() * 4;
+        ax = road.x[i] + road.tz[i] * sd * off; az = road.z[i] - road.tx[i] * sd * off;
+      }
+      Cam.anchor = new THREE.Vector3(ax, Math.max(groundAt(ax, az, rp.y + 3), rp.y) + 2.2 + Math.random() * 3, az);
       Cam.anchorT = 0;
     }
     camera.position.copy(Cam.anchor);
