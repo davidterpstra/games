@@ -221,6 +221,7 @@ async function boot() {
   Game.scene.add(Festival.group);
   prepareEvents();
   buildMarkers(Game.scene);
+  buildSmashables(Game.scene);
   initTraffic();
   progress(0.94, 'Drawing maps'); await frameYield();
   buildWorldMap();
@@ -313,6 +314,8 @@ function frame() {
       if (frozen) for (const c of cars) { c.x = c.prev.x; c.z = c.prev.z; c.h = c.prev.h; c.vx = c.vz = 0; c.w = 0; }
       collideCars(cars);
       collideTraffic(p);
+      smashCheck(p, true);
+      for (const a of Game.ai) smashCheck(a, false);
       if (!Race.ev) { updateStunts(PH_DT, p); }
       Game.acc -= PH_DT; steps++;
     }
@@ -326,6 +329,7 @@ function frame() {
     carEffects(p, dt, true);
     for (const a of Game.ai) carEffects(a, dt, Math.hypot(a.x - p.x, a.z - p.z) < 150);
     hudUpdate(dt, p);
+    updateSmash(dt, p);
     // markers / interaction prompt
     const m = Race.ev ? null : nearestMarker(p, 30);
     showPrompt(m && (m.garage || m.ev) ? m : null);

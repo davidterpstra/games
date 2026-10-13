@@ -18,6 +18,7 @@ This game was rebuilt from the earlier single-file drift game `Drift_Offroad_v8.
 | Start event / enter garage | `E` | X | E |
 | Mute / radio on-off | `M` / `N` | – | – |
 | Horn | `H` | – | – |
+| Photo mode | `P` | – | – |
 | Pause | `Esc` | Start | II |
 
 ## What's in the game
@@ -46,16 +47,23 @@ This game was rebuilt from the earlier single-file drift game `Drift_Offroad_v8.
 
   With *steering & drift assist* on (the default), stability control stops the car spinning from steering alone. A handbrake flick starts a drift. While you hold the throttle, steering sets the drift angle; lift off to grip up again.
 - **Events:** a light column marks each event in the world. Drive into one and press `E`.
-  - Circuits: Solstice Loop and Ashcombe Ring
-  - Road race: Westcountry Run (point-to-point)
-  - Sprint: Grimstone Pass Sprint
+  - Circuits: Solstice Loop, Solstice Loop Reverse and Ashcombe Ring
+  - Road races (point-to-point): Westcountry Run and Lakeside Dash
+  - Sprints: Grimstone Pass Sprint and Brackenmoor Sprint
   - Off-road: Brackenmoor Scramble (gravel trail plus cross-country) and Harrowfield Rally
 
   Races have a countdown, checkpoint gates, laps, a timer, live positions, a wrong-way warning, AI opponents, a results table, credits and XP. Personal bests are saved.
+- **Free-roam life:**
+  - traffic on the roads: it keeps left, slows for bends, villages and the car ahead, turns at junctions and stops when you hit it
+  - a dancing crowd at the festival stage, plus visitors around the tents and garages
+- **Smashables:** wooden fences along the farm tracks, hay bales in the fields and cones on the festival lanes. They break into tumbling debris and come back after a while.
+- **Progression:** you start with three cars and earn credits from races, stunts and skills (drifts, jumps, near misses with traffic, smashes) to buy the other four in the garage.
+- **Photo mode** (`P`): orbit and zoom the camera freely, change the lens, then save a PNG with `Enter`.
 - **Stunts in free roam:** speed traps, a speed zone and drift zones are always active (just drive through them), with star ratings and records. Drift chains (with a multiplier) and jumps earn credits.
 - **AI opponents:** they use the same physics as you. They steer along the racing line, brake for corners based on how tight the road ahead is, overtake when blocked, have slight catch-up, and recover themselves if they get stuck.
 - **Weather and time of day:**
-  - six presets: sunny afternoon, overcast, rain, morning fog, golden sunset and night
+  - eight presets: sunny afternoon, overcast, rain, morning fog, golden sunset, night, winter snow and winter night
+  - winter covers the terrain, roofs, trees, walls and road verges with snow, adds snowfall and lowers grip
   - an optional day/night cycle
   - a sky with moving clouds, sun, moon and stars, which also supplies the reflections
   - fog and haze
@@ -91,14 +99,18 @@ The files in `src/js/*.js` are joined in name order into one ES module by `build
 | `05_props.js` | instanced trees (2 LODs, wind), GPU grass, rocks, hedgerows, villages, street lights, water |
 | `05b_festival.js` | the festival hub |
 | `06_sky.js` | sky shader, sun and moon, fog, environment reflections, weather, rain, pooled lights |
+| `06b_snow.js` | winter snow layer on every material |
 | `07_carmodel.js` | procedural car models |
 | `08_vehicle.js` | vehicle physics |
 | `09_fx.js` | particles and tyre marks |
 | `10_audio.js` | audio engine and radio |
 | `11_camera.js` | camera modes |
-| `12_race.js` | routes, race manager, AI drivers, checkpoints, stunts, drift scoring |
+| `12_race.js` | routes, race manager, AI drivers, checkpoints, stunts, skill scoring |
+| `12b_traffic.js` | ambient traffic |
+| `12c_smash.js` | smashable fences, hay bales and cones, with debris |
 | `13_hud.js` | HUD and minimap |
-| `14_menu.js` | menus |
+| `14_menu.js` | menus, garage and car buying |
+| `14b_photo.js` | photo mode |
 | `15_input.js` | keyboard, gamepad and touch input |
 | `16_main.js` | boot, main loop, quality settings, dynamic resolution |
 
