@@ -4424,6 +4424,12 @@ class Vehicle {
     this.wheelspin = 0;
     if (Math.abs(FxR) > capRL) { this.wheelspin = Math.min(1, Math.abs(FxR) / capRL - 1); FxR = Math.sign(FxR) * capRL; }
     if (Math.abs(FxF) > capFL) { this.wheelspin = Math.max(this.wheelspin, Math.min(1, Math.abs(FxF) / capFL - 1)); FxF = Math.sign(FxF) * capFL; }
+    // traction control on the steered axle: keep grip in reserve so the car still turns under power
+    if (settings.assist && Math.abs(FxF) > capF * 0.6) {
+      const spare = Math.abs(FxF) - capF * 0.6;
+      FxF = Math.sign(FxF) * capF * 0.6;
+      FxR = Math.sign(FxR || FxF) * Math.min(capRL, Math.abs(FxR) + spare);
+    }
     // brakes (with ABS-like limiting)
     if (brake > 0 && absV > 0.05) {
       const bF = brake * sp.brake * this.m * G * 1.05;
@@ -4448,7 +4454,7 @@ class Vehicle {
       const sustain = this.driftT > 0 && Math.abs(beta) > 0.12 ? 1 - 0.35 * throttle : 1;
       Fyr = -capR * curve(ar) * Math.max(0.12, latR) * sustain;
       const useF = clamp(Math.abs(FxF) / Math.max(1, capF), 0, 0.97);
-      Fyf *= Math.max(0.2, Math.sqrt(1 - useF * useF));
+      Fyf *= Math.max(settings.assist ? 0.55 : 0.2, Math.sqrt(1 - useF * useF));
       this.slip = ar;
       this.slipF = af;
     } else { FxF = FxR = 0; }
@@ -4473,8 +4479,15 @@ class Vehicle {
       if (settings.assist && v > 6) {
         if (!this.driftT) {
           // stability control: steering alone never spins the car
-          const exc = Math.max(0, Math.abs(beta) - 0.07);
-          this.w += Math.sign(beta) * exc * 15 * dt;
+          const exc = Math.max(0, Math.abs(beta) - 0.1);
+          this.w += Math.sign(beta) * exc * 9 * dt;
+          // steering response: pull the yaw rate towards what the front wheels ask for,
+          // limited by the grip available, so the car turns whether or not you're on the gas
+          if (Math.abs(beta) < 0.35 && vLong > 0) {
+            const wMax = muF * G * 0.95 / Math.max(v, 1);
+            const wT = clamp(vLong * Math.tan(d) / this.L, -wMax, wMax);
+            this.w = lerp(this.w, wT, 1 - Math.exp(-3.2 * dt));
+          }
         } else if (Math.abs(beta) > 0.12 && throttle > 0.3 && !inp.handbrake) {
           // drift steering: with throttle held, steering sets the slide angle
           const dir = Math.sign(beta);
