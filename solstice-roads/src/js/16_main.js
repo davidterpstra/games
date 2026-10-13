@@ -266,6 +266,7 @@ async function boot() {
   Bus.on('shift', (e) => { if (e.car === Game.player) SFX.shift(); });
   initInput();
   initMenus();
+  initPhoto();
   $('bigMap').addEventListener('click', mapClick);
   progress(1, 'Ready');
   // first render compiles shaders
@@ -334,6 +335,8 @@ function frame() {
     Save.data.stats.km = (Save.data.stats.km || 0) + p.speed * dt / 1000;
     Game.saveT = (Game.saveT || 0) + dt;
     if (Game.saveT > 15) { Game.saveT = 0; Save.write(); }
+  } else if (Photo.on) {
+    photoUpdate(dt, cam);
   } else if (Game.mode === 'menu') {
     // cinematic orbit around the player's car on the plaza
     const s = Game.menuSpot;

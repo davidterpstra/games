@@ -79,6 +79,7 @@ function openPause() {
   const inRace = !!Race.ev;
   $('pRestart').hidden = !inRace; $('pLeave').hidden = !inRace;
   $('pGarage').hidden = inRace; $('pEvents').hidden = inRace;
+  bindButtons($('pause'));
   $('pTitle').textContent = inRace ? Race.ev.name : 'Paused';
   Menu.stack = [];
   showScreen('pause');

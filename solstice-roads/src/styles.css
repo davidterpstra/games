@@ -215,3 +215,13 @@ body.touch #racePanel { transform: scale(0.8); transform-origin: left top; }
   .tag { margin: 6px 0 12px; } .mm-nav button { padding: 8px 18px; font-size: 18px; }
   .mm-foot { display: none; }
 }
+
+/* ---------- photo mode ---------- */
+body.photo #hud, body.photo #touch { opacity: 0; visibility: hidden; }
+#photoUi { position: fixed; left: 50%; bottom: 18px; transform: translateX(-50%); z-index: 30; display: flex; align-items: center; gap: 14px; padding: 10px 14px; flex-wrap: wrap; justify-content: center; max-width: 94vw; }
+#photoUi[hidden] { display: none; }
+#photoUi b { font: italic 800 20px var(--cond); }
+#photoUi span { color: var(--muted); font-size: 13px; }
+#photoUi label { display: flex; align-items: center; gap: 8px; font-size: 13px; }
+#photoUi input { accent-color: var(--pink); width: 120px; }
+#photoUi button { padding: 8px 14px; font-size: 15px; cursor: pointer; }

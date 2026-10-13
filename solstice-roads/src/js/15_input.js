@@ -38,7 +38,9 @@ function updateTouchUI() {
   document.body.classList.toggle('touch', on);
 }
 function handleKey(code, e) {
+  if (Photo.on && photoKey(code)) return;
   const playing = (Game.mode === 'drive' || Game.mode === 'race') && !Game.paused;
+  if (code === 'KeyP' && playing) { photoEnter(); return; }
   if (code === 'Escape' || code === 'pause') {
     if (Menu.screen === 'results') return;
     if (playing) openPause();
