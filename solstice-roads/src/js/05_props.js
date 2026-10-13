@@ -187,7 +187,7 @@ float leaf = lh(vLeafP * 2.3) * 0.45 + lh(vLeafP * 6.1) * 0.35 + lh(vLeafP * 14.
 float isLeaf = step(0.12, vColor.g - vColor.r);
 diffuseColor.rgb *= mix(1.0, 0.45 + leaf * 0.95, isLeaf);`)
       .replace('#include <normal_fragment_maps>', `#include <normal_fragment_maps>
-normal = normalize(normal + (vec3(lh(vLeafP * 6.0), lh(vLeafP * 6.0 + 3.1), lh(vLeafP * 6.0 + 7.7)) - 0.5) * 1.2 * isLeaf);`);
+normal = normalize(normal + (vec3(lh(vLeafP * 6.0), lh(vLeafP * 6.0 + 3.1), lh(vLeafP * 6.0 + 7.7)) - 0.5) * 1.2 * isLeaf + vec3(0.0, 0.002, 0.0));`);
     sh.vertexShader = sh.vertexShader
       .replace('#include <common>', '#include <common>\nuniform float uTime, uWind; varying vec3 vLeafP;')
       .replace('#include <begin_vertex>', `#include <begin_vertex>

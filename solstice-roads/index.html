@@ -2362,7 +2362,7 @@ float leaf = lh(vLeafP * 2.3) * 0.45 + lh(vLeafP * 6.1) * 0.35 + lh(vLeafP * 14.
 float isLeaf = step(0.12, vColor.g - vColor.r);
 diffuseColor.rgb *= mix(1.0, 0.45 + leaf * 0.95, isLeaf);`)
       .replace('#include <normal_fragment_maps>', `#include <normal_fragment_maps>
-normal = normalize(normal + (vec3(lh(vLeafP * 6.0), lh(vLeafP * 6.0 + 3.1), lh(vLeafP * 6.0 + 7.7)) - 0.5) * 1.2 * isLeaf);`);
+normal = normalize(normal + (vec3(lh(vLeafP * 6.0), lh(vLeafP * 6.0 + 3.1), lh(vLeafP * 6.0 + 7.7)) - 0.5) * 1.2 * isLeaf + vec3(0.0, 0.002, 0.0));`);
     sh.vertexShader = sh.vertexShader
       .replace('#include <common>', '#include <common>\nuniform float uTime, uWind; varying vec3 vLeafP;')
       .replace('#include <begin_vertex>', `#include <begin_vertex>
@@ -3611,12 +3611,14 @@ function addSnow(mat, amount = 1) {
   #ifdef USE_INSTANCING
   wn = mat3(instanceMatrix) * wn;
   #endif
-  vSnowUp = normalize(mat3(modelMatrix) * wn).y;
+  vec3 wn2 = mat3(modelMatrix) * wn;
+  float wl = dot(wn2, wn2);
+  vSnowUp = wl > 1e-10 ? wn2.y * inversesqrt(wl) : 0.0; // degenerate normals must not produce NaN
 }`);
     sh.fragmentShader = sh.fragmentShader
       .replace('#include <common>', '#include <common>\nuniform float uSnow; varying float vSnowUp;')
       .replace('#include <roughnessmap_fragment>', `#include <roughnessmap_fragment>
-float snowK = uSnow * ${amount.toFixed(2)} * smoothstep(0.25, 0.75, vSnowUp);
+float snowK = clamp(uSnow * ${amount.toFixed(2)} * smoothstep(0.25, 0.75, vSnowUp), 0.0, 1.0);
 diffuseColor.rgb = mix(diffuseColor.rgb, vec3(0.93, 0.96, 1.0), snowK);
 roughnessFactor = mix(roughnessFactor, 0.75, snowK);`);
   };
@@ -3631,8 +3633,9 @@ roughnessFactor = mix(roughnessFactor, 0.75, snowK);`);
 /* Called once after the world is built: snow on everything static. */
 function applySnowToWorld(scene) {
   const skip = new Set([Terrain.material, ...RoadGfx.materials, ...Props.waterMats]);
+  const inCar = (o) => { for (let p = o; p; p = p.parent) if (p.userData.isCar) return true; return false; };
   scene.traverse((o) => {
-    if (!o.isMesh || !o.material) return;
+    if (!o.isMesh || !o.material || inCar(o)) return;
     for (const m of Array.isArray(o.material) ? o.material : [o.material]) {
       if (skip.has(m) || !m.isMeshStandardMaterial || m.isMeshPhysicalMaterial || m.transparent) continue;
       if (m.emissive && m.emissive.getHex() !== 0 && !m.emissiveMap) continue; // lamps and glowing signs
@@ -3742,6 +3745,7 @@ function makeCar(spec, color, opts = {}) {
   const uF = L / 2 - S.fo, uR = uF - spec.wb;
   const archR = R + (spec.style === 'truck' ? 0.14 : 0.06);
   const root = new THREE.Group(), body = new THREE.Group();
+  root.userData.isCar = true;
   root.add(body);
   const paint = new THREE.MeshPhysicalMaterial({ color, metalness: 0.55, roughness: 0.3, clearcoat: 1, clearcoatRoughness: 0.06, envMapIntensity: 1.25 });
   const glass = new THREE.MeshPhysicalMaterial({ color: 0x0a0f14, metalness: 0.1, roughness: 0.04, transparent: true, opacity: 0.62, envMapIntensity: 1.6, clearcoat: 1 });
@@ -6947,6 +6951,12 @@ function buildComposer(q) {
   c.setPixelRatio(r.getPixelRatio());
   c.setSize(innerWidth, innerHeight);
   c.addPass(new RenderPass(Game.scene, Game.camera));
+  // safety net: a single NaN/Inf pixel would otherwise be smeared over the whole screen by bloom
+  c.addPass(new ShaderPass({
+    uniforms: { tDiffuse: { value: null } },
+    vertexShader: 'varying vec2 vUv; void main(){ vUv = uv; gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0); }',
+    fragmentShader: 'uniform sampler2D tDiffuse; varying vec2 vUv; void main(){ vec4 c = texture2D(tDiffuse, vUv); bvec4 bad = bvec4(isnan(c.r) || isinf(c.r), isnan(c.g) || isinf(c.g), isnan(c.b) || isinf(c.b), false); gl_FragColor = any(bad) ? vec4(0.0, 0.0, 0.0, 1.0) : min(c, vec4(64.0)); }',
+  }));
   Game.bloom = new UnrealBloomPass(new THREE.Vector2(innerWidth, innerHeight), 0.32, 0.6, 0.92);
   c.addPass(Game.bloom);
   c.addPass(new OutputPass());

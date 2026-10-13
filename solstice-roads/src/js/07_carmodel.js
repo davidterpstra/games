@@ -84,6 +84,7 @@ function makeCar(spec, color, opts = {}) {
   const uF = L / 2 - S.fo, uR = uF - spec.wb;
   const archR = R + (spec.style === 'truck' ? 0.14 : 0.06);
   const root = new THREE.Group(), body = new THREE.Group();
+  root.userData.isCar = true;
   root.add(body);
   const paint = new THREE.MeshPhysicalMaterial({ color, metalness: 0.55, roughness: 0.3, clearcoat: 1, clearcoatRoughness: 0.06, envMapIntensity: 1.25 });
   const glass = new THREE.MeshPhysicalMaterial({ color: 0x0a0f14, metalness: 0.1, roughness: 0.04, transparent: true, opacity: 0.62, envMapIntensity: 1.6, clearcoat: 1 });

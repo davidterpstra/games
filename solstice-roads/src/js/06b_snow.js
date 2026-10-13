@@ -22,12 +22,14 @@ function addSnow(mat, amount = 1) {
   #ifdef USE_INSTANCING
   wn = mat3(instanceMatrix) * wn;
   #endif
-  vSnowUp = normalize(mat3(modelMatrix) * wn).y;
+  vec3 wn2 = mat3(modelMatrix) * wn;
+  float wl = dot(wn2, wn2);
+  vSnowUp = wl > 1e-10 ? wn2.y * inversesqrt(wl) : 0.0; // degenerate normals must not produce NaN
 }`);
     sh.fragmentShader = sh.fragmentShader
       .replace('#include <common>', '#include <common>\nuniform float uSnow; varying float vSnowUp;')
       .replace('#include <roughnessmap_fragment>', `#include <roughnessmap_fragment>
-float snowK = uSnow * ${amount.toFixed(2)} * smoothstep(0.25, 0.75, vSnowUp);
+float snowK = clamp(uSnow * ${amount.toFixed(2)} * smoothstep(0.25, 0.75, vSnowUp), 0.0, 1.0);
 diffuseColor.rgb = mix(diffuseColor.rgb, vec3(0.93, 0.96, 1.0), snowK);
 roughnessFactor = mix(roughnessFactor, 0.75, snowK);`);
   };
@@ -42,8 +44,9 @@ roughnessFactor = mix(roughnessFactor, 0.75, snowK);`);
 /* Called once after the world is built: snow on everything static. */
 function applySnowToWorld(scene) {
   const skip = new Set([Terrain.material, ...RoadGfx.materials, ...Props.waterMats]);
+  const inCar = (o) => { for (let p = o; p; p = p.parent) if (p.userData.isCar) return true; return false; };
   scene.traverse((o) => {
-    if (!o.isMesh || !o.material) return;
+    if (!o.isMesh || !o.material || inCar(o)) return;
     for (const m of Array.isArray(o.material) ? o.material : [o.material]) {
       if (skip.has(m) || !m.isMeshStandardMaterial || m.isMeshPhysicalMaterial || m.transparent) continue;
       if (m.emissive && m.emissive.getHex() !== 0 && !m.emissiveMap) continue; // lamps and glowing signs

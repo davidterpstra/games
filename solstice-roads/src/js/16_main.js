@@ -62,6 +62,12 @@ function buildComposer(q) {
   c.setPixelRatio(r.getPixelRatio());
   c.setSize(innerWidth, innerHeight);
   c.addPass(new RenderPass(Game.scene, Game.camera));
+  // safety net: a single NaN/Inf pixel would otherwise be smeared over the whole screen by bloom
+  c.addPass(new ShaderPass({
+    uniforms: { tDiffuse: { value: null } },
+    vertexShader: 'varying vec2 vUv; void main(){ vUv = uv; gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0); }',
+    fragmentShader: 'uniform sampler2D tDiffuse; varying vec2 vUv; void main(){ vec4 c = texture2D(tDiffuse, vUv); bvec4 bad = bvec4(isnan(c.r) || isinf(c.r), isnan(c.g) || isinf(c.g), isnan(c.b) || isinf(c.b), false); gl_FragColor = any(bad) ? vec4(0.0, 0.0, 0.0, 1.0) : min(c, vec4(64.0)); }',
+  }));
   Game.bloom = new UnrealBloomPass(new THREE.Vector2(innerWidth, innerHeight), 0.32, 0.6, 0.92);
   c.addPass(Game.bloom);
   c.addPass(new OutputPass());
