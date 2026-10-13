@@ -286,7 +286,7 @@ async function boot() {
   addEventListener('pagehide', () => Save.write());
   document.addEventListener('visibilitychange', () => { if (document.hidden) Save.write(); });
   window.SR = Game; // debugging/automation hook
-  Object.assign(window.SR, { updateStunts, updateSkills, makeCar, Festival, Menu, EVENTS, raceUpdate, AIDriver, collideCars, racePositions, raceEnd, Vehicle, World, Race, Events, CARS, Sky, Cam, Skill, raceSetup, resetPlayer, setWeather, startFreeRoam, openGarage, openEvents, openSettings, openPause, resumeGame, Save, camSetMode });
+  Object.assign(window.SR, { Props, updateStunts, updateSkills, makeCar, Festival, Menu, EVENTS, raceUpdate, AIDriver, collideCars, racePositions, raceEnd, Vehicle, World, Race, Events, CARS, Sky, Cam, Skill, raceSetup, resetPlayer, setWeather, startFreeRoam, openGarage, openEvents, openSettings, openPause, resumeGame, Save, camSetMode });
   requestAnimationFrame(loop);
 }
 

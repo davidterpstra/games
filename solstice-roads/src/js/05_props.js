@@ -33,6 +33,68 @@ function blob(r, detail, seed, sx = 1, sy = 1, sz = 1) {
 const stripUV = (g) => { if (g.attributes.uv) g.deleteAttribute('uv'); if (g.index) g = g.toNonIndexed(); if (!g.attributes.normal) g.computeVertexNormals(); return g; };
 function mergeColored(parts) { return mergeGeometries(parts.map((g) => { g = stripUV(g); if (!g.attributes.normal) g.computeVertexNormals(); return g; })); }
 
+/* Leaf atlas: left 3/4 is a cluster of leaves on transparency, right 1/4 is solid white so
+   trunks and inner canopy (which sample it) keep their vertex colours. */
+function makeLeafTexture() {
+  return canvasTex(256, 256, (x, w, h) => {
+    x.clearRect(0, 0, w, h);
+    x.fillStyle = '#fff'; x.fillRect(200, 0, 56, h);
+    const r = mulberry32(77);
+    for (let i = 0; i < 260; i++) {
+      const cx = 14 + r() * 164, cy = 14 + r() * 228;
+      const dx = (cx - 96) / 90, dy = (cy - 128) / 120;
+      if (dx * dx + dy * dy > 1) continue; // roughly round cluster
+      const v = 150 + r() * 105;
+      x.save(); x.translate(cx, cy); x.rotate(r() * TAU);
+      x.fillStyle = `rgb(${v * 0.92 | 0},${v | 0},${v * 0.86 | 0})`;
+      x.beginPath(); x.ellipse(0, 0, 4 + r() * 4, 9 + r() * 6, 0, 0, TAU); x.fill();
+      x.strokeStyle = 'rgba(60,70,50,0.35)'; x.lineWidth = 1;
+      x.beginPath(); x.moveTo(0, -10); x.lineTo(0, 10); x.stroke();
+      x.restore();
+    }
+  }, { repeat: false });
+}
+/* Leaf cards scattered over canopy blobs; normals point away from the blob centre so the
+   crown is lit like a volume. Other parts get a uv inside the solid strip of the atlas. */
+function leafyMerge(parts, blobs, perBlob, size, tint) {
+  const geos = [];
+  for (const g0 of parts) {
+    let g = g0.index ? g0.toNonIndexed() : g0;
+    if (!g.attributes.normal) g.computeVertexNormals();
+    const uv = new Float32Array(g.attributes.position.count * 2);
+    for (let i = 0; i < uv.length; i += 2) { uv[i] = 0.9; uv[i + 1] = 0.5; }
+    g.setAttribute('uv', new THREE.BufferAttribute(uv, 2));
+    geos.push(g);
+  }
+  const col = new THREE.Color();
+  blobs.forEach(([bx, by, bz, br], bi) => {
+    for (let k = 0; k < perBlob; k++) {
+      const u = hash2(bi * 97 + k, 3) * 2 - 1, a = hash2(bi * 97 + k, 7) * TAU;
+      const sq = Math.sqrt(1 - u * u);
+      const nx = sq * Math.cos(a), ny = u * 0.8 + 0.2, nz = sq * Math.sin(a);
+      const sz = size * (0.75 + hash2(bi, k) * 0.5);
+      const g = new THREE.PlaneGeometry(sz, sz).toNonIndexed();
+      g.rotateX(hash2(k, bi) * TAU); g.rotateY(hash2(k + 9, bi) * TAU); g.rotateZ(hash2(k + 3, bi + 5) * TAU);
+      const rr = br * (0.6 + 0.4 * hash2(k * 5, bi + 11));
+      const cx = bx + nx * rr, cy = by + ny * rr, cz = bz + nz * rr;
+      g.translate(cx, cy, cz);
+      const p = g.attributes.position, n = new Float32Array(p.count * 3), c = new Float32Array(p.count * 3), uv = g.attributes.uv;
+      for (let i = 0; i < p.count; i++) {
+        const vx = p.getX(i) - bx, vy = p.getY(i) - by, vz = p.getZ(i) - bz, l = Math.hypot(vx, vy, vz) || 1;
+        n[i * 3] = vx / l; n[i * 3 + 1] = vy / l; n[i * 3 + 2] = vz / l;
+        const t = clamp((p.getY(i) - (by - br)) / (br * 2.2), 0, 1);
+        col.setRGB(tint[0], tint[1], tint[2]).multiplyScalar(0.55 + 0.6 * t + 0.12 * (hash2(bi, k * 3) - 0.5));
+        c[i * 3] = col.r; c[i * 3 + 1] = col.g; c[i * 3 + 2] = col.b;
+        uv.setX(i, uv.getX(i) * 0.74);
+      }
+      g.setAttribute('normal', new THREE.BufferAttribute(n, 3));
+      g.setAttribute('color', new THREE.BufferAttribute(c, 3));
+      geos.push(g);
+    }
+  });
+  return mergeGeometries(geos);
+}
+
 function makeTreeGeoms() {
   const T = {};
   const bark = (c) => (col, x, y) => col.setRGB(0.32, 0.24, 0.17).multiplyScalar(0.8 + 0.2 * c);
@@ -43,11 +105,11 @@ function makeTreeGeoms() {
     const parts = [trunk];
     const blobs = [[0, 6.2, 0, 2.6], [1.6, 5.4, 0.6, 1.9], [-1.5, 5.6, -0.5, 2.0], [0.4, 5.2, -1.6, 1.8], [-0.5, 5.0, 1.6, 1.8], [0.2, 7.6, 0.3, 1.7]];
     blobs.forEach(([x, y, z, r], i) => {
-      const b = blob(r, 2, i * 3.1); b.translate(x, y, z);
-      colorize(b, (col, px, py, pz) => { const t = clamp((py - 3.6) / 5.2, 0, 1); col.setRGB(0.2, 0.36, 0.13).multiplyScalar(0.55 + 0.6 * t + 0.1 * hash2(i, 1)); });
+      const b = blob(r * 0.72, 2, i * 3.1); b.translate(x, y, z);
+      colorize(b, (col, px, py, pz) => { const t = clamp((py - 3.6) / 5.2, 0, 1); col.setRGB(0.16, 0.3, 0.1).multiplyScalar(0.3 + 0.35 * t + 0.1 * hash2(i, 1)); });
       parts.push(b);
     });
-    T.oak = mergeColored(parts);
+    T.oak = leafyMerge(parts, blobs, 24, 2.5, [0.24, 0.42, 0.15]);
     const ft = new THREE.CylinderGeometry(0.25, 0.4, 4.6, 5); ft.translate(0, 2.3, 0); colorize(ft, bark(1));
     const fb = blob(3.3, 1, 2, 1, 0.8, 1); fb.translate(0, 6.0, 0);
     colorize(fb, (col, x, y) => col.setRGB(0.2, 0.35, 0.13).multiplyScalar(0.6 + 0.5 * clamp((y - 4) / 4, 0, 1)));
@@ -77,12 +139,13 @@ function makeTreeGeoms() {
     const trunk = new THREE.CylinderGeometry(0.1, 0.2, 6.5, 6, 6); trunk.translate(0, 3.25, 0);
     colorize(trunk, (col, x, y, z, i) => { const m = hash2(Math.floor(y * 3), 1) < 0.25 ? 0.25 : 0.92; col.setRGB(m, m, m * 0.97); });
     const parts = [trunk];
-    [[0, 6.4, 0, 1.6], [0.7, 5.3, 0.3, 1.2], [-0.6, 5.6, -0.4, 1.3], [0.1, 7.6, 0, 1.1]].forEach(([x, y, z, r], i) => {
-      const b = blob(r, 2, 10 + i, 1, 1.35, 1); b.translate(x, y, z);
+    const bblobs = [[0, 6.4, 0, 1.6], [0.7, 5.3, 0.3, 1.2], [-0.6, 5.6, -0.4, 1.3], [0.1, 7.6, 0, 1.1]];
+    bblobs.forEach(([x, y, z, r], i) => {
+      const b = blob(r * 0.72, 2, 10 + i, 1, 1.35, 1); b.translate(x, y, z);
       colorize(b, (col, px, py) => col.setRGB(0.36, 0.5, 0.2).multiplyScalar(0.6 + 0.5 * clamp((py - 4.5) / 4, 0, 1)));
       parts.push(b);
     });
-    T.birch = mergeColored(parts);
+    T.birch = leafyMerge(parts, bblobs.map(([x, y, z, r]) => [x, y, z, r * 1.15]), 16, 1.8, [0.42, 0.56, 0.24]);
     const ft = new THREE.CylinderGeometry(0.1, 0.18, 6, 4); ft.translate(0, 3, 0); colorize(ft, (col) => col.setRGB(0.85, 0.85, 0.82));
     const fb = blob(1.9, 1, 4, 1, 1.5, 1); fb.translate(0, 6.3, 0); colorize(fb, (col, x, y) => col.setRGB(0.35, 0.48, 0.2).multiplyScalar(0.7 + 0.4 * clamp((y - 4.5) / 4, 0, 1)));
     T.birchFar = mergeColored([ft, fb]);
@@ -196,6 +259,7 @@ function buildVegetation(q) {
   const G = makeTreeGeoms();
   Props.geoms = G;
   const matLeaf = windMaterial(0.035);
+  const matCards = windMaterial(0.035, { map: makeLeafTexture(), alphaTest: 0.45, side: THREE.DoubleSide });
   const matStill = new THREE.MeshStandardMaterial({ vertexColors: true, roughness: 0.95 });
   const chunks = [];
   for (let i = 0; i < VCN * VCN; i++) chunks.push({ trees: [[], [], []], bush: [], rock: [], hedge: [] });
@@ -269,7 +333,7 @@ function buildVegetation(q) {
     const cx = (ci % VCN) * VCH - HALF + VCH / 2, cz = Math.floor(ci / VCN) * VCH - HALF + VCH / 2;
     const vc = { cx, cz, near: [], far: [], small: [] };
     for (let t = 0; t < 3; t++) {
-      const a = inst(near[t], matLeaf, c.trees[t], true); if (a) vc.near.push(a);
+      const a = inst(near[t], t === 1 ? matLeaf : matCards, c.trees[t], true); if (a) vc.near.push(a);
       const b = inst(far[t], matLeaf, c.trees[t], false); if (b) vc.far.push(b);
     }
     const bu = inst(G.bush, matLeaf, c.bush, false); if (bu) vc.small.push(bu);
