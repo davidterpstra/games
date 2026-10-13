@@ -230,3 +230,12 @@ body.photo #hud, body.photo #touch { opacity: 0; visibility: hidden; }
 .gcar .price { margin-left: auto; font: 700 14px var(--cond); color: var(--amber); white-space: nowrap; }
 .gcar { position: relative; }
 #gDrive:disabled { opacity: 0.55; cursor: not-allowed; filter: grayscale(0.6); }
+
+/* ---------- online ---------- */
+.net { position: absolute; left: 50%; top: 12px; transform: translateX(-50%); padding: 4px 12px 4px 26px; border-radius: 20px; background: rgba(10, 12, 18, 0.55); border: 1px solid var(--line); font: 600 12px var(--body); white-space: nowrap; }
+.net::before { content: ''; position: absolute; left: 11px; top: 50%; width: 8px; height: 8px; margin-top: -4px; border-radius: 50%; background: #888; }
+.net.online::before { background: #2fd27a; box-shadow: 0 0 8px #2fd27a; }
+.net.connecting::before { background: #ffb02e; }
+.net.failed::before { background: #ff4d4d; }
+.textin { font: 600 15px var(--body); color: var(--text); background: rgba(255, 255, 255, 0.06); border: 1px solid var(--line); border-radius: 8px; padding: 7px 10px; width: min(240px, 60vw); }
+.textin:focus-visible { outline: 3px solid #fff; outline-offset: 1px; }

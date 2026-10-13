@@ -289,7 +289,8 @@ async function boot() {
   const firstGesture = () => { audioStart(); musicPlay(); removeEventListener('pointerdown', firstGesture); removeEventListener('keydown', firstGesture); };
   addEventListener('pointerdown', firstGesture);
   addEventListener('keydown', firstGesture);
-  addEventListener('pagehide', () => Save.write());
+  addEventListener('pagehide', () => { Save.write(); netLeave(); });
+  netConnect();
   document.addEventListener('visibilitychange', () => { if (document.hidden) Save.write(); });
   window.SR = Game; // debugging/automation hook
   Object.assign(window.SR, { Props, updateStunts, updateSkills, makeCar, Festival, Menu, EVENTS, raceUpdate, AIDriver, collideCars, racePositions, raceEnd, Vehicle, World, Race, Events, CARS, Sky, Cam, Skill, raceSetup, resetPlayer, setWeather, startFreeRoam, openGarage, openEvents, openSettings, openPause, resumeGame, Save, camSetMode });
@@ -320,6 +321,7 @@ function frame() {
       if (frozen) for (const c of cars) { c.x = c.prev.x; c.z = c.prev.z; c.h = c.prev.h; c.vx = c.vz = 0; c.w = 0; }
       collideCars(cars);
       collideTraffic(p);
+      collideRemotes(p);
       smashCheck(p, true);
       for (const a of Game.ai) smashCheck(a, false);
       if (!Race.ev) { updateStunts(PH_DT, p); }
@@ -388,6 +390,7 @@ function frame() {
   if (Props.grass) Props.grass.u.uCam.value.copy(cam.position);
   updateFestival(dt, nightGlow);
   if (playing || Game.mode === 'menu') updateTraffic(dt, p, cam.position);
+  netUpdate(dt);
   updateMarkers(cam.position, !!Race.ev || Game.mode === 'garage');
   updateFX(dt, Game.scene);
   audioUpdate(dt, p, cam, Game.ai);
