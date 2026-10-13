@@ -149,6 +149,9 @@ body.in-menu #hud, body.in-menu #touch { opacity: 0; visibility: hidden; }
 .dnum span { font: 600 13px var(--body); letter-spacing: 2px; color: var(--muted); }
 .dgear { position: absolute; left: 50%; bottom: 22px; transform: translateX(-50%); width: 44px; height: 44px; border-radius: 10px; display: grid; place-items: center; font: 800 28px var(--cond); background: rgba(10, 12, 18, 0.7); border: 1px solid var(--line); }
 #mapbox { position: absolute; left: 22px; bottom: 18px; width: 220px; }
+#mapbox { cursor: pointer; pointer-events: auto; }
+#mapbox.full { width: 420px; }
+#mapbox.full #minimap { width: 420px; height: 420px; }
 #minimap { width: 220px; height: 220px; display: block; filter: drop-shadow(0 4px 12px rgba(0, 0, 0, 0.5)); }
 #loc { margin-top: 6px; text-align: center; font: 700 16px var(--cond); letter-spacing: 1px; text-transform: uppercase; text-shadow: 0 2px 8px rgba(0, 0, 0, 0.8); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 #racePanel { position: absolute; left: 22px; top: 20px; display: none; gap: 18px; padding: 12px 20px; align-items: center; }

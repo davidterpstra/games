@@ -160,6 +160,9 @@ body.in-menu #hud, body.in-menu #touch { opacity: 0; visibility: hidden; }
 .dnum span { font: 600 13px var(--body); letter-spacing: 2px; color: var(--muted); }
 .dgear { position: absolute; left: 50%; bottom: 22px; transform: translateX(-50%); width: 44px; height: 44px; border-radius: 10px; display: grid; place-items: center; font: 800 28px var(--cond); background: rgba(10, 12, 18, 0.7); border: 1px solid var(--line); }
 #mapbox { position: absolute; left: 22px; bottom: 18px; width: 220px; }
+#mapbox { cursor: pointer; pointer-events: auto; }
+#mapbox.full { width: 420px; }
+#mapbox.full #minimap { width: 420px; height: 420px; }
 #minimap { width: 220px; height: 220px; display: block; filter: drop-shadow(0 4px 12px rgba(0, 0, 0, 0.5)); }
 #loc { margin-top: 6px; text-align: center; font: 700 16px var(--cond); letter-spacing: 1px; text-transform: uppercase; text-shadow: 0 2px 8px rgba(0, 0, 0, 0.8); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 #racePanel { position: absolute; left: 22px; top: 20px; display: none; gap: 18px; padding: 12px 20px; align-items: center; }
@@ -394,6 +397,7 @@ body.photo #hud, body.photo #touch { opacity: 0; visibility: hidden; }
       <div><kbd>N</kbd><span>Radio on / off</span></div>
       <div><kbd>H</kbd><span>Horn</span></div>
       <div><kbd>P</kbd><span>Photo mode</span></div>
+      <div><kbd>T</kbd><kbd>Tab</kbd><span>Whole map on / off (or tap the minimap)</span></div>
       <div><kbd>Esc</kbd><span>Pause</span></div>
       <div><kbd>Pad</kbd><span>RT gas · LT brake · A handbrake · Y camera · X interact</span></div>
     </div>
@@ -711,10 +715,10 @@ const WEATHERS = [
 
 /* ---------- graphics presets ---------- */
 const QUALITY = {
-  low: { name: 'Low', traffic: 5, dpr: 0.75, shadows: 0, post: false, msaa: 0, grass: 0, treeFar: 520, view: 1100, rain: 2500, treeShadows: false, terrainLod: [250, 600] },
-  medium: { name: 'Medium', traffic: 8, dpr: 1.0, shadows: 1024, post: true, msaa: 0, grass: 14000, treeFar: 800, view: 1600, rain: 5000, treeShadows: false, terrainLod: [320, 800] },
-  high: { name: 'High', traffic: 12, dpr: 1.5, shadows: 2048, post: true, msaa: 4, grass: 32000, treeFar: 1150, view: 2200, rain: 9000, treeShadows: true, terrainLod: [420, 1000] },
-  ultra: { name: 'Ultra', traffic: 16, dpr: 2.0, shadows: 4096, post: true, msaa: 4, grass: 60000, treeFar: 1600, view: 2800, rain: 14000, treeShadows: true, terrainLod: [560, 1300] },
+  low: { name: 'Low', traffic: 5, dpr: 0.75, shadows: 0, post: false, msaa: 0, grass: 0, treeFar: 1000, view: 3400, rain: 2500, treeShadows: false, terrainLod: [250, 700] },
+  medium: { name: 'Medium', traffic: 8, dpr: 1.0, shadows: 1024, post: true, msaa: 0, grass: 14000, treeFar: 1600, view: 3600, rain: 5000, treeShadows: false, terrainLod: [320, 800] },
+  high: { name: 'High', traffic: 12, dpr: 1.5, shadows: 2048, post: true, msaa: 4, grass: 32000, treeFar: 2400, view: 3800, rain: 9000, treeShadows: true, terrainLod: [420, 1000] },
+  ultra: { name: 'Ultra', traffic: 16, dpr: 2.0, shadows: 4096, post: true, msaa: 4, grass: 60000, treeFar: 3400, view: 4000, rain: 14000, treeShadows: true, terrainLod: [560, 1300] },
 };
 
 const DEFAULT_SETTINGS = {
@@ -3516,8 +3520,8 @@ function computeAtmosphere() {
   Sky.hemi.intensity = lerp(0.12, 0.22 + clouds * 0.45, day);
   // fog
   const view = Sky.q ? Sky.q.view : 1600;
-  let dens = 0.00028 + golden * 0.00012 + clouds * 0.00015 + rain * 0.0012 + fog * 0.0042;
-  dens = Math.max(dens, 2.1 / view);
+  let dens = 0.00016 + golden * 0.00012 + clouds * 0.00015 + rain * 0.0012 + fog * 0.0042;
+  dens = Math.max(dens, 1.6 / view); // the whole of Wendmoor stays readable on every preset
   Sky.fogColor.copy(hor).lerp(zen, 0.12);
   return { dens, day, golden };
 }
@@ -6360,7 +6364,7 @@ function collideRemotes(player) {
    heading-up), location, race panel, drift chain, notifications,
    interaction prompt, countdown.
    ===================================================================== */
-const Hud = { map: null, mapScale: 0.5, tach: null, tctx: null, mm: null, mctx: null, loc: '', locT: 0, near: null, fpsT: 0, frames: 0, lastSpeed: -1, lastGear: '' };
+const Hud = { map: null, mapScale: 0.5, tach: null, tctx: null, mm: null, mctx: null, loc: '', locT: 0, near: null, fpsT: 0, frames: 0, lastSpeed: -1, lastGear: '', full: false };
 
 function buildWorldMap() {
   const S = 1200, sc = S / WORLD; // px per metre
@@ -6407,6 +6411,14 @@ function buildWorldMap() {
 function initHud() {
   Hud.tach = $('tach'); Hud.tctx = Hud.tach.getContext('2d');
   Hud.mm = $('minimap'); Hud.mctx = Hud.mm.getContext('2d');
+  $('mapbox').addEventListener('pointerdown', (e) => { e.stopPropagation(); toggleFullMap(); });
+}
+// T / Tab / tapping the minimap: switch between the local radar and the whole of Wendmoor
+function toggleFullMap() {
+  Hud.full = !Hud.full;
+  const S = Hud.full ? 420 : 220;
+  Hud.mm.width = Hud.mm.height = S;
+  $('mapbox').classList.toggle('full', Hud.full);
 }
 
 function drawTach(rpm, red, kmh, gear) {
@@ -6443,17 +6455,19 @@ function drawTach(rpm, red, kmh, gear) {
 }
 
 function drawMinimap(car, extra) {
-  const c = Hud.mm, x = Hud.mctx, W = c.width, H = c.height, R = W / 2 - 4;
+  const c = Hud.mm, x = Hud.mctx, W = c.width, H = c.height, R = W / 2 - 4, full = Hud.full;
   x.clearRect(0, 0, W, H);
   x.save();
-  x.beginPath(); x.arc(W / 2, H / 2, R, 0, TAU); x.clip();
+  x.beginPath();
+  if (full) x.roundRect(4, 4, W - 8, H - 8, 18); else x.arc(W / 2, H / 2, R, 0, TAU);
+  x.clip();
   x.fillStyle = '#1d2a1b'; x.fillRect(0, 0, W, H);
-  const zoom = (W / 2) / (150 + Math.min(150, car.speed * 2.2)); // px per metre on the minimap
+  const zoom = full ? (W - 8) / WORLD : (W / 2) / (150 + Math.min(150, car.speed * 2.2)); // px per metre on the minimap
   const k = zoom / Hud.mapScale;
-  x.translate(W / 2, H / 2 + R * 0.25);
-  x.rotate(car.h - Math.PI);
+  if (full) x.translate(W / 2, H / 2);
+  else { x.translate(W / 2, H / 2 + R * 0.25); x.rotate(car.h - Math.PI); }
   x.scale(k, k);
-  const px = (car.x + HALF) * Hud.mapScale, pz = (car.z + HALF) * Hud.mapScale;
+  const px = full ? HALF * Hud.mapScale : (car.x + HALF) * Hud.mapScale, pz = full ? HALF * Hud.mapScale : (car.z + HALF) * Hud.mapScale;
   x.globalAlpha = 0.92;
   x.drawImage(Hud.map, -px, -pz);
   x.globalAlpha = 1;
@@ -6479,10 +6493,12 @@ function drawMinimap(car, extra) {
   x.restore();
   // player arrow
   x.save();
-  x.translate(W / 2, H / 2 + R * 0.25);
+  if (full) { x.translate(W / 2 + car.x * zoom, H / 2 + car.z * zoom); x.rotate(Math.PI - car.h); }
+  else x.translate(W / 2, H / 2 + R * 0.25);
   x.fillStyle = '#fff'; x.strokeStyle = '#ff3d7f'; x.lineWidth = 2.5;
   x.beginPath(); x.moveTo(0, -10); x.lineTo(7, 8); x.lineTo(0, 4); x.lineTo(-7, 8); x.closePath(); x.fill(); x.stroke();
   x.restore();
+  if (full) { x.strokeStyle = 'rgba(255,255,255,0.35)'; x.lineWidth = 2; x.beginPath(); x.roundRect(4, 4, W - 8, H - 8, 18); x.stroke(); return; }
   // ring + north marker
   x.strokeStyle = 'rgba(255,255,255,0.35)'; x.lineWidth = 2; x.beginPath(); x.arc(W / 2, H / 2, R, 0, TAU); x.stroke();
   const ang = car.h - Math.PI; // rotation applied to the map
@@ -7088,7 +7104,7 @@ function initPhoto() {
    controls. Produces throttle / brake / steer / handbrake in 0..1.
    ===================================================================== */
 const Input = { K: {}, touch: { left: 0, right: 0, gas: 0, brake: 0, hb: 0 }, steer: 0, padPrev: [], usedTouch: false };
-const GAME_KEYS = new Set(['ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight', 'Space', 'KeyW', 'KeyA', 'KeyS', 'KeyD']);
+const GAME_KEYS = new Set(['ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight', 'Space', 'KeyW', 'KeyA', 'KeyS', 'KeyD', 'Tab']);
 
 function initInput() {
   addEventListener('keydown', (e) => {
@@ -7136,6 +7152,7 @@ function handleKey(code, e) {
   if (code === 'KeyM') { Game.settings.muted = !Game.settings.muted; applyVolumes(); notify(Game.settings.muted ? 'Sound muted' : 'Sound on', '', 'info', 1200); return; }
   if (code === 'KeyN') { musicToggle(); updateRadioBtn(); return; }
   if (!playing) return;
+  if (code === 'KeyT' || code === 'Tab' || code === 'map') { toggleFullMap(); return; }
   if (code === 'KeyC' || code === 'cam') { camSetMode(Cam.mode + 1, Game.camera); Game.settings.camera = Cam.mode; notify('Camera', CAM_NAMES[Cam.mode], 'info', 900); }
   else if (code === 'KeyR' || code === 'reset') resetPlayer();
   else if (code === 'KeyE' || code === 'act') interact();

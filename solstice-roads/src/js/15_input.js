@@ -3,7 +3,7 @@
    controls. Produces throttle / brake / steer / handbrake in 0..1.
    ===================================================================== */
 const Input = { K: {}, touch: { left: 0, right: 0, gas: 0, brake: 0, hb: 0 }, steer: 0, padPrev: [], usedTouch: false };
-const GAME_KEYS = new Set(['ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight', 'Space', 'KeyW', 'KeyA', 'KeyS', 'KeyD']);
+const GAME_KEYS = new Set(['ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight', 'Space', 'KeyW', 'KeyA', 'KeyS', 'KeyD', 'Tab']);
 
 function initInput() {
   addEventListener('keydown', (e) => {
@@ -51,6 +51,7 @@ function handleKey(code, e) {
   if (code === 'KeyM') { Game.settings.muted = !Game.settings.muted; applyVolumes(); notify(Game.settings.muted ? 'Sound muted' : 'Sound on', '', 'info', 1200); return; }
   if (code === 'KeyN') { musicToggle(); updateRadioBtn(); return; }
   if (!playing) return;
+  if (code === 'KeyT' || code === 'Tab' || code === 'map') { toggleFullMap(); return; }
   if (code === 'KeyC' || code === 'cam') { camSetMode(Cam.mode + 1, Game.camera); Game.settings.camera = Cam.mode; notify('Camera', CAM_NAMES[Cam.mode], 'info', 900); }
   else if (code === 'KeyR' || code === 'reset') resetPlayer();
   else if (code === 'KeyE' || code === 'act') interact();

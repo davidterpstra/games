@@ -3,7 +3,7 @@
    heading-up), location, race panel, drift chain, notifications,
    interaction prompt, countdown.
    ===================================================================== */
-const Hud = { map: null, mapScale: 0.5, tach: null, tctx: null, mm: null, mctx: null, loc: '', locT: 0, near: null, fpsT: 0, frames: 0, lastSpeed: -1, lastGear: '' };
+const Hud = { map: null, mapScale: 0.5, tach: null, tctx: null, mm: null, mctx: null, loc: '', locT: 0, near: null, fpsT: 0, frames: 0, lastSpeed: -1, lastGear: '', full: false };
 
 function buildWorldMap() {
   const S = 1200, sc = S / WORLD; // px per metre
@@ -50,6 +50,14 @@ function buildWorldMap() {
 function initHud() {
   Hud.tach = $('tach'); Hud.tctx = Hud.tach.getContext('2d');
   Hud.mm = $('minimap'); Hud.mctx = Hud.mm.getContext('2d');
+  $('mapbox').addEventListener('pointerdown', (e) => { e.stopPropagation(); toggleFullMap(); });
+}
+// T / Tab / tapping the minimap: switch between the local radar and the whole of Wendmoor
+function toggleFullMap() {
+  Hud.full = !Hud.full;
+  const S = Hud.full ? 420 : 220;
+  Hud.mm.width = Hud.mm.height = S;
+  $('mapbox').classList.toggle('full', Hud.full);
 }
 
 function drawTach(rpm, red, kmh, gear) {
@@ -86,17 +94,19 @@ function drawTach(rpm, red, kmh, gear) {
 }
 
 function drawMinimap(car, extra) {
-  const c = Hud.mm, x = Hud.mctx, W = c.width, H = c.height, R = W / 2 - 4;
+  const c = Hud.mm, x = Hud.mctx, W = c.width, H = c.height, R = W / 2 - 4, full = Hud.full;
   x.clearRect(0, 0, W, H);
   x.save();
-  x.beginPath(); x.arc(W / 2, H / 2, R, 0, TAU); x.clip();
+  x.beginPath();
+  if (full) x.roundRect(4, 4, W - 8, H - 8, 18); else x.arc(W / 2, H / 2, R, 0, TAU);
+  x.clip();
   x.fillStyle = '#1d2a1b'; x.fillRect(0, 0, W, H);
-  const zoom = (W / 2) / (150 + Math.min(150, car.speed * 2.2)); // px per metre on the minimap
+  const zoom = full ? (W - 8) / WORLD : (W / 2) / (150 + Math.min(150, car.speed * 2.2)); // px per metre on the minimap
   const k = zoom / Hud.mapScale;
-  x.translate(W / 2, H / 2 + R * 0.25);
-  x.rotate(car.h - Math.PI);
+  if (full) x.translate(W / 2, H / 2);
+  else { x.translate(W / 2, H / 2 + R * 0.25); x.rotate(car.h - Math.PI); }
   x.scale(k, k);
-  const px = (car.x + HALF) * Hud.mapScale, pz = (car.z + HALF) * Hud.mapScale;
+  const px = full ? HALF * Hud.mapScale : (car.x + HALF) * Hud.mapScale, pz = full ? HALF * Hud.mapScale : (car.z + HALF) * Hud.mapScale;
   x.globalAlpha = 0.92;
   x.drawImage(Hud.map, -px, -pz);
   x.globalAlpha = 1;
@@ -122,10 +132,12 @@ function drawMinimap(car, extra) {
   x.restore();
   // player arrow
   x.save();
-  x.translate(W / 2, H / 2 + R * 0.25);
+  if (full) { x.translate(W / 2 + car.x * zoom, H / 2 + car.z * zoom); x.rotate(Math.PI - car.h); }
+  else x.translate(W / 2, H / 2 + R * 0.25);
   x.fillStyle = '#fff'; x.strokeStyle = '#ff3d7f'; x.lineWidth = 2.5;
   x.beginPath(); x.moveTo(0, -10); x.lineTo(7, 8); x.lineTo(0, 4); x.lineTo(-7, 8); x.closePath(); x.fill(); x.stroke();
   x.restore();
+  if (full) { x.strokeStyle = 'rgba(255,255,255,0.35)'; x.lineWidth = 2; x.beginPath(); x.roundRect(4, 4, W - 8, H - 8, 18); x.stroke(); return; }
   // ring + north marker
   x.strokeStyle = 'rgba(255,255,255,0.35)'; x.lineWidth = 2; x.beginPath(); x.arc(W / 2, H / 2, R, 0, TAU); x.stroke();
   const ang = car.h - Math.PI; // rotation applied to the map

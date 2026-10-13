@@ -179,8 +179,8 @@ function computeAtmosphere() {
   Sky.hemi.intensity = lerp(0.12, 0.22 + clouds * 0.45, day);
   // fog
   const view = Sky.q ? Sky.q.view : 1600;
-  let dens = 0.00028 + golden * 0.00012 + clouds * 0.00015 + rain * 0.0012 + fog * 0.0042;
-  dens = Math.max(dens, 2.1 / view);
+  let dens = 0.00016 + golden * 0.00012 + clouds * 0.00015 + rain * 0.0012 + fog * 0.0042;
+  dens = Math.max(dens, 1.6 / view); // the whole of Wendmoor stays readable on every preset
   Sky.fogColor.copy(hor).lerp(zen, 0.12);
   return { dens, day, golden };
 }
