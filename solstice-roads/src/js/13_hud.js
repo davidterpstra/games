@@ -116,6 +116,7 @@ function drawMinimap(car, extra) {
     x.fillStyle = TYPE_COLOR[m.type]; x.strokeStyle = '#111'; x.lineWidth = 2 / k;
     x.beginPath(); x.arc(M(m.x) - px, M(m.z) - pz, 5.5 / k, 0, TAU); x.fill(); x.stroke();
   }
+  if (!Race.ev) for (const o of Traffic.cars) { x.fillStyle = '#c9ced6'; x.beginPath(); x.arc(M(o.x) - px, M(o.z) - pz, 3.2 / k, 0, TAU); x.fill(); }
   for (const o of extra.cars || []) { x.fillStyle = '#ffd23a'; x.strokeStyle = '#111'; x.lineWidth = 2 / k; x.beginPath(); x.arc(M(o.x) - px, M(o.z) - pz, 4.5 / k, 0, TAU); x.fill(); x.stroke(); }
   x.restore();
   // player arrow

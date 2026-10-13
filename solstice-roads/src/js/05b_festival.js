@@ -288,7 +288,62 @@ transformed.y -= fx * fx * 0.25 * (1.2 - min(uWind, 1.0));`);
     arch.traverse((m) => { m.castShadow = true; });
     G.add(arch);
   }
+  buildCrowd(G, H0);
   mergeByMaterial(G, [Festival.sun, Festival.wheel]);
+}
+
+/* Festival visitors: a dancing crowd at the stage, people browsing the tents and garages. */
+function buildCrowd(G, H0) {
+  const spots = [];
+  const r = mulberry32(31);
+  const area = (a0, a1, r0, r1, n, dance) => {
+    for (let i = 0; i < n; i++) {
+      const a = lerp(a0, a1, r()), rad = lerp(r0, r1, Math.sqrt(r()));
+      const [x, z] = polar(a, rad);
+      if (spots.some((p) => Math.hypot(p[0] - x, p[1] - z) < 0.75)) continue;
+      spots.push([x, z, dance, r()]);
+    }
+  };
+  area(-Math.PI / 4 - 0.2, -Math.PI / 4 + 0.2, 85, 95, 150, 1); // in front of the stage
+  area(0.42, 1.12, 84, 90, 45, 0); // tents
+  area(Math.PI * 0.75 - 0.35, Math.PI * 0.75 + 0.35, 83, 88, 25, 0); // garages
+  area(-Math.PI * 0.9, -Math.PI * 0.55, 84, 90, 25, 0); // wheel + grandstand
+  const body = new THREE.CapsuleGeometry(0.2, 0.75, 3, 8).translate(0, 0.6, 0);
+  const head = new THREE.SphereGeometry(0.12, 10, 8).translate(0, 1.32, 0);
+  const mat = (shirts) => {
+    const m = new THREE.MeshStandardMaterial({ roughness: 0.85 });
+    m.onBeforeCompile = (sh) => {
+      sh.uniforms.uTime = Props.uTime;
+      sh.vertexShader = sh.vertexShader
+        .replace('#include <common>', '#include <common>\nuniform float uTime;')
+        .replace('#include <begin_vertex>', `#include <begin_vertex>
+vec2 cp = instanceMatrix[3].xz;
+float ph = fract(sin(dot(cp, vec2(12.9898, 78.233))) * 43758.5453);
+float dance = step(0.5, fract(ph * 7.0)) * step(instanceMatrix[3].y, 1e6);
+transformed.y += abs(sin(uTime * (3.2 + ph) + ph * 6.28)) * 0.16 * dance;
+transformed.x += sin(uTime * 1.3 + ph * 9.0) * 0.03 * position.y;`);
+    };
+    void shirts;
+    return m;
+  };
+  const bm = new THREE.InstancedMesh(body, mat(true), spots.length);
+  const hm = new THREE.InstancedMesh(head, mat(false), spots.length);
+  const o = new THREE.Object3D(), col = new THREE.Color();
+  const shirts = [0xff3d7f, 0xffb02e, 0x27b6ff, 0xf4f4f0, 0x2fbf71, 0x6a2fd6, 0x222831, 0xe8222f, 0x1e6bff];
+  const skin = [0xf1c7a5, 0xd9a07a, 0xa86b45, 0x6e4529, 0xf6d6bd];
+  spots.forEach((p, i) => {
+    const [x, z, dance, rnd] = p;
+    // dancers face the stage, others face a random direction
+    const [sx, sz] = polar(-Math.PI / 4, 104);
+    const face = dance ? Math.atan2(sx - x, sz - z) : rnd * TAU;
+    o.position.set(x, H0 + (dance ? 0 : 0), z); o.rotation.set(0, face, 0); o.scale.setScalar(0.88 + rnd * 0.25); o.updateMatrix();
+    bm.setMatrixAt(i, o.matrix); hm.setMatrixAt(i, o.matrix);
+    bm.setColorAt(i, col.set(shirts[(i * 5 + (rnd * 9 | 0)) % shirts.length]));
+    hm.setColorAt(i, col.set(skin[(i * 3 + (rnd * 5 | 0)) % skin.length]));
+    Col.circle(x, z, 0.35, 'post');
+  });
+  bm.castShadow = hm.castShadow = true;
+  G.add(bm, hm);
 }
 
 function updateFestival(dt, night) {

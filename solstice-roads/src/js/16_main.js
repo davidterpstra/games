@@ -94,6 +94,7 @@ Game.applySettings = function () {
   if (Game.q !== Game.lastQ) { buildComposer(q); Game.lastQ = q; }
   if (Game.composer) Game.composer.setPixelRatio(Game.dprNow);
   setGrassCount(q.grass, q.grass >= 60000 ? 72 : q.grass >= 30000 ? 58 : 44);
+  if (Game.player) setTrafficSize(q.traffic);
   Game.camera.far = q.view + 300;
   Game.camera.updateProjectionMatrix();
   updateVegetation(Game.camera.position.x, Game.camera.position.z, q);
@@ -179,7 +180,7 @@ function guessQuality(r) {
   let name = '';
   try { const gl = r.getContext(); const ext = gl.getExtension('WEBGL_debug_renderer_info'); name = ext ? gl.getParameter(ext.UNMASKED_RENDERER_WEBGL) : gl.getParameter(gl.RENDERER); } catch (e) { /* ignore */ }
   name = String(name).toLowerCase();
-  const mobile = matchMedia('(pointer: coarse)').matches && Math.min(screen.width, screen.height) < 900;
+  const mobile = matchMedia('(pointer: coarse)').matches && Math.min(window.screen.width, window.screen.height) < 900;
   if (mobile || /swiftshader|llvmpipe|software|mali|adreno|powervr/.test(name)) return 'low';
   if (/intel|uhd|iris|hd graphics|apple m1|radeon\(tm\) graphics|vega/.test(name)) return 'medium';
   return 'high';
@@ -220,6 +221,7 @@ async function boot() {
   Game.scene.add(Festival.group);
   prepareEvents();
   buildMarkers(Game.scene);
+  initTraffic();
   progress(0.94, 'Drawing maps'); await frameYield();
   buildWorldMap();
   initHud();
@@ -281,7 +283,7 @@ async function boot() {
   addEventListener('pagehide', () => Save.write());
   document.addEventListener('visibilitychange', () => { if (document.hidden) Save.write(); });
   window.SR = Game; // debugging/automation hook
-  Object.assign(window.SR, { updateStunts, updateSkills, Skill, makeCar, Festival, Menu, EVENTS, raceUpdate, AIDriver, collideCars, racePositions, raceEnd, Vehicle, World, Race, Events, CARS, Sky, Cam, Skill, raceSetup, resetPlayer, setWeather, startFreeRoam, openGarage, openEvents, openSettings, openPause, resumeGame, Save, camSetMode });
+  Object.assign(window.SR, { updateStunts, updateSkills, makeCar, Festival, Menu, EVENTS, raceUpdate, AIDriver, collideCars, racePositions, raceEnd, Vehicle, World, Race, Events, CARS, Sky, Cam, Skill, raceSetup, resetPlayer, setWeather, startFreeRoam, openGarage, openEvents, openSettings, openPause, resumeGame, Save, camSetMode });
   requestAnimationFrame(loop);
 }
 
@@ -308,6 +310,7 @@ function frame() {
       for (const c of cars) { c.frozen = frozen; c.step(PH_DT, Game.settings); }
       if (frozen) for (const c of cars) { c.x = c.prev.x; c.z = c.prev.z; c.h = c.prev.h; c.vx = c.vz = 0; c.w = 0; }
       collideCars(cars);
+      collideTraffic(p);
       if (!Race.ev) { updateStunts(PH_DT, p); }
       Game.acc -= PH_DT; steps++;
     }
@@ -370,6 +373,7 @@ function frame() {
   }
   if (Props.grass) Props.grass.u.uCam.value.copy(cam.position);
   updateFestival(dt, nightGlow);
+  if (playing || Game.mode === 'menu') updateTraffic(dt, p, cam.position);
   updateMarkers(cam.position, !!Race.ev || Game.mode === 'garage');
   updateFX(dt, Game.scene);
   audioUpdate(dt, p, cam, Game.ai);

@@ -460,6 +460,15 @@ function makeCar(spec, color, opts = {}) {
   // collapse static parts into one mesh per material (draw calls: ~90 -> ~25 per car)
   const lampMats = [];
   body.traverse((o) => { if (o.material && o.material.userData && o.material.userData.lamp && !lampMats.includes(o.material)) lampMats.push(o.material); });
+  if (opts.lite) {
+    // traffic cars: no interior, plates, brake discs, calipers or hub caps
+    body.remove(interior); body.remove(pf); body.remove(pr);
+    for (const w of wheels) {
+      const side = w.spin.children[0];
+      for (const c of [...side.children]) if (c.material === CarMats.disc || c.material === capMat) side.remove(c);
+      for (const c of [...w.pivot.children]) if (c.material === calMat) w.pivot.remove(c);
+    }
+  }
   mergeByMaterial(body, [steer, gauge]);
   for (const w of wheels) mergeByMaterial(w.spin.children[0], []);
   return {

@@ -674,10 +674,10 @@ const WEATHERS = [
 
 /* ---------- graphics presets ---------- */
 const QUALITY = {
-  low: { name: 'Low', dpr: 0.75, shadows: 0, post: false, msaa: 0, grass: 0, treeFar: 520, view: 1100, rain: 2500, treeShadows: false, terrainLod: [250, 600] },
-  medium: { name: 'Medium', dpr: 1.0, shadows: 1024, post: true, msaa: 0, grass: 14000, treeFar: 800, view: 1600, rain: 5000, treeShadows: false, terrainLod: [320, 800] },
-  high: { name: 'High', dpr: 1.5, shadows: 2048, post: true, msaa: 4, grass: 32000, treeFar: 1150, view: 2200, rain: 9000, treeShadows: true, terrainLod: [420, 1000] },
-  ultra: { name: 'Ultra', dpr: 2.0, shadows: 4096, post: true, msaa: 4, grass: 60000, treeFar: 1600, view: 2800, rain: 14000, treeShadows: true, terrainLod: [560, 1300] },
+  low: { name: 'Low', traffic: 5, dpr: 0.75, shadows: 0, post: false, msaa: 0, grass: 0, treeFar: 520, view: 1100, rain: 2500, treeShadows: false, terrainLod: [250, 600] },
+  medium: { name: 'Medium', traffic: 8, dpr: 1.0, shadows: 1024, post: true, msaa: 0, grass: 14000, treeFar: 800, view: 1600, rain: 5000, treeShadows: false, terrainLod: [320, 800] },
+  high: { name: 'High', traffic: 12, dpr: 1.5, shadows: 2048, post: true, msaa: 4, grass: 32000, treeFar: 1150, view: 2200, rain: 9000, treeShadows: true, terrainLod: [420, 1000] },
+  ultra: { name: 'Ultra', traffic: 16, dpr: 2.0, shadows: 4096, post: true, msaa: 4, grass: 60000, treeFar: 1600, view: 2800, rain: 14000, treeShadows: true, terrainLod: [560, 1300] },
 };
 
 const DEFAULT_SETTINGS = {
@@ -3139,7 +3139,62 @@ transformed.y -= fx * fx * 0.25 * (1.2 - min(uWind, 1.0));`);
     arch.traverse((m) => { m.castShadow = true; });
     G.add(arch);
   }
+  buildCrowd(G, H0);
   mergeByMaterial(G, [Festival.sun, Festival.wheel]);
+}
+
+/* Festival visitors: a dancing crowd at the stage, people browsing the tents and garages. */
+function buildCrowd(G, H0) {
+  const spots = [];
+  const r = mulberry32(31);
+  const area = (a0, a1, r0, r1, n, dance) => {
+    for (let i = 0; i < n; i++) {
+      const a = lerp(a0, a1, r()), rad = lerp(r0, r1, Math.sqrt(r()));
+      const [x, z] = polar(a, rad);
+      if (spots.some((p) => Math.hypot(p[0] - x, p[1] - z) < 0.75)) continue;
+      spots.push([x, z, dance, r()]);
+    }
+  };
+  area(-Math.PI / 4 - 0.2, -Math.PI / 4 + 0.2, 85, 95, 150, 1); // in front of the stage
+  area(0.42, 1.12, 84, 90, 45, 0); // tents
+  area(Math.PI * 0.75 - 0.35, Math.PI * 0.75 + 0.35, 83, 88, 25, 0); // garages
+  area(-Math.PI * 0.9, -Math.PI * 0.55, 84, 90, 25, 0); // wheel + grandstand
+  const body = new THREE.CapsuleGeometry(0.2, 0.75, 3, 8).translate(0, 0.6, 0);
+  const head = new THREE.SphereGeometry(0.12, 10, 8).translate(0, 1.32, 0);
+  const mat = (shirts) => {
+    const m = new THREE.MeshStandardMaterial({ roughness: 0.85 });
+    m.onBeforeCompile = (sh) => {
+      sh.uniforms.uTime = Props.uTime;
+      sh.vertexShader = sh.vertexShader
+        .replace('#include <common>', '#include <common>\nuniform float uTime;')
+        .replace('#include <begin_vertex>', `#include <begin_vertex>
+vec2 cp = instanceMatrix[3].xz;
+float ph = fract(sin(dot(cp, vec2(12.9898, 78.233))) * 43758.5453);
+float dance = step(0.5, fract(ph * 7.0)) * step(instanceMatrix[3].y, 1e6);
+transformed.y += abs(sin(uTime * (3.2 + ph) + ph * 6.28)) * 0.16 * dance;
+transformed.x += sin(uTime * 1.3 + ph * 9.0) * 0.03 * position.y;`);
+    };
+    void shirts;
+    return m;
+  };
+  const bm = new THREE.InstancedMesh(body, mat(true), spots.length);
+  const hm = new THREE.InstancedMesh(head, mat(false), spots.length);
+  const o = new THREE.Object3D(), col = new THREE.Color();
+  const shirts = [0xff3d7f, 0xffb02e, 0x27b6ff, 0xf4f4f0, 0x2fbf71, 0x6a2fd6, 0x222831, 0xe8222f, 0x1e6bff];
+  const skin = [0xf1c7a5, 0xd9a07a, 0xa86b45, 0x6e4529, 0xf6d6bd];
+  spots.forEach((p, i) => {
+    const [x, z, dance, rnd] = p;
+    // dancers face the stage, others face a random direction
+    const [sx, sz] = polar(-Math.PI / 4, 104);
+    const face = dance ? Math.atan2(sx - x, sz - z) : rnd * TAU;
+    o.position.set(x, H0 + (dance ? 0 : 0), z); o.rotation.set(0, face, 0); o.scale.setScalar(0.88 + rnd * 0.25); o.updateMatrix();
+    bm.setMatrixAt(i, o.matrix); hm.setMatrixAt(i, o.matrix);
+    bm.setColorAt(i, col.set(shirts[(i * 5 + (rnd * 9 | 0)) % shirts.length]));
+    hm.setColorAt(i, col.set(skin[(i * 3 + (rnd * 5 | 0)) % skin.length]));
+    Col.circle(x, z, 0.35, 'post');
+  });
+  bm.castShadow = hm.castShadow = true;
+  G.add(bm, hm);
 }
 
 function updateFestival(dt, night) {
@@ -3867,6 +3922,15 @@ function makeCar(spec, color, opts = {}) {
   // collapse static parts into one mesh per material (draw calls: ~90 -> ~25 per car)
   const lampMats = [];
   body.traverse((o) => { if (o.material && o.material.userData && o.material.userData.lamp && !lampMats.includes(o.material)) lampMats.push(o.material); });
+  if (opts.lite) {
+    // traffic cars: no interior, plates, brake discs, calipers or hub caps
+    body.remove(interior); body.remove(pf); body.remove(pr);
+    for (const w of wheels) {
+      const side = w.spin.children[0];
+      for (const c of [...side.children]) if (c.material === CarMats.disc || c.material === capMat) side.remove(c);
+      for (const c of [...w.pivot.children]) if (c.material === calMat) w.pivot.remove(c);
+    }
+  }
   mergeByMaterial(body, [steer, gauge]);
   for (const w of wheels) mergeByMaterial(w.spin.children[0], []);
   return {
@@ -5436,6 +5500,180 @@ function stuntResult(ev, value, label) {
   notify(ev.name, `${label}  ${'★'.repeat(stars)}${'☆'.repeat(3 - stars)}${pb ? '  · NEW RECORD' : ''}${reward ? '  · +' + reward + ' CR' : ''}`, 'stunt', 4200);
 }
 
+/* ==== 12b_traffic.js ==== */
+/* =====================================================================
+   Ambient traffic for free roam. Traffic cars are kinematic: they follow
+   the road network on the left-hand lane (UK), slow for bends, villages
+   and the car ahead, turn at junctions, brake-light when slowing and
+   stop for a moment when the player hits them. They are recycled when
+   they get far from the player, so only a small pool is ever alive.
+   ===================================================================== */
+const Traffic = { cars: [], adj: {}, timer: 0, size: 0, visible: true };
+const TRAFFIC_PAINT = [0xc0c4c8, 0xf4f4f0, 0x111317, 0x1e3f7a, 0x8c1020, 0x2f5a3a, 0x6d7a86, 0xd9c7a0, 0x3b3f47, 0x9a2f2f];
+const TRAFFIC_SPEED = { A: 24, B: 16, M: 12, D: 8.5 };
+const TRAFFIC_CARS = ['brisa', 'taiga', 'aurelia', 'marauder', 'ridgeback', 'brisa', 'taiga'];
+
+function roadPoint(road, s, out) {
+  s = clamp(s, 0, road.len);
+  let lo = 0, hi = road.n - 1;
+  while (lo < hi - 1) { const m = (lo + hi) >> 1; if (road.s[m] <= s) lo = m; else hi = m; }
+  const seg = road.s[hi] - road.s[lo] || 1, t = clamp((s - road.s[lo]) / seg, 0, 1);
+  out.x = lerp(road.x[lo], road.x[hi], t); out.z = lerp(road.z[lo], road.z[hi], t); out.y = lerp(road.y[lo], road.y[hi], t);
+  out.tx = lerp(road.tx[lo], road.tx[hi], t); out.tz = lerp(road.tz[lo], road.tz[hi], t);
+  out.grade = (road.y[hi] - road.y[lo]) / seg;
+  out.flag = road.flag[lo];
+  return out;
+}
+
+class TrafficCar {
+  constructor(spec, paint) {
+    this.spec = spec;
+    this.model = makeCar(spec, paint, { lite: true });
+    Game.scene.add(this.model.root);
+    this.m = spec.mass; this.hw = spec.wid / 2 * 0.96; this.hl = spec.len / 2 * 0.97;
+    this.speed = 0; this.pause = 0; this.spin = 0; this.braking = false;
+    this.x = 0; this.z = 0; this.y = 0; this.h = 0; this.vx = 0; this.vz = 0;
+    this.p = {}; this.q = {};
+  }
+  place(road, s, dir) {
+    this.road = road; this.s = s; this.dir = dir;
+    this.speed = TRAFFIC_SPEED[road.type] * 0.8;
+    this.pause = 0;
+    this.pose();
+  }
+  pose() {
+    const p = roadPoint(this.road, this.s, this.p);
+    const tx = p.tx * this.dir, tz = p.tz * this.dir;
+    const lane = this.road.type === 'D' ? 1.0 : this.road.hw * 0.46;
+    this.x = p.x + tz * lane; this.z = p.z - tx * lane; // left of travel = (tz, -tx)
+    this.y = p.y + 0.07;
+    this.h = Math.atan2(tx, tz);
+    this.grade = p.grade * this.dir;
+    this.vx = tx * this.speed; this.vz = tz * this.speed;
+  }
+  targetSpeed(cars) {
+    const road = this.road;
+    let v = TRAFFIC_SPEED[road.type];
+    const pl = placeName(this.x, this.z);
+    if (pl && pl.kind === 'village') v = Math.min(v, 13);
+    // slow for bends ahead
+    const a = roadPoint(road, this.s, this.p), b = roadPoint(road, this.s + this.dir * 28, this.q);
+    const turn = Math.abs(wrapAngle(Math.atan2(b.tx, b.tz) - Math.atan2(a.tx, a.tz)));
+    if (turn > 0.05) v = Math.min(v, Math.sqrt(4.5 / (turn / 28)));
+    // and for anything in front of us in our lane (other traffic, the player, rivals)
+    const fx = Math.sin(this.h), fz = Math.cos(this.h);
+    for (const o of cars) {
+      if (o === this) continue;
+      const dx = o.x - this.x, dz = o.z - this.z;
+      const ahead = dx * fx + dz * fz, lat = Math.abs(dx * fz - dz * fx);
+      if (ahead > 0 && ahead < 32 && lat < 2.6) {
+        const ov = Math.max(0, (o.vx || 0) * fx + (o.vz || 0) * fz);
+        v = Math.min(v, ahead < 9 ? 0 : ov + (ahead - 9) * 0.6);
+      }
+    }
+    return v;
+  }
+  update(dt, cars) {
+    if (this.pause > 0) { this.pause -= dt; this.speed = Math.max(0, this.speed - 12 * dt); }
+    else {
+      const vt = this.targetSpeed(cars);
+      const prev = this.speed;
+      this.speed = vt > this.speed ? Math.min(vt, this.speed + 2.6 * dt) : Math.max(vt, this.speed - 7 * dt);
+      this.braking = this.speed < prev - 0.5 * dt;
+    }
+    this.s += this.dir * this.speed * dt;
+    if (this.s < 0 || this.s > this.road.len) this.turnAtJunction();
+    this.pose();
+  }
+  turnAtJunction() {
+    const node = this.dir > 0 ? this.road.def.b : this.road.def.a;
+    const options = (Traffic.adj[node] || []).filter((r) => r !== this.road);
+    if (!options.length || Math.hypot(NODES[node][0] - PLAZA.x, NODES[node][1] - PLAZA.z) < PLAZA.r + 5) { this.respawn(); return; }
+    const next = options[(Math.random() * options.length) | 0];
+    const fromA = next.def.a === node;
+    this.road = next; this.dir = fromA ? 1 : -1; this.s = fromA ? 0.5 : next.len - 0.5;
+  }
+  respawn() {
+    const p = Game.player;
+    for (let tries = 0; tries < 40; tries++) {
+      const road = World.roads[(Math.random() * World.roads.length) | 0];
+      if (road.type === 'D' && Math.random() < 0.7) continue;
+      const s = 20 + Math.random() * Math.max(1, road.len - 40);
+      const pt = roadPoint(road, s, this.p);
+      const d = Math.hypot(pt.x - p.x, pt.z - p.z);
+      if (d < 160 || d > 620) continue;
+      // keep a gap to other traffic
+      if (Traffic.cars.some((c) => c !== this && Math.hypot(c.x - pt.x, c.z - pt.z) < 40)) continue;
+      this.place(road, s, Math.random() < 0.5 ? 1 : -1);
+      return;
+    }
+    const road = World.roads[0];
+    this.place(road, road.len / 2, 1);
+  }
+  sync(dt) {
+    const m = this.model, r = m.root;
+    r.position.set(this.x, this.y, this.z);
+    r.rotation.set(-Math.atan(this.grade), this.h, 0, 'YXZ');
+    this.spin += this.speed / this.spec.tyreR * dt;
+    for (const w of m.wheels) w.spin.rotation.x = this.spin;
+    m.brake.emissiveIntensity = this.braking || this.speed < 0.5 ? 4 : 0.4 + Sky.night * 0.9;
+    m.head.emissiveIntensity = 0.5 + Sky.night * 3;
+    for (const lm of m.lampMats) lm.emissiveIntensity = 0.3 + Sky.night * 2.2;
+  }
+}
+
+function initTraffic() {
+  for (const r of World.roads) { (Traffic.adj[r.def.a] ||= []).push(r); (Traffic.adj[r.def.b] ||= []).push(r); }
+}
+function setTrafficSize(n) {
+  while (Traffic.cars.length > n) { const c = Traffic.cars.pop(); Game.scene.remove(c.model.root); c.model.dispose(); }
+  while (Traffic.cars.length < n) {
+    const i = Traffic.cars.length;
+    const spec = CARS.find((c) => c.id === TRAFFIC_CARS[i % TRAFFIC_CARS.length]);
+    const c = new TrafficCar(spec, TRAFFIC_PAINT[(i * 7 + 3) % TRAFFIC_PAINT.length]);
+    Traffic.cars.push(c);
+    c.respawn();
+  }
+  Traffic.size = n;
+}
+function updateTraffic(dt, player, camPos) {
+  const on = !Race.ev;
+  if (on !== Traffic.visible) { Traffic.visible = on; for (const c of Traffic.cars) c.model.root.visible = on; }
+  if (!on) return;
+  const others = [player, ...Traffic.cars];
+  Traffic.timer -= dt;
+  const check = Traffic.timer <= 0;
+  if (check) Traffic.timer = 0.5;
+  for (const c of Traffic.cars) {
+    c.update(dt, others);
+    const d = Math.hypot(c.x - camPos.x, c.z - camPos.z);
+    if (check && d > 700) c.respawn();
+    c.model.root.visible = d < 420;
+    if (c.model.root.visible) c.sync(dt);
+  }
+}
+/* Player vs traffic: the player bounces, the traffic car stops briefly. */
+function collideTraffic(player) {
+  if (Race.ev) return;
+  for (const c of Traffic.cars) {
+    const dx = c.x - player.x, dz = c.z - player.z;
+    if (dx * dx + dz * dz > 49 || Math.abs(c.y - player.y) > 3) continue;
+    const r = boxVsCollider(player.x, player.z, player.h, player.hw, player.hl, { t: 1, x: c.x, z: c.z, hx: c.hw, hz: c.hl, c: Math.cos(c.h), s: Math.sin(c.h) });
+    if (!r) continue;
+    const nx = r.n[0], nz = r.n[1];
+    player.x += nx * r.d; player.z += nz * r.d;
+    const vrel = (player.vx - c.vx) * nx + (player.vz - c.vz) * nz;
+    if (vrel < 0) {
+      const k = c.m / (c.m + player.m);
+      player.vx -= nx * vrel * (1.25 * k + 0.1); player.vz -= nz * vrel * (1.25 * k + 0.1);
+      player.w += (Math.random() - 0.5) * -vrel * 0.25;
+      c.pause = 3.5;
+      c.speed *= 0.3;
+      if (-vrel > 2) Bus.emit('hit', { car: player, v: -vrel });
+    }
+  }
+}
+
 /* ==== 13_hud.js ==== */
 /* =====================================================================
    HUD: tachometer + speed + gear, minimap (pre-rendered world map,
@@ -5555,6 +5793,7 @@ function drawMinimap(car, extra) {
     x.fillStyle = TYPE_COLOR[m.type]; x.strokeStyle = '#111'; x.lineWidth = 2 / k;
     x.beginPath(); x.arc(M(m.x) - px, M(m.z) - pz, 5.5 / k, 0, TAU); x.fill(); x.stroke();
   }
+  if (!Race.ev) for (const o of Traffic.cars) { x.fillStyle = '#c9ced6'; x.beginPath(); x.arc(M(o.x) - px, M(o.z) - pz, 3.2 / k, 0, TAU); x.fill(); }
   for (const o of extra.cars || []) { x.fillStyle = '#ffd23a'; x.strokeStyle = '#111'; x.lineWidth = 2 / k; x.beginPath(); x.arc(M(o.x) - px, M(o.z) - pz, 4.5 / k, 0, TAU); x.fill(); x.stroke(); }
   x.restore();
   // player arrow
@@ -6229,6 +6468,7 @@ Game.applySettings = function () {
   if (Game.q !== Game.lastQ) { buildComposer(q); Game.lastQ = q; }
   if (Game.composer) Game.composer.setPixelRatio(Game.dprNow);
   setGrassCount(q.grass, q.grass >= 60000 ? 72 : q.grass >= 30000 ? 58 : 44);
+  if (Game.player) setTrafficSize(q.traffic);
   Game.camera.far = q.view + 300;
   Game.camera.updateProjectionMatrix();
   updateVegetation(Game.camera.position.x, Game.camera.position.z, q);
@@ -6314,7 +6554,7 @@ function guessQuality(r) {
   let name = '';
   try { const gl = r.getContext(); const ext = gl.getExtension('WEBGL_debug_renderer_info'); name = ext ? gl.getParameter(ext.UNMASKED_RENDERER_WEBGL) : gl.getParameter(gl.RENDERER); } catch (e) { /* ignore */ }
   name = String(name).toLowerCase();
-  const mobile = matchMedia('(pointer: coarse)').matches && Math.min(screen.width, screen.height) < 900;
+  const mobile = matchMedia('(pointer: coarse)').matches && Math.min(window.screen.width, window.screen.height) < 900;
   if (mobile || /swiftshader|llvmpipe|software|mali|adreno|powervr/.test(name)) return 'low';
   if (/intel|uhd|iris|hd graphics|apple m1|radeon\(tm\) graphics|vega/.test(name)) return 'medium';
   return 'high';
@@ -6355,6 +6595,7 @@ async function boot() {
   Game.scene.add(Festival.group);
   prepareEvents();
   buildMarkers(Game.scene);
+  initTraffic();
   progress(0.94, 'Drawing maps'); await frameYield();
   buildWorldMap();
   initHud();
@@ -6416,7 +6657,7 @@ async function boot() {
   addEventListener('pagehide', () => Save.write());
   document.addEventListener('visibilitychange', () => { if (document.hidden) Save.write(); });
   window.SR = Game; // debugging/automation hook
-  Object.assign(window.SR, { updateStunts, updateSkills, Skill, makeCar, Festival, Menu, EVENTS, raceUpdate, AIDriver, collideCars, racePositions, raceEnd, Vehicle, World, Race, Events, CARS, Sky, Cam, Skill, raceSetup, resetPlayer, setWeather, startFreeRoam, openGarage, openEvents, openSettings, openPause, resumeGame, Save, camSetMode });
+  Object.assign(window.SR, { updateStunts, updateSkills, makeCar, Festival, Menu, EVENTS, raceUpdate, AIDriver, collideCars, racePositions, raceEnd, Vehicle, World, Race, Events, CARS, Sky, Cam, Skill, raceSetup, resetPlayer, setWeather, startFreeRoam, openGarage, openEvents, openSettings, openPause, resumeGame, Save, camSetMode });
   requestAnimationFrame(loop);
 }
 
@@ -6443,6 +6684,7 @@ function frame() {
       for (const c of cars) { c.frozen = frozen; c.step(PH_DT, Game.settings); }
       if (frozen) for (const c of cars) { c.x = c.prev.x; c.z = c.prev.z; c.h = c.prev.h; c.vx = c.vz = 0; c.w = 0; }
       collideCars(cars);
+      collideTraffic(p);
       if (!Race.ev) { updateStunts(PH_DT, p); }
       Game.acc -= PH_DT; steps++;
     }
@@ -6505,6 +6747,7 @@ function frame() {
   }
   if (Props.grass) Props.grass.u.uCam.value.copy(cam.position);
   updateFestival(dt, nightGlow);
+  if (playing || Game.mode === 'menu') updateTraffic(dt, p, cam.position);
   updateMarkers(cam.position, !!Race.ev || Game.mode === 'garage');
   updateFX(dt, Game.scene);
   audioUpdate(dt, p, cam, Game.ai);
