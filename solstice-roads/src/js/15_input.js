@@ -58,7 +58,10 @@ function handleKey(code, e) {
   void e;
 }
 function readPad() {
-  const pads = navigator.getGamepads ? navigator.getGamepads() : [];
+  // some embeds (sandboxed iframes, Safari) refuse gamepad access with an exception
+  if (Input.noPad || !navigator.getGamepads) return null;
+  let pads;
+  try { pads = navigator.getGamepads(); } catch (e) { Input.noPad = true; return null; }
   const p = pads && [...pads].find((g) => g && g.connected);
   if (!p) return null;
   const b = (i) => (p.buttons[i] ? p.buttons[i].value : 0);
