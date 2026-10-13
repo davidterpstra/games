@@ -1,0 +1,145 @@
+<canvas id="game" aria-label="Solstice Roads game view"></canvas>
+
+<!-- ============ HUD ============ -->
+<div id="hud" aria-hidden="true">
+  <div id="racePanel" class="glass">
+    <div class="rpos"><span>Position</span><b id="rPos">1<small>/6</small></b></div>
+    <div class="rinfo"><b id="rLap">Lap 1/2</b><span id="rTime">0:00.00</span><small id="rCp">Checkpoint 1/8</small></div>
+  </div>
+  <div id="drift"><b id="driftPts">0</b><span>DRIFT</span><i id="driftMul"></i></div>
+  <div id="notes"></div>
+  <div id="count"></div>
+  <div id="wrong">WRONG WAY</div>
+  <div id="prompt" class="glass"></div>
+  <div id="mapbox">
+    <canvas id="minimap" width="220" height="220"></canvas>
+    <div id="loc">Solstice Festival</div>
+  </div>
+  <div id="dash">
+    <canvas id="tach" width="250" height="250"></canvas>
+    <div class="dnum"><b id="spd">0</b><span>km/h</span></div>
+    <div class="dgear" id="gear">N</div>
+  </div>
+  <div id="fps" hidden></div>
+</div>
+
+<!-- touch controls -->
+<div id="touch" aria-hidden="true">
+  <div class="tl"><button data-touch="left" aria-label="Steer left">&#9664;</button><button data-touch="right" aria-label="Steer right">&#9654;</button></div>
+  <div class="tr">
+    <button data-touch="hb" class="small" aria-label="Handbrake">HB</button>
+    <button data-touch="brake" aria-label="Brake">&#9660;</button>
+    <button data-touch="gas" class="gas" aria-label="Throttle">&#9650;</button>
+  </div>
+  <div class="ttop"><button data-touch="pause" aria-label="Pause">II</button><button data-touch="cam" aria-label="Camera">CAM</button><button data-touch="reset" aria-label="Reset car">R</button><button data-touch="act" aria-label="Interact">E</button></div>
+</div>
+
+<!-- ============ SCREENS ============ -->
+<div id="loading">
+  <div class="logo"><span class="sun"></span><h1>SOLSTICE<em>ROADS</em></h1></div>
+  <div class="lbar"><i id="loadBar"></i></div>
+  <p id="loadTxt">Loading</p>
+  <p class="tip">Tip: hold <kbd>Space</kbd> to flick the car into a drift, then catch it with throttle and opposite lock.</p>
+</div>
+
+<section id="mainMenu" class="screen">
+  <div class="mm-left">
+    <div class="logo"><span class="sun"></span><h1>SOLSTICE<em>ROADS</em></h1></div>
+    <p class="tag" id="mmSub">Open-world countryside festival</p>
+    <nav class="mm-nav">
+      <button id="mmPlay" class="primary">Play</button>
+      <button id="mmEvents">Events &amp; Map</button>
+      <button id="mmGarage">Garage</button>
+      <button id="mmSettings">Settings</button>
+      <button id="mmHelp">How to play</button>
+    </nav>
+  </div>
+  <footer class="mm-foot">
+    <div class="prof"><span class="level">Level 1</span><span class="credits">0 CR</span></div>
+    <div class="car"><small>Your car</small><b id="mmCar">-</b></div>
+    <button id="radioBtn" class="radio" aria-label="Toggle festival radio"><i></i><span><small>Festival radio · N</small><b id="radioTitle">Chasing the Edge</b></span></button>
+  </footer>
+</section>
+
+<section id="garage" class="screen">
+  <div class="g-left glass scroll">
+    <h2>Garage</h2>
+    <div id="gList"></div>
+  </div>
+  <div class="g-right glass scroll">
+    <div class="g-head"><span id="gClass" class="cls big">A<i>600</i></span><div><h3 id="gName">-</h3><small id="gMaker">-</small></div></div>
+    <p id="gDesc" class="muted"></p>
+    <div id="gStats"></div>
+    <div id="gSpecs"></div>
+    <h4>Paint</h4>
+    <div id="gPaint"></div>
+    <div class="row"><button id="gBack" class="back">Back</button><button id="gDrive" class="primary">Drive</button></div>
+  </div>
+</section>
+
+<section id="events" class="screen">
+  <div class="ev-map glass"><canvas id="bigMap" width="760" height="760"></canvas></div>
+  <div class="ev-side glass">
+    <h2>Events &amp; Map</h2>
+    <div id="evList" class="scroll"></div>
+    <div id="evDetail"></div>
+    <button id="evBack" class="back">Back</button>
+  </div>
+</section>
+
+<section id="settings" class="screen">
+  <div class="set glass">
+    <h2>Settings</h2>
+    <div class="tabs"><button data-tab="graphics">Graphics</button><button data-tab="world">Weather &amp; time</button><button data-tab="audio">Audio</button><button data-tab="gameplay">Gameplay</button><button data-tab="controls">Controls</button></div>
+    <div id="setBody" class="scroll"></div>
+    <button id="setBack" class="back">Save &amp; back</button>
+  </div>
+</section>
+
+<section id="pause" class="screen">
+  <div class="pause glass">
+    <h2 id="pTitle">Paused</h2>
+    <button id="pResume" class="primary">Resume</button>
+    <button id="pRestart">Restart event</button>
+    <button id="pLeave">Leave event</button>
+    <button id="pReset">Reset car to road</button>
+    <button id="pEvents">Events &amp; Map</button>
+    <button id="pGarage">Garage</button>
+    <button id="pSettings">Settings</button>
+    <button id="pMain" class="back">Main menu</button>
+  </div>
+</section>
+
+<section id="results" class="screen">
+  <div class="res glass">
+    <small id="resEvent"></small>
+    <h2 id="resTitle">Victory!</h2>
+    <table><thead><tr><th>#</th><th>Driver</th><th>Car</th><th>Time</th><th>Best lap</th></tr></thead><tbody id="resTable"></tbody></table>
+    <div id="resRewards"></div>
+    <div class="row"><button id="resRestart">Restart</button><button id="resContinue" class="primary">Continue</button></div>
+  </div>
+</section>
+
+<section id="help" class="screen">
+  <div class="set glass">
+    <h2>How to play</h2>
+    <p class="muted">Explore Wendmoor freely. Light columns mark events: drive into one and press <kbd>E</kbd>. Speed traps, speed zones and drift zones are always live — just drive through their gates. Drifts and jumps earn credits.</p>
+    <div class="keys">
+      <div><kbd>W</kbd><kbd>&uarr;</kbd><span>Accelerate</span></div>
+      <div><kbd>S</kbd><kbd>&darr;</kbd><span>Brake / reverse</span></div>
+      <div><kbd>A</kbd><kbd>D</kbd><kbd>&larr;</kbd><kbd>&rarr;</kbd><span>Steer</span></div>
+      <div><kbd>Space</kbd><span>Handbrake</span></div>
+      <div><kbd>C</kbd><span>Change camera</span></div>
+      <div><kbd>R</kbd><span>Reset car to the road</span></div>
+      <div><kbd>E</kbd><span>Start event / enter garage</span></div>
+      <div><kbd>M</kbd><span>Mute</span></div>
+      <div><kbd>N</kbd><span>Radio on / off</span></div>
+      <div><kbd>H</kbd><span>Horn</span></div>
+      <div><kbd>Esc</kbd><span>Pause</span></div>
+      <div><kbd>Pad</kbd><span>RT gas · LT brake · A handbrake · Y camera · X interact</span></div>
+    </div>
+    <button id="helpBack" class="back">Back</button>
+  </div>
+</section>
+
+<div id="fade"></div>
