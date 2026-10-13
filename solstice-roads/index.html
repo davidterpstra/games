@@ -4255,7 +4255,8 @@ class Vehicle {
     if (!this.air) {
       const nh = groundAt(this.x, this.z, this.y + 0.3);
       const mv = Math.hypot(this.x - ox, this.z - oz);
-      if (nh - this.y > 0.25 + mv * 1.6) {
+      const rise = nh - this.y;
+      if (rise > 0.04 && rise > mv * (this.spec.offroad > 0.7 ? 1.25 : 1.0)) { // steeper than ~45-50 degrees
         this.x = ox; this.z = oz;
         groundNormal(this.x, this.z, this.y + 0.3, _n);
         const hl = Math.hypot(_n.x, _n.z) || 1, nx = _n.x / hl, nz = _n.z / hl; // points downhill
