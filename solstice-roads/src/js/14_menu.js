@@ -378,13 +378,12 @@ function renderSettings() {
     name.type = 'text'; name.id = 'netName'; name.className = 'textin'; name.maxLength = 16; name.value = netName();
     name.onchange = () => { const v = name.value.replace(/[^\p{L}\p{N} _.\-]/gu, '').slice(0, 16).trim(); Save.data.name = v || netName(); name.value = Save.data.name; Save.write(); netSend(); };
     row('Your name', name);
-    row('Server', choice('server', [['auto', 'Auto'], [0, '1'], [1, '2'], [2, '3'], [3, '4'], [4, '5']], () => netConnect()));
     const st = document.createElement('p'); st.id = 'netStatus'; st.className = 'muted';
     box.appendChild(st);
     const again = document.createElement('button'); again.className = 'seg1'; again.textContent = 'Reconnect'; again.onclick = () => netConnect();
     row('Connection', again);
     const info = document.createElement('p'); info.className = 'muted';
-    info.textContent = 'Auto tries server 1 first and moves on to the next one when a server does not answer. You drive together in free roam; other players appear with their name above their car.';
+    info.textContent = 'Everyone drives together on one server in free roam; other players appear with their name above their car.';
     box.appendChild(info);
     netSetStatus(Net.status, Net.detail);
   } else {

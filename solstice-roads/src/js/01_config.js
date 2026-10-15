@@ -118,5 +118,5 @@ const QUALITY = {
 const DEFAULT_SETTINGS = {
   quality: 'high', resScale: 1, autoRes: true, weather: 'sunny', dynamicTime: false, timeSpeed: 1,
   master: 0.8, engine: 0.8, sfx: 0.8, ambient: 0.6, muted: false,
-  assist: true, shake: true, camera: 0, abs: true, showFps: false, online: true, server: 'auto',
+  assist: true, shake: true, camera: 0, abs: true, showFps: false, online: true,
 };

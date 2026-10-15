@@ -3,28 +3,19 @@
    Each client PUTs its own car state ~8x a second to
    /solstice-roads/v1/players/<id> and streams the whole players node
    with EventSource. Remote cars are smoothed, named and collidable.
-   Servers are tried in order (auto) until one answers; the player can
-   also pick one in Settings → Online. All incoming data is validated:
-   the databases are open, so anything could be written there.
+   Everyone plays on one server. All incoming data is validated: the
+   database is open, so anything could be written there.
    ===================================================================== */
-const NET_SERVERS = [
-  'https://device-streaming-34280597-default-rtdb.europe-west1.firebasedatabase.app',
-  'https://quizplatform-6be74-default-rtdb.europe-west1.firebasedatabase.app',
-  'https://leermaat-ai-default-rtdb.europe-west1.firebasedatabase.app',
-  'https://nieuwtablat-default-rtdb.europe-west1.firebasedatabase.app',
-  'https://teamsstickerbot-default-rtdb.europe-west1.firebasedatabase.app',
-];
+const NET_SERVER = 'https://device-streaming-34280597-default-rtdb.europe-west1.firebasedatabase.app';
 const NET_ROOT = '/solstice-roads/v1';
-// Room directory on the player's own API: it records on which Firebase server
-// the shared free-roam room lives, so every client ends up on the same one.
-// Only that lookup/registration goes through the API; live car data still
-// streams through Firebase exactly as before.
+// The room is also registered on the player's own API (code -> where the room
+// data lives). Live car data streams through Firebase only.
 const NET_API = 'https://api.quizplatform.store';
 const NET_ROOM = 'SOLSTICE01', NET_PROJECT = 'solstice-roads';
 const NET_MAX = 24;
 const Net = {
-  id: '', idx: -1, url: '', status: 'off', detail: '', es: null, remotes: new Map(),
-  sendT: 0, inflight: false, fails: 0, gen: 0, cleanT: 10,
+  id: '', url: '', status: 'off', detail: '', es: null, remotes: new Map(),
+  sendT: 0, inflight: false, fails: 0, gen: 0, cleanT: 10, retry: 0,
 };
 
 function netName() {
@@ -34,9 +25,9 @@ function netName() {
 function netSetStatus(st, detail = '') {
   Net.status = st; Net.detail = detail;
   const n = [...Net.remotes.values()].filter((r) => r.visible).length;
-  const txt = st === 'online' ? `Online · Server ${Net.idx + 1} · ${n + 1} player${n ? 's' : ''}`
+  const txt = st === 'online' ? `Online · ${n + 1} player${n ? 's' : ''}`
     : st === 'connecting' ? `Connecting${detail ? ' · ' + detail : ''}…`
-      : st === 'failed' ? detail || 'Offline · no server reachable'
+      : st === 'failed' ? detail || 'Offline · server unreachable'
         : 'Offline';
   const el = $('net');
   if (el) { el.textContent = txt; el.className = 'net ' + st; }
@@ -44,11 +35,11 @@ function netSetStatus(st, detail = '') {
   if (s) s.textContent = txt;
 }
 
-async function netProbe(i) {
+async function netProbe() {
   const ctl = new AbortController();
   const timer = setTimeout(() => ctl.abort(), 4500);
   try {
-    const r = await fetch(NET_SERVERS[i] + NET_ROOT + '/ping.json', { signal: ctl.signal, cache: 'no-store' });
+    const r = await fetch(NET_SERVER + NET_ROOT + '/ping.json', { signal: ctl.signal, cache: 'no-store' });
     return r.ok;
   } catch (e) {
     return false;
@@ -66,57 +57,38 @@ async function netApi(method, path, body) {
     return { ok: false, status: 0, data: null }; // offline, timeout or blocked by CORS
   } finally { clearTimeout(timer); }
 }
-/* Which server the shared room is registered on (-1: unknown) and whether we
-   may (re)register it: never overwrite a room that belongs to another project. */
-async function netRoomLookup() {
+/* Register the room on the API when it is missing or points elsewhere; never
+   overwrite a room with this code that belongs to another project. */
+async function netRoomSync() {
   const r = await netApi('GET', '/rooms/' + NET_ROOM);
-  if (r.status === 404) return { idx: -1, canWrite: true };
-  if (!r.ok || !r.data || typeof r.data !== 'object') return { idx: -1, canWrite: false };
-  const d = r.data;
-  const room = [d, d.room, d.data, d.result].find((o) => o && typeof o === 'object' && typeof o.location === 'string');
-  if (!room) return { idx: -1, canWrite: true };
-  if (room.project !== undefined && room.project !== NET_PROJECT) return { idx: -1, canWrite: false };
-  // only ever follow the registry to one of our own servers
-  const loc = room.location.replace(/\/+$/, '');
-  return { idx: NET_SERVERS.findIndex((u) => u + NET_ROOT === loc), canWrite: true };
-}
-function netRoomRegister(i) {
-  return netApi('POST', '/rooms', { code: NET_ROOM, location: NET_SERVERS[i] + NET_ROOT, project: NET_PROJECT });
+  const loc = NET_SERVER + NET_ROOT;
+  if (r.status !== 404) {
+    if (!r.ok || !r.data || typeof r.data !== 'object') return;
+    const d = r.data;
+    const room = [d, d.room, d.data, d.result].find((o) => o && typeof o === 'object' && typeof o.location === 'string');
+    if (room && room.project !== undefined && room.project !== NET_PROJECT) return;
+    if (room && room.location.replace(/\/+$/, '') === loc) return;
+  }
+  await netApi('POST', '/rooms', { code: NET_ROOM, location: loc, project: NET_PROJECT });
 }
 
-async function netConnect(startAt = 0, failed = -1) {
+async function netConnect() {
   netClose();
+  clearTimeout(Net.retry);
   if (!Game.settings.online) { netSetStatus('off'); return; }
   if (!Save.data.netId) { Save.data.netId = Math.random().toString(36).slice(2, 12); Save.write(); }
   Net.id = Save.data.netId;
   const gen = ++Net.gen;
-  const pick = Game.settings.server;
-  const auto = pick === 'auto' || pick === undefined;
-  let room = { idx: -1, canWrite: false };
-  if (auto) {
-    netSetStatus('connecting');
-    room = await netRoomLookup();
-    if (gen !== Net.gen) return;
-  }
-  let order = auto
-    ? [0, 1, 2, 3, 4].map((k) => (k + startAt) % NET_SERVERS.length)
-    : [pick | 0];
-  // the registered server goes first, unless it is the one that just dropped out
-  if (auto && room.idx >= 0 && room.idx !== failed) order = [room.idx, ...order.filter((k) => k !== room.idx)];
-  for (const i of order) {
-    netSetStatus('connecting', 'Server ' + (i + 1));
-    const ok = await netProbe(i);
-    if (gen !== Net.gen) return; // settings changed meanwhile
-    if (ok) {
-      netOpen(i);
-      if (auto && room.canWrite && room.idx !== i) netRoomRegister(i);
-      return;
-    }
-  }
-  netSetStatus('failed', pick === 'auto' || pick === undefined ? 'Offline · no server reachable' : `Offline · Server ${(pick | 0) + 1} unreachable`);
+  netSetStatus('connecting');
+  const ok = await netProbe();
+  if (gen !== Net.gen) return; // settings changed meanwhile
+  if (ok) { netOpen(); netRoomSync(); return; }
+  netSetStatus('failed');
+  // keep trying quietly in the background
+  Net.retry = setTimeout(() => { if (gen === Net.gen) netConnect(); }, 15000);
 }
-function netOpen(i) {
-  Net.idx = i; Net.url = NET_SERVERS[i]; Net.fails = 0;
+function netOpen() {
+  Net.url = NET_SERVER; Net.fails = 0;
   let es;
   try { es = new EventSource(Net.url + NET_ROOT + '/players.json'); } catch (e) { netLost(); return; }
   Net.es = es;
@@ -131,15 +103,12 @@ function netOpen(i) {
 function netClose() {
   if (Net.es) { Net.es.close(); Net.es = null; }
   for (const id of [...Net.remotes.keys()]) netRemove(id);
-  Net.idx = -1; Net.url = '';
+  Net.url = '';
 }
 function netLost() {
-  const was = Net.idx;
   netClose();
   netSetStatus('connecting', 'reconnecting');
-  // auto mode moves on to the next server; a chosen server is retried
-  const auto = Game.settings.server === 'auto' || Game.settings.server === undefined;
-  setTimeout(() => netConnect(auto ? (was + 1) % NET_SERVERS.length : 0, was), 1500);
+  setTimeout(() => netConnect(), 1500);
 }
 function netLeave() {
   if (!Net.url || !Net.id) return;
