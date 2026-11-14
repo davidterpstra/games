@@ -109,8 +109,14 @@ export function createAudio({ bus, settings }) {
     }
   }
 
+  // Browsers refuse to start audio before the first user activation and warn on every attempt, so the
+  // context is created/resumed only once the page has been activated (click/key/touch), never per sfx/frame.
+  const activated = () => (typeof navigator !== 'undefined' && navigator.userActivation ? navigator.userActivation.hasBeenActive : true);
+  let gestureSeen = false;
   function unlock() {
     if (failed) return;
+    if (!gestureSeen && !activated()) return;   // wait for a real gesture (listeners below call unlock again)
+    gestureSeen = true;
     if (!ctx) build();
     if (ctx && ctx.state === 'suspended') ctx.resume().catch(() => {});
   }
@@ -119,7 +125,7 @@ export function createAudio({ bus, settings }) {
     if (!ctx || !sfx) return;
     const fn = sfx[name];
     if (!fn) { console.warn(`[audio] unknown sfx "${name}"`); return; }
-    if (ctx.state !== 'running') { if (ctx.state === 'suspended') ctx.resume().catch(() => {}); return; }
+    if (ctx.state !== 'running') return;
     if (voices >= MAX_VOICES && !name.startsWith('ui_')) return;
     const g = ctx.createGain();
     g.gain.value = o.volume === undefined ? 1 : o.volume;
@@ -181,7 +187,7 @@ export function createAudio({ bus, settings }) {
   bus.on('player:land', (p) => play('land', { volume: 0.9, impact: p && typeof p.impact === 'number' ? p.impact : 0.5 }));
   bus.on('settings:changed', ({ key }) => { if (key === 'masterVolume' || key === 'sfxVolume' || key === 'ambientVolume') applyVolumes(); });
   if (typeof window !== 'undefined') {
-    const gesture = () => { unlock(); if (ctx && ctx.state === 'running') { window.removeEventListener('pointerdown', gesture, true); window.removeEventListener('keydown', gesture, true); } };
+    const gesture = () => { gestureSeen = true; unlock(); if (ctx && ctx.state === 'running') { window.removeEventListener('pointerdown', gesture, true); window.removeEventListener('keydown', gesture, true); } };
     window.addEventListener('pointerdown', gesture, true);
     window.addEventListener('keydown', gesture, true);
   }
