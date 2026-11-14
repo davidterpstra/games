@@ -632,7 +632,7 @@ function buildMaterials({ renderer, quality = 'medium' } = {}) {
     () => { def('cobble', bump(std(T(paintCobble(S, rand)), { roughness: 0.95 }), 2), 3); },
     () => { def('earth', std(T(paintEarth(S, rand)), { roughness: 1 }), 6); },
     () => { def('rock', bump(std(T(paintRock(S, rand)), { roughness: 0.55, metalness: 0.05, side: THREE.DoubleSide }), 2.5), 4); },
-    () => { def('steel', std(null, { color: 0x4a4e52, roughness: 0.45, metalness: 0.75 }), 2); },
+    () => { def('steel', std(null, { color: 0x6d7378, roughness: 0.5, metalness: 0.35 }), 2); },
     () => { def('black', std(null, { color: 0x151515, roughness: 0.7, metalness: 0.2 }), 2); },
     () => { def('paper', std(T(paintPaper(rand)), { roughness: 1, side: THREE.DoubleSide }), 1); },
     () => { def('map', std(T(paintMap(rand)), { roughness: 1, side: THREE.DoubleSide }), 1); },

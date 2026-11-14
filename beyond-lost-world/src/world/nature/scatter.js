@@ -186,12 +186,13 @@ export function generateRocks(hf, waterInfo) {
     const edge = Math.max(Math.abs(x), Math.abs(z)) - 238;
     const h = y(x, z);
     const steep = clamp((0.9 - ny) * 5, 0, 1);
-    const p = 0.16 * steep * (edge > 0 ? 1 : 0.25) + (edge > 20 ? 0.03 : 0);
+    // sparse on the far mountain walls: from a distance big round rocks on a steep face read as floating blobs
+    const p = 0.16 * steep * (edge > 0 ? 0.3 : 0.25);
     if (r[2] > p) return null;
     if (!spotOK(hf, x, z, { pad: 3, path: 2.0, slope: 0.0, water: 0.8 })) return null;
-    const s = 2.2 + r[4] * r[4] * 4.5 + (edge > 40 ? 1.8 : 0);
-    const sx = s * (0.9 + r[3] * 0.5), sy = s * (0.8 + r[5] * 0.7), sz = s * (0.9 + r[6] * 0.4);
-    cliffs.push({ x, z, y: h - sy * 0.55, rot: r[3] * 6.28, sx, sy, sz, variant: 0, rc: Math.max(sx, sz) * 0.8, top: sy * 0.8, color: [1, 1, 1] });
+    const s = 2.0 + r[4] * r[4] * 3.5;
+    const sx = s * (0.9 + r[3] * 0.5), sy = s * (0.55 + r[5] * 0.4), sz = s * (0.9 + r[6] * 0.4);
+    cliffs.push({ x, z, y: h - sy * 0.45 - s * (1 - ny) * 0.9, rot: r[3] * 6.28, sx, sy, sz, variant: 0, rc: Math.max(sx, sz) * 0.8, top: sy * 0.8, color: [1, 1, 1] });
     return null;
   });
   // river banks

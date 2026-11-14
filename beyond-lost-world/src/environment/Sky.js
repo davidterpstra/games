@@ -89,10 +89,11 @@ void main() {
     vec2 cp = d.xz / (h * .85 + .14) * .5 + uWindOff;
     float n = fbm(cp);
     float thr = mix(.74, .28, uCoverage);
-    dens = smoothstep(thr, thr + .26, n);
+    dens = smoothstep(thr, thr + .42, n);
+    dens = dens * dens * (3. - 2. * dens) * mix(.82, 1., uOvercast);
     float n2 = fbm(cp + uSunDir.xz * .09 / (h * .6 + .4));
-    float d2 = smoothstep(thr, thr + .26, n2);
-    lit = clamp(.55 + (dens - d2) * 2.2 - dens * .25 * uOvercast, 0., 1.);
+    float d2 = smoothstep(thr, thr + .42, n2);
+    lit = clamp(.72 + (dens - d2) * 1.3 - dens * .3 * uOvercast, 0., 1.);
   }
   dens *= cloudFade;
   vec3 cloudCol = mix(uCloudShade, uCloudLit, lit);
@@ -174,7 +175,7 @@ export function createSky(quality = 'high') {
       _c.copy(dn.sunColor).multiplyScalar(.95 * day + .02).lerp(u.uHorizon.value, .25 * (1 - wx.overcast));
       _c.lerp(_grey.setScalar(.30 * day + .02), wx.overcast * .8);
       u.uCloudLit.value.copy(_c).addScalar(.015 + dn.night * .04);
-      _c.copy(u.uZenith.value).lerp(u.uHorizon.value, .4).multiplyScalar(.55 + .15 * day).lerp(_grey.setScalar(.10 * day + .015), wx.overcast * .85);
+      _c.copy(u.uZenith.value).lerp(u.uHorizon.value, .4).multiplyScalar(.85 + .2 * day).lerp(u.uCloudLit.value, .35).lerp(_grey.setScalar(.10 * day + .015), wx.overcast * .85);
       u.uCloudShade.value.copy(_c);
       // wind drift
       const sp = (.25 + wx.windNow * 1.6) * dt * .006;
