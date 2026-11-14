@@ -44,7 +44,10 @@ export function createPickups({ scene, world, inventory, interaction, bus }) {
   scene.add(root);
   const entries = new Map();          // id -> entry
   const collected = new Set();
-  const instanced = new Map();        // type -> { meshes: InstancedMesh[], next }
+  // one InstancedMesh set per (type, 64 m cell): a single map-wide set would never be frustum-culled
+  const instanced = new Map();        // 'type@cx,cz' -> { meshes: InstancedMesh[], next }
+  const CELL = 64;
+  const cellKey = (s) => `${s.type}@${Math.floor(s.position.x / CELL)},${Math.floor(s.position.z / CELL)}`;
   const glints = [];
   let focusedEntry = null;
   let time = 0;
@@ -59,19 +62,20 @@ export function createPickups({ scene, world, inventory, interaction, bus }) {
   }
 
   const counts = {};
-  for (const s of specs) if (!s.mission) counts[s.type] = (counts[s.type] || 0) + 1;
+  for (const s of specs) if (!s.mission) counts[cellKey(s)] = (counts[cellKey(s)] || 0) + 1;
 
-  for (const type of Object.keys(counts)) {
+  for (const key of Object.keys(counts)) {
+    const type = key.split('@')[0];
     const parts = getItemParts(type);
     const meshes = parts.map((p) => {
-      const im = new THREE.InstancedMesh(p.geometry, p.material, counts[type]);
+      const im = new THREE.InstancedMesh(p.geometry, p.material, counts[key]);
       im.name = `pickups_${type}`;
       im.receiveShadow = true;
       im.instanceMatrix.setUsage(THREE.DynamicDrawUsage);
       root.add(im);
       return im;
     });
-    instanced.set(type, { meshes, next: 0 });
+    instanced.set(key, { meshes, next: 0 });
   }
 
   function placeMatrix(spec, out) {
@@ -93,7 +97,7 @@ export function createPickups({ scene, world, inventory, interaction, bus }) {
   for (const spec of specs) {
     const entry = { id: spec.id, type: spec.type, itemId: spec.type, count: YIELD[spec.type] || 1, position: spec.position, collected: false, matrix: new THREE.Matrix4(), index: -1, object: null, glint: null, baseScale: 1 };
     placeMatrix(spec, entry.matrix);
-    const inst = !spec.mission ? instanced.get(spec.type) : null;
+    const inst = !spec.mission ? instanced.get(cellKey(spec)) : null;
     if (inst) {
       entry.index = inst.next++;
       entry.inst = inst;
