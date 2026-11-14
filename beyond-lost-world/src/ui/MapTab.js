@@ -10,7 +10,8 @@ export function createMapTab(ctx) {
   const { game } = ctx;
   const canvas = h('canvas', { class: 'map-canvas', width: 720, height: 720 });
   const markers = h('div', { class: 'map-markers' });
-  const player = h('div', { class: 'map-player', 'aria-label': 'Jouw positie' }, icon('arrow'));
+  const arrow = icon('arrow');
+  const player = h('div', { class: 'map-player', 'aria-label': 'Jouw positie' }, arrow);
   const loadingNote = h('div', { class: 'map-loading', text: 'Kaart wordt getekend…' });
   const frame = h('div', { class: 'map-frame' }, canvas, markers, player, loadingNote,
     h('div', { class: 'map-compass', 'aria-hidden': 'true' }, h('span', { text: 'N' })));
@@ -111,7 +112,7 @@ export function createMapTab(ctx) {
       const [x, y] = toPct(l.x, l.z);
       const m = h('button', { class: `map-marker ${l.discovered ? 'found' : 'unknown'}`, type: 'button', style: { left: x + '%', top: y + '%' }, 'aria-label': l.discovered ? l.name : 'Onbekende locatie', 'data-nosfx': '' },
         h('span', { class: 'mk-dot' }, l.discovered ? null : h('i', { text: '?' })), l.discovered ? h('span', { class: 'mk-label', text: l.name }) : null);
-      if (l.x > 90) m.classList.add('label-left');
+      if (l.x > 90 || l.id === 'cave') m.classList.add('label-left');
       m.addEventListener('click', () => m.classList.toggle('show-label'));
       markers.append(m); markerEls.set(l.id, m);
     }
@@ -134,7 +135,7 @@ export function createMapTab(ctx) {
     lastPos = sig;
     const [x, y] = toPct(p.position.x, p.position.z);
     player.style.left = x + '%'; player.style.top = y + '%';
-    player.style.setProperty('--rot', (-(p.yaw || 0)) + 'rad');
+    arrow.style.transform = `rotate(${-(p.yaw || 0)}rad)`;
   }
 
   return {

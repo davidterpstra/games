@@ -20,16 +20,16 @@ const _m = new THREE.Matrix4(), _q = new THREE.Quaternion(), _qy = new THREE.Qua
 const _up = new THREE.Vector3(0, 1, 0), _n = new THREE.Vector3();
 const ZERO = new THREE.Matrix4().makeScale(0, 0, 0);
 
-function createGlint() {
+export function createGlint() {
   const g = new THREE.Group();
   g.name = 'glint';
   const shaft = new THREE.Mesh(
-    new THREE.CylinderGeometry(0.16, 0.3, 2.2, 14, 1, true),
-    new THREE.MeshBasicMaterial({ map: shaftTexture(), transparent: true, blending: THREE.AdditiveBlending, depthWrite: false, side: THREE.DoubleSide, opacity: 0.55, fog: false }),
+    new THREE.CylinderGeometry(0.1, 0.2, 2.2, 14, 1, true),
+    new THREE.MeshBasicMaterial({ map: shaftTexture(), transparent: true, blending: THREE.AdditiveBlending, depthWrite: false, side: THREE.DoubleSide, opacity: 0.3, fog: false }),
   );
   shaft.position.y = 1.1; shaft.renderOrder = 3; shaft.userData.base = 0.5;
   const glow = new THREE.Sprite(new THREE.SpriteMaterial({ map: glowTexture(), transparent: true, blending: THREE.AdditiveBlending, depthWrite: false, opacity: 0.8 }));
-  glow.scale.setScalar(0.7); glow.position.y = 0.1; glow.renderOrder = 4;
+  glow.scale.setScalar(0.45); glow.position.y = 0.1; glow.renderOrder = 4;
   g.add(shaft, glow);
   g.userData.shaft = shaft; g.userData.glow = glow;
   return g;
@@ -174,8 +174,8 @@ export function createPickups({ scene, world, inventory, interaction, bus }) {
       const pulse = 0.75 + 0.25 * Math.sin(time * 2.2);
       for (const g of glints) {
         if (!g.visible) continue;
-        g.userData.shaft.material.opacity = 0.45 * pulse + (focusedEntry && focusedEntry.glint === g ? 0.25 : 0);
-        g.userData.glow.material.opacity = 0.5 + 0.4 * pulse;
+        g.userData.shaft.material.opacity = 0.35 * pulse + (focusedEntry && focusedEntry.glint === g ? 0.2 : 0);
+        g.userData.glow.material.opacity = 0.35 + 0.3 * pulse;
       }
     },
     serialize() { return [...collected]; },

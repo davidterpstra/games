@@ -1,5 +1,5 @@
 // Inventory tab: 24-slot grid with item icons + counts and a details panel for the selected item.
-import { h, icon } from './dom.js';
+import { h, icon, fill } from './dom.js';
 
 const CAT = { material: 'Materiaal', tool: 'Gereedschap', key: 'Sleutelvoorwerp', artifact: 'Artefact' };
 const SLOTS = 24;
@@ -39,7 +39,7 @@ export function createItemsTab(ctx) {
         b.classList.toggle('is-empty', !slot);
         if (slot) {
           const it = items[slot.itemId];
-          b.replaceChildren(icon(slot.itemId, 'slot-ic'), slot.count > 1 ? h('span', { class: 'slot-count', text: String(slot.count) }) : null);
+          fill(b, icon(slot.itemId, 'slot-ic'), slot.count > 1 ? h('span', { class: 'slot-count', text: String(slot.count) }) : null);
           b.dataset.item = slot.itemId;
           b.dataset.cat = it?.category || '';
           b.setAttribute('aria-label', `${it?.name || slot.itemId}, ${slot.count}`);

@@ -16,7 +16,7 @@ void main() {
   vec4 a = viewMatrix * vec4(head, 1.0);
   vec4 b = viewMatrix * vec4(tail, 1.0);
   vec3 dir = b.xyz - a.xyz;
-  vec3 side = normalize(cross(dir, a.xyz)) * uWidth * (0.7 + 0.6 * aSeed.w);
+  vec3 side = normalize(cross(dir, a.xyz)) * max(uWidth, -a.z * 0.0016) * (0.7 + 0.6 * aSeed.w);
   vec3 vp = mix(a.xyz, b.xyz, position.y) + side * position.x;
   gl_Position = projectionMatrix * vec4(vp, 1.0);
   float dist = length(rel);

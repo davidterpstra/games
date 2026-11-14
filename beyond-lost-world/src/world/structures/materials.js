@@ -609,6 +609,7 @@ export function createMaterials({ renderer, quality = 'medium' } = {}) {
   def('rust', bump(std(T(paintRust(S, rand)), { roughness: 0.7, metalness: 0.35 }), 0.8), 2);
   def('corrugated', bump(std(T(paintCorrugated(S, rand)), { roughness: 0.6, metalness: 0.4 }), 1.4), 2);
   def('panel', std(T(paintPanel(S, rand)), { roughness: 0.55, metalness: 0.35 }), 3);
+  def('dish', Object.assign(M.panel.clone(), { side: THREE.DoubleSide }), 3);
   def('tile', bump(std(T(paintRoofTile(S, rand, 'clay')), { roughness: 0.85 }), 1.4), 2);
   def('slate', bump(std(T(paintRoofTile(S, rand, 'slate')), { roughness: 0.85 }), 1.4), 2);
   def('shingle', bump(std(T(paintShingle(S, rand)), { roughness: 0.95 }), 1.2), 2);

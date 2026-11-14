@@ -41,7 +41,7 @@ function notebook() {
 }
 
 function paper() {
-  const noise = new SimplexNoise(mulberry32(71));
+  const noise = new SimplexNoise({ random: mulberry32(71) });
   const group = new THREE.Group();
   const m = mat('paper', () => std({ map: paperTexture(), roughness: 0.95, side: THREE.DoubleSide }));
   const m2 = mat('paper2', () => std({ map: paperTexture('#cbbf9d'), roughness: 0.95, side: THREE.DoubleSide }));
@@ -105,7 +105,7 @@ function recorder() {
 }
 
 function tablet() {
-  const noise = new SimplexNoise(mulberry32(81));
+  const noise = new SimplexNoise({ random: mulberry32(81) });
   const geo = new THREE.BoxGeometry(0.42, 0.07, 0.54, 10, 2, 12);
   displace(geo, (v) => {
     const k = 0.012 * noise.noise3d(v.x * 8, v.y * 8, v.z * 8);

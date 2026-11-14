@@ -2,7 +2,7 @@
 // `getItemParts(type)` returns shared {geometry, material} parts (used for InstancedMesh as well),
 // `createItemObject(type)` returns a ready Group for single objects.
 import * as THREE from 'three';
-import { mergeGeometries } from 'three/addons/utils/BufferGeometryUtils.js';
+import { mergeGeometries, mergeVertices } from 'three/addons/utils/BufferGeometryUtils.js';
 import { SimplexNoise } from 'three/addons/math/SimplexNoise.js';
 import { mulberry32 } from '../world/layout.js';
 import { barkTexture, rustTexture, fabricTexture, sunDiscTexture, cardFaceTexture } from './ModelTextures.js';
@@ -35,6 +35,9 @@ export function ground(geo) {
   return geo;
 }
 
+/** Welds duplicated vertices so computeVertexNormals gives smooth shading. */
+function weld(geo) { geo.deleteAttribute('normal'); geo.deleteAttribute('uv'); return mergeVertices(geo, 1e-4); }
+
 /** Displaces vertices by a function of their position (shared-position vertices stay welded). */
 function displace(geo, fn) {
   const p = geo.attributes.position, v = new THREE.Vector3();
@@ -60,11 +63,11 @@ function limb(len, r0, r1, bend, noise, seed, tone = 1) {
     v.x += bend * 0.2 * Math.sin(t * Math.PI * 1.5);
   });
   g.rotateZ(-Math.PI / 2);
-  return prep(g, (x, y, z) => { const k = (0.8 + 0.35 * noise.noise3d(x * 30, y * 30, z * 30)) * tone; return [0.52 * k, 0.4 * k, 0.28 * k]; });
+  return prep(g, (x, y, z) => { const k = (0.8 + 0.35 * noise.noise3d(x * 30, y * 30, z * 30)) * tone; return [1.15 * k, 0.98 * k, 0.8 * k]; });
 }
 
 function buildBranch() {
-  const noise = new SimplexNoise(mulberry32(11));
+  const noise = new SimplexNoise({ random: mulberry32(11) });
   const parts = [limb(0.95, 0.05, 0.028, 0.045, noise, 1)];
   const twigs = [[-0.22, 0.6, 0.5], [0.08, -0.7, 0.4], [0.26, 0.5, 0.3]];
   twigs.forEach(([x, yaw, size], i) => {
@@ -85,21 +88,21 @@ function buildBranch() {
 // Stone
 
 function buildStone() {
-  const noise = new SimplexNoise(mulberry32(21));
-  const g = new THREE.DodecahedronGeometry(0.2, 2);
+  const noise = new SimplexNoise({ random: mulberry32(21) });
+  const g = weld(new THREE.DodecahedronGeometry(0.2, 2));
   displace(g, (v) => {
-    const n = 1 + 0.22 * noise.noise3d(v.x * 5, v.y * 5, v.z * 5) + 0.06 * noise.noise3d(v.x * 22, v.y * 22, v.z * 22);
+    const n = 1 + 0.26 * noise.noise3d(v.x * 5, v.y * 5, v.z * 5) + 0.09 * noise.noise3d(v.x * 16, v.y * 16, v.z * 16);
     v.multiplyScalar(n);
     v.x *= 1.25; v.z *= 0.95; v.y *= 0.62;
     if (v.y < -0.07) v.y = -0.07 + (v.y + 0.07) * 0.25; // flat bottom
   });
   const out = prep(g, (x, y, z) => {
-    const k = 0.62 + 0.3 * noise.noise3d(x * 14, y * 14, z * 14);
-    const moss = Math.max(0, noise.noise3d(x * 6 + 9, y * 6, z * 6)) * (y > 0 ? 1 : 0.2);
-    return [(0.52 - moss * 0.18) * k, (0.5 + moss * 0.06) * k, (0.47 - moss * 0.2) * k];
+    const k = 0.42 + 0.25 * noise.noise3d(x * 14, y * 14, z * 14);
+    const moss = Math.max(0, noise.noise3d(x * 6 + 9, y * 6, z * 6) - 0.2) * (y > 0 ? 0.8 : 0.1);
+    return [(0.55 - moss * 0.2) * k, (0.5 + moss * 0.04) * k, (0.44 - moss * 0.22) * k];
   });
   ground(out);
-  return [{ geometry: out, material: mat('stone', () => new THREE.MeshStandardMaterial({ vertexColors: true, roughness: 0.92, flatShading: true })) }];
+  return [{ geometry: out, material: mat('stone', () => new THREE.MeshStandardMaterial({ vertexColors: true, roughness: 0.92 })) }];
 }
 
 // ---------------------------------------------------------------------------------------------
@@ -134,7 +137,7 @@ function buildFiber() {
 // Resin: bark chip with an amber lump (two parts)
 
 function buildResin() {
-  const noise = new SimplexNoise(mulberry32(41));
+  const noise = new SimplexNoise({ random: mulberry32(41) });
   const chip = new THREE.BoxGeometry(0.3, 0.035, 0.19, 8, 1, 5);
   displace(chip, (v) => {
     v.y += 0.02 * noise.noise3d(v.x * 8, 0, v.z * 8) + 0.025 * (v.x * v.x) * 4;
@@ -142,14 +145,14 @@ function buildResin() {
   });
   const chipG = prep(chip, (x, y, z) => { const k = 0.8 + 0.4 * noise.noise3d(x * 30, y * 30, z * 30); return [0.5 * k, 0.38 * k, 0.26 * k]; });
   ground(chipG);
-  const lump = new THREE.IcosahedronGeometry(0.075, 3);
+  const lump = weld(new THREE.IcosahedronGeometry(0.075, 3));
   displace(lump, (v) => {
     const n = 1 + 0.16 * noise.noise3d(v.x * 9, v.y * 9, v.z * 9);
     v.multiplyScalar(n); v.x *= 1.35; v.y *= 0.72; v.z *= 1.0;
   });
-  const drip = new THREE.IcosahedronGeometry(0.035, 2); displace(drip, (v) => { v.y *= 0.8; v.x *= 1.2; });
+  const drip = weld(new THREE.IcosahedronGeometry(0.035, 2)); displace(drip, (v) => { v.y *= 0.8; v.x *= 1.2; });
   drip.translate(0.1, -0.012, 0.05);
-  const drip2 = new THREE.IcosahedronGeometry(0.024, 2); drip2.translate(-0.085, -0.02, -0.055);
+  const drip2 = weld(new THREE.IcosahedronGeometry(0.024, 2)); drip2.translate(-0.085, -0.02, -0.055); drip2.computeVertexNormals();
   const amber = mergeGeometries([prep(lump), prep(drip), prep(drip2)]);
   amber.translate(0.01, 0.063, 0.0);
   return [
@@ -162,7 +165,7 @@ function buildResin() {
 // Cloth: folded fabric
 
 function buildCloth() {
-  const noise = new SimplexNoise(mulberry32(51));
+  const noise = new SimplexNoise({ random: mulberry32(51) });
   const parts = [];
   const layers = [[0.36, 0.25, 0.0, 0.0], [0.34, 0.24, 0.07, 0.0], [0.32, 0.23, -0.12, 0.0], [0.3, 0.2, 0.18, 0.0]];
   let y = 0;
@@ -203,7 +206,7 @@ function plate(w, d, bendX, bendZ, noise, seed) {
 }
 
 function buildScrap() {
-  const noise = new SimplexNoise(mulberry32(61));
+  const noise = new SimplexNoise({ random: mulberry32(61) });
   const parts = [];
   const a = plate(0.34, 0.24, 0.02, 0.05, noise, 1); a.rotateY(0.3); a.translate(0, 0.01, 0);
   const b = plate(0.28, 0.2, -0.03, 0.04, noise, 2); b.rotateZ(0.32); b.rotateY(-0.9); b.translate(0.04, 0.06, 0.02);

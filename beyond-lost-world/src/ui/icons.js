@@ -35,7 +35,7 @@ export const icons = {
   scrap: wrap('<path d="M3.500 8.500 14 4l6.200 5.200-2.100 9L7.200 20.500z" fill="currentColor" fill-opacity=".14"/><circle cx="12" cy="12.200" r="2.300"/><path d="M6 9.500l1.500 1M17.500 15.500l1-.5" opacity=".6"/>'),
   rope: wrap('<circle cx="11" cy="13" r="7.200"/><circle cx="11" cy="13" r="3.800"/><path d="M4.300 11.300l13.200 4.700M5.300 16.800 16.700 9.700M13.500 6.200C16 3 20 3.500 21 7.500" opacity=".7"/>'),
   torch: wrap('<path d="M8.500 21.500 12.800 11.800" stroke-width="2.600"/><path d="M10 17.200l3.200 1.300M11 14.200l3 1.200" opacity=".6"/><path d="M14.800 2.500c2.600 3.600 4.200 5.400 1.700 8.800-1 1.300-3.600 1.400-4.300-.8-.8-2.300.8-4.500 2.600-8z" fill="currentColor" fill-opacity=".25"/>'),
-  crowbar: wrap('<path d="M5 19.500 17.200 7.300c1.500-1.500 3.300-1.600 3.300-3.800"/><path d="M5 19.500l-1.800.8 1.100-1.900zM17.200 7.300l2.300 2.300" /><path d="M20.500 3.500l-2.800.4" opacity=".7"/>', ''),
+  crowbar: wrap('<path d="M4.500 19.500 16.500 7.500" stroke-width="2.800"/><path d="M16.800 7.200c1.800-1.800 3.800-1.200 3.500-3.800M20.300 3.400l-2.800.8" stroke-width="2"/><path d="M4.500 19.500l-1.200 1.200" stroke-width="2.800"/>'),
   sundisc: wrap(`<circle cx="12" cy="12" r="5.200" fill="currentColor" fill-opacity=".16"/><circle cx="12" cy="12" r="2.400"/><path d="${sunRays(12, 12, 7.200, 10.200, 12)}"/>`),
   keycard: wrap('<rect x="2.800" y="5.800" width="18.400" height="12.400" rx="2.200" fill="currentColor" fill-opacity=".1"/><path d="M2.800 9.800h18.400" stroke-width="2.600" opacity=".7"/><rect x="5.500" y="12.800" width="4.200" height="3" rx=".8"/><path d="M13 14.300h5.500" opacity=".7"/>'),
 
@@ -44,7 +44,7 @@ export const icons = {
   map: wrap('<path d="M3 6.200 9 4l6 2.200L21 4v13.800L15 20l-6-2.200L3 20z" fill="currentColor" fill-opacity=".08"/><path d="M9 4v13.800M15 6.200V20"/>'),
   journal: wrap('<path d="M5 4.500A1.500 1.500 0 0 1 6.500 3H18a1 1 0 0 1 1 1v13H7a2 2 0 0 0-2 2z"/><path d="M5 19a2 2 0 0 0 2 2h12v-4"/><path d="M9 7.500h6M9 10.500h4" opacity=".7"/>'),
   settings: gear(),
-  inventory: wrap('<path d="M7.500 9.500a3 3 0 0 1 3-3h3a3 3 0 0 1 3 3V20h-9z" transform="translate(-0.5 0)"/><path d="M9 6.500V5a3 3 0 0 1 6 0v1.500"/><path d="M8 14h8M8 20h8" opacity=".7"/>', ''),
+  inventory: wrap('<rect x="5.500" y="8" width="13" height="13" rx="4" fill="currentColor" fill-opacity=".1"/><path d="M9 8V6.500a3 3 0 0 1 6 0V8"/><path d="M8.800 15h6.400M9.500 18.200h5" opacity=".65"/>'),
   crafting: wrap('<path d="M14.500 4.500 20 10l-2.500 1-1.800-1.800L8 17a2 2 0 0 1-3-3l7.800-7.700-1.800-1.800z" fill="currentColor" fill-opacity=".12"/>'),
   stamina: wrap('<path d="M13 2.500 5 13.500h6l-1 8 8-11h-6z" fill="currentColor" fill-opacity=".18"/>'),
   checkpoint: wrap('<circle cx="12" cy="8.500" r="1.800" fill="currentColor"/><path d="M12 10.500V21M8.500 21h7M8.500 5a5 5 0 0 0 0 7M15.500 5a5 5 0 0 1 0 7M5.800 3a8.500 8.500 0 0 0 0 11M18.200 3a8.500 8.500 0 0 1 0 11" opacity=".9"/>'),

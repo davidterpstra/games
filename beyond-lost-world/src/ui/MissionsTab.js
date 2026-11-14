@@ -1,5 +1,5 @@
 // Missions tab: active mission with objectives, completed list, locked missions as "???".
-import { h, icon } from './dom.js';
+import { h, icon, fill } from './dom.js';
 
 export function createMissionsTab(ctx) {
   const { bus, game } = ctx;
@@ -18,7 +18,7 @@ export function createMissionsTab(ctx) {
     const active = list.filter((m) => m.status === 'active');
     const done = list.filter((m) => m.status === 'done');
     const locked = list.filter((m) => m.status === 'locked');
-    el.replaceChildren(
+    fill(el, 
       h('section', { class: 'mis-sec' }, h('h3', { class: 'sec-title', text: 'Actieve missie' }),
         active.length ? active.map((m) => h('article', { class: 'mission-card active' },
           h('div', { class: 'mission-head' }, icon('mission'), h('h4', { text: m.title })), h('p', { class: 'mission-desc', text: m.description }), objectives(m)))

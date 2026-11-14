@@ -11,12 +11,12 @@ const KEYS = [
   { e: -0.40, zen: c(0x050a1e), hor: c(0x142241), sun: c(0xffffff), sunI: 0, hemS: c(0x4a62a6), hemG: c(0x1a2238), hemI: 0.80, exp: 1.30 },
   { e: -0.20, zen: c(0x080f28), hor: c(0x1d2d52), sun: c(0xffffff), sunI: 0, hemS: c(0x4a62a6), hemG: c(0x1a2238), hemI: 0.78, exp: 1.28 },
   { e: -0.10, zen: c(0x0f1c44), hor: c(0x4a4068), sun: c(0xff8a5a), sunI: 0, hemS: c(0x5a64a0), hemG: c(0x2a2838), hemI: 0.78, exp: 1.18 },
-  { e: -0.035, zen: c(0x1c3068), hor: c(0xb06a82), sun: c(0xff7a44), sunI: 0.0, hemS: c(0x7078b0), hemG: c(0x3a3036), hemI: 0.82, exp: 1.08 },
-  { e: 0.00, zen: c(0x2c4c92), hor: c(0xff9262), sun: c(0xff7a3c), sunI: 0.7, hemS: c(0x8a92c0), hemG: c(0x4a3a30), hemI: 0.85, exp: 1.03 },
-  { e: 0.07, zen: c(0x3868b4), hor: c(0xffbb90), sun: c(0xffa662), sunI: 1.7, hemS: c(0x93a8d6), hemG: c(0x54463a), hemI: 0.90, exp: 1.0 },
-  { e: 0.18, zen: c(0x3c76c8), hor: c(0xdcc8b4), sun: c(0xffd09a), sunI: 2.5, hemS: c(0x9ab8e2), hemG: c(0x5a4e3c), hemI: 0.98, exp: 1.0 },
-  { e: 0.40, zen: c(0x3374cf), hor: c(0xb4d0ee), sun: c(0xffecd0), sunI: 3.0, hemS: c(0xa2c4f0), hemG: c(0x625a42), hemI: 1.04, exp: 0.98 },
-  { e: 0.95, zen: c(0x2a6bd0), hor: c(0xa8cdf2), sun: c(0xfff6ea), sunI: 3.2, hemS: c(0xa6c8f5), hemG: c(0x6a6048), hemI: 1.08, exp: 0.96 },
+  { e: -0.035, zen: c(0x1c3068), hor: c(0xb06a82), sun: c(0xff7a44), sunI: 0.0, hemS: c(0x7078b0), hemG: c(0x3a3036), hemI: 0.95, exp: 1.12 },
+  { e: 0.00, zen: c(0x2c4c92), hor: c(0xff9262), sun: c(0xff7a3c), sunI: 0.7, hemS: c(0x8a92c0), hemG: c(0x4a3a30), hemI: 1.0, exp: 1.06 },
+  { e: 0.07, zen: c(0x3868b4), hor: c(0xffb078), sun: c(0xff9d52), sunI: 1.7, hemS: c(0x93a8d6), hemG: c(0x54463a), hemI: 1.02, exp: 1.02 },
+  { e: 0.18, zen: c(0x3a70c4), hor: c(0xf2bc82), sun: c(0xffc47e), sunI: 2.5, hemS: c(0x9ab8e2), hemG: c(0x5a4e3c), hemI: 0.98, exp: 1.0 },
+  { e: 0.40, zen: c(0x3374cf), hor: c(0xb8d0e8), sun: c(0xffe3bc), sunI: 2.7, hemS: c(0xa2c4f0), hemG: c(0x625a42), hemI: 1.04, exp: 0.98 },
+  { e: 0.95, zen: c(0x2a6bd0), hor: c(0xa8cdf2), sun: c(0xfff6ea), sunI: 2.9, hemS: c(0xa6c8f5), hemG: c(0x6a6048), hemI: 1.08, exp: 0.96 },
 ];
 
 const smooth = (a, b, x) => { const t = Math.min(1, Math.max(0, (x - a) / (b - a))); return t * t * (3 - 2 * t); };

@@ -55,7 +55,7 @@ void main() {
 
   // sun scattering: broad Mie lobe + warm horizon bloom at low sun
   float vis = uSunVis;
-  col += uSunColor * (hg(cosS, .78) * .11 + pow(max(cosS, 0.), 6.) * .10) * vis * smoothstep(-.15, .05, uSunElev);
+  col += uSunColor * (hg(cosS, .78) * .26 + pow(max(cosS, 0.), 5.) * .16) * vis * smoothstep(-.15, .05, uSunElev);
   vec2 az = normalize(d.xz + 1e-5), saz = normalize(uSunDir.xz + 1e-5);
   float horizonGlow = pow(max(dot(az, saz), 0.), 3.) * exp(-h * 6.5) * uTwilight;
   col += uSunColor * horizonGlow * .55 * vis;
@@ -67,8 +67,9 @@ void main() {
     float s = starLayer(d, 70., .93) + starLayer(d, 130., .95) * .8 + starLayer(d, 36., .985) * 1.4;
     vec3 gal = normalize(vec3(.35, .55, .75));
     float band = exp(-pow(dot(d, gal) * 3.4, 2.));
-    float mw = band * (.35 + .65 * fbm(vec2(atan(d.x, d.z) * 3., dot(d, gal) * 9.)));
-    sky2 = vec3(.9, .95, 1.) * s * 1.2 + vec3(.20, .24, .38) * mw * .30;
+    vec3 gt = normalize(cross(gal, vec3(0., 1., 0.)));
+    float mw = band * (.3 + .7 * fbm(vec2(dot(d, gt) * 7., dot(d, cross(gal, gt)) * 7.)));
+    sky2 = vec3(.9, .95, 1.) * s * 1.2 + vec3(.20, .24, .38) * mw * .2;
   }
 
   // moon
@@ -76,8 +77,8 @@ void main() {
   float md = smoothstep(.99935, .99965, cosM);
   vec2 mp = (d - uMoonDir).xz * 150.;
   float maria = .78 + .22 * vnoise(mp * .9) + .08 * vnoise(mp * 3.);
-  vec3 moon = vec3(.93, .95, 1.) * maria * md * 2.2;
-  moon += vec3(.55, .65, .95) * (pow(max(cosM, 0.), 90.) * .45 + pow(max(cosM, 0.), 8.) * .05);
+  vec3 moon = vec3(.93, .95, 1.) * maria * md * 1.5;
+  moon += vec3(.55, .65, .95) * (pow(max(cosM, 0.), 120.) * .35 + pow(max(cosM, 0.), 10.) * .035);
   sky2 += moon * moonVis * smoothstep(0., .04, d.y + .02);
 
   // clouds
@@ -100,7 +101,7 @@ void main() {
   col += sky2 * (1. - dens * .92);
   // sun disc (sits behind clouds)
   float sd = smoothstep(.99962, .99982, cosS) * smoothstep(-.01, .02, d.y);
-  col += uSunColor * sd * 9. * vis * smoothstep(-.03, .04, uSunElev) * (1. - dens * .96);
+  col += uSunColor * sd * 5. * vis * smoothstep(-.03, .04, uSunElev) * (1. - dens * .96);
   col = mix(col, cloudCol, dens * (.94 - .1 * uOvercast * 0.));
   col += vec3(.55, .6, .85) * uFlash * (.25 + dens * 1.4) ;
 
@@ -164,16 +165,16 @@ export function createSky(quality = 'high') {
       // sky colours: desaturate towards storm-grey, blend into fog colour in fog weather
       _grey.setScalar(dn.zenith.r * .3 + dn.zenith.g * .5 + dn.zenith.b * .2).multiplyScalar(.75);
       u.uZenith.value.copy(dn.zenith).lerp(_grey, wx.overcast * .72);
-      _grey.setScalar(dn.horizon.r * .3 + dn.horizon.g * .5 + dn.horizon.b * .2).multiplyScalar(.9);
+      _grey.setScalar(dn.horizon.r * .3 + dn.horizon.g * .5 + dn.horizon.b * .2).multiplyScalar(.9 - .38 * wx.overcast);
       u.uHorizon.value.copy(dn.horizon).lerp(_grey, wx.overcast * .6);
       u.uZenith.value.lerp(u.uHorizon.value, wx.fog * .85);
       u.uSunColor.value.copy(dn.sunColor);
       // cloud lighting
       const day = dn.dayFactor;
       _c.copy(dn.sunColor).multiplyScalar(.95 * day + .02).lerp(u.uHorizon.value, .25 * (1 - wx.overcast));
-      _c.lerp(_grey.setScalar(.38 * day + .02), wx.overcast * .75);
+      _c.lerp(_grey.setScalar(.30 * day + .02), wx.overcast * .8);
       u.uCloudLit.value.copy(_c).addScalar(.015 + dn.night * .04);
-      _c.copy(u.uZenith.value).lerp(u.uHorizon.value, .4).multiplyScalar(.55 + .15 * day).lerp(_grey.setScalar(.18 * day + .015), wx.overcast * .8);
+      _c.copy(u.uZenith.value).lerp(u.uHorizon.value, .4).multiplyScalar(.55 + .15 * day).lerp(_grey.setScalar(.10 * day + .015), wx.overcast * .85);
       u.uCloudShade.value.copy(_c);
       // wind drift
       const sp = (.25 + wx.windNow * 1.6) * dt * .006;

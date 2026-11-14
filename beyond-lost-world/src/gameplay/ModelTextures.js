@@ -106,12 +106,11 @@ export function sunDiscTexture() {
       ctx.closePath(); ctx.fill();
     }
     for (let i = 0; i < 48; i++) { const a = (i / 48) * Math.PI * 2; ctx.beginPath(); ctx.moveTo(cx + Math.cos(a) * 218, cy + Math.sin(a) * 218); ctx.lineTo(cx + Math.cos(a) * 230, cy + Math.sin(a) * 230); ctx.stroke(); }
-    // face
+    // centre: ring, dot and small triangles
     ctx.lineWidth = 4;
     ctx.beginPath(); ctx.arc(cx, cy, 70, 0, 6.3); ctx.stroke();
-    ctx.beginPath(); ctx.arc(cx - 24, cy - 12, 8, 0, 6.3); ctx.fill(); ctx.beginPath(); ctx.arc(cx + 24, cy - 12, 8, 0, 6.3); ctx.fill();
-    ctx.beginPath(); ctx.moveTo(cx, cy - 8); ctx.lineTo(cx - 8, cy + 14); ctx.lineTo(cx + 8, cy + 14); ctx.stroke();
-    ctx.beginPath(); ctx.arc(cx, cy + 22, 26, 0.25, Math.PI - 0.25); ctx.stroke();
+    ctx.beginPath(); ctx.arc(cx, cy, 30, 0, 6.3); ctx.fill();
+    for (let i = 0; i < 8; i++) { const a = (i / 8) * 6.283 + 0.39; ctx.beginPath(); ctx.moveTo(cx + Math.cos(a - 0.2) * 40, cy + Math.sin(a - 0.2) * 40); ctx.lineTo(cx + Math.cos(a) * 62, cy + Math.sin(a) * 62); ctx.lineTo(cx + Math.cos(a + 0.2) * 40, cy + Math.sin(a + 0.2) * 40); ctx.closePath(); ctx.fill(); }
   });
 }
 
@@ -229,7 +228,7 @@ export function reelTexture() {
 export function shaftTexture() {
   return canvasTexture('shaft', 16, 128, (ctx, w, h) => {
     const g = ctx.createLinearGradient(0, h, 0, 0);
-    g.addColorStop(0, 'rgba(255,230,150,0.9)'); g.addColorStop(0.35, 'rgba(255,220,130,0.35)'); g.addColorStop(1, 'rgba(255,220,130,0)');
+    g.addColorStop(0, 'rgba(255,230,150,0)'); g.addColorStop(0.12, 'rgba(255,230,150,0.8)'); g.addColorStop(0.45, 'rgba(255,220,130,0.3)'); g.addColorStop(1, 'rgba(255,220,130,0)');
     ctx.fillStyle = g; ctx.fillRect(0, 0, w, h);
   }, { anisotropy: 1 });
 }
