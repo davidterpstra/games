@@ -59,7 +59,8 @@ export function createLighting({ scene, quality, shadows }) {
       hemi.color.copy(dn.hemiSky);
       hemi.groundColor.copy(dn.hemiGround);
       // overcast skies give soft, bluish-grey fill; interiors lose almost all ambient light
-      const fill = (dn.hemiIntensity * (1 + wx.overcast * 0.12)) * (1 - 0.97 * dark);
+      // lightly shaded interiors (dark < 1) get extra fill since the roof blocks the sun; caves stay black
+      const fill = (dn.hemiIntensity * (1 + wx.overcast * 0.12)) * (1 - 0.97 * dark) * (1 + 4.3 * dark * (1 - dark));
       hemi.intensity = fill + flash * 2.6 * (1 - dark);
 
       // snap the shadow frustum centre to shadow-map texels (no shimmering when moving)

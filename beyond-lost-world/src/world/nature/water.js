@@ -246,8 +246,9 @@ export function createWater({ hf, scene, renderer, quality }) {
       let y = hf.riverSurface(S[i].x, S[i].z, S[i].wy);
       const ramp = sstep(0, 5, S[i].s - s0);
       y = POOL.waterY + (y - POOL.waterY) * ramp;
+      const wf = 0.3 + 0.7 * sstep(0, 9, S[i].s - s0);
       for (let m = 0; m <= M; m++) {
-        const o = (m / M * 2 - 1) * hw;
+        const o = (m / M * 2 - 1) * hw * wf;
         const x = S[i].x + nx * o, z = S[i].z + nz * o;
         pos.push(x, y, z); uv.push(o / 9, (S[i].s) / 9); depth.push(y - getH(x, z));
       }

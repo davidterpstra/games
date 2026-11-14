@@ -80,7 +80,7 @@ export function createRain(quality = 'medium') {
       u.uTime.value = time;
       u.uCam.value.copy(cam);
       u.uVel.value.set(wind * 7, -16 - intensity * 3, wind * 2.5);
-      u.uAlpha.value = 0.55 * Math.min(1, intensity * 1.2);
+      u.uAlpha.value = 0.85 * Math.min(1, intensity * 1.2);
       u.uColor.value.copy(tint).multiplyScalar(0.25 + light * 0.9);
       geo.instanceCount = Math.max(1, Math.floor(count * (0.25 + 0.75 * intensity)));
     },

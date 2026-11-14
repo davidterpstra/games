@@ -83,6 +83,11 @@ export function createAmbience(core) {
   let t = 0;
   let birdTimer = 2, owlTimer = 20, dripTimer = 1.5, crackleTimer = 0.2;
   let torchOn = false;
+  let riverTimer = 0, ri = { dist: 999, x: 0, z: 0 };
+  const pan = (s, px, pz) => {
+    const dx = px - s.camX, dz = pz - s.camZ, l = Math.hypot(dx, dz) || 1;
+    return Math.max(-0.85, Math.min(0.85, ((dx * s.rightX + dz * s.rightZ) / l) * Math.min(1, l / 6)));
+  };
 
   // ---- one-shot generators ----
   function osc(type, f, t0, dur, vol, out, f2) {
@@ -220,25 +225,21 @@ export function createAmbience(core) {
     rainLow.gain.value = cur.rain * 0.34;
 
     // water by distance
-    const ri = riverInfo(s.camX, s.camZ);
+    if ((riverTimer -= dt) <= 0) { riverTimer = 0.12; ri = riverInfo(s.camX, s.camZ); } // allocates: throttle
     const dr = Math.max(0, ri.dist - RIVER.width / 2);
     cur.river = ease(cur.river, Math.pow(1 - clamp01(dr / 55), 2) * 0.4 * (s.camY - 0 < 80 ? 1 : 0.4), k * 1.5);
     river.g.gain.value = cur.river * (0.8 + 0.2 * Math.sin(t * 0.9));
-    const pan = (px, pz) => {
-      const dx = px - s.camX, dz = pz - s.camZ, l = Math.hypot(dx, dz) || 1;
-      return Math.max(-0.85, Math.min(0.85, ((dx * s.rightX + dz * s.rightZ) / l) * Math.min(1, l / 6)));
-    };
-    if (river.p) river.p.pan.value = pan(ri.x, ri.z);
+    if (river.p) river.p.pan.value = pan(s, ri.x, ri.z);
     const dfall = Math.hypot(s.camX - WATERFALL.pool.x, s.camZ - WATERFALL.pool.z);
     cur.fall = ease(cur.fall, Math.pow(clamp01(1 - (dfall - 10) / 170), 1.7) * 0.9, k * 1.5);
     fall.g.gain.value = cur.fall * 0.75;
     fallLow.g.gain.value = cur.fall * 0.7;
-    const fp = pan(WATERFALL.pool.x, WATERFALL.pool.z);
+    const fp = pan(s, WATERFALL.pool.x, WATERFALL.pool.z);
     if (fall.p) { fall.p.pan.value = fp; fallLow.p.pan.value = fp * 0.6; }
     const dlake = Math.hypot(s.camX - LAKE.x, s.camZ - LAKE.z) - LAKE.radius;
     cur.lake = ease(cur.lake, Math.pow(1 - clamp01(dlake / 32), 2) * 0.28, k);
     lake.g.gain.value = cur.lake * (0.7 + 0.3 * Math.sin(t * 0.55) * Math.sin(t * 0.31));
-    if (lake.p) lake.p.pan.value = pan(LAKE.x, LAKE.z) * 0.7;
+    if (lake.p) lake.p.pan.value = pan(s, LAKE.x, LAKE.z) * 0.7;
 
     // night: crickets
     const cr = s.night * (1 - s.rain * 0.9) * (1 - s.storm) * out * (1 - clamp01(s.wind * 0.5));

@@ -126,7 +126,9 @@ function riverShape(h, x, z) {
   if (rd > HALF_W + 36) return h;
   const sm = sstep(HALF_W * 0.3, HALF_W + 4, rd);
   const T = rwy - 1.6 + 2.6 * sm + 0.11 * Math.max(0, rd - (HALF_W + 4)) + 0.12 * noise2(x / 6, z / 6) * sm;
-  const w = 1 - sstep(HALF_W + 6, HALF_W + 34, rd);
+  let w = 1 - sstep(HALF_W + 6, HALF_W + 34, rd);
+  // inside the lake the bowl wins; only the mouth channel cuts through the shore
+  w *= sstep(LAKE.radius - 4, LAKE.radius + 3, Math.hypot(x - LAKE.x, z - LAKE.z));
   return lerp(h, T, w);
 }
 
@@ -327,3 +329,5 @@ export function createHeightField(segments) {
     PLAY_BOUNDS,
   };
 }
+
+export { woodDistance };

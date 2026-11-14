@@ -107,7 +107,20 @@ export function createTorch({ camera }) {
   const track = (o) => { disposables.push(o); return o; };
 
   // --- wooden handle (slightly gnarled) ---
-  const wood = track(new THREE.MeshStandardMaterial({ map: track(woodTexture()), roughness: 0.9, metalness: 0, depthTest: false }));
+  // The view model is unlit (the torch light would blow out geometry 30 cm away): shading is baked into vertex colours,
+  // brighter towards the flame and on surfaces facing up/right, like a hand-held fire would light it.
+  const bake = (geo, k = 1) => {
+    const p = geo.attributes.position, n = geo.attributes.normal, col = new Float32Array(p.count * 3);
+    for (let i = 0; i < p.count; i++) {
+      const y = p.getY(i);
+      const t = THREE.MathUtils.clamp(y / 0.66, 0, 1);
+      const facing = 0.7 + 0.3 * THREE.MathUtils.clamp(n.getY(i) * 0.6 - n.getX(i) * 0.4 + n.getZ(i) * 0.3, -1, 1);
+      const v = (0.22 + 0.95 * t * t) * facing * k;
+      col[i * 3] = v * (1 + 0.15 * t); col[i * 3 + 1] = v * (0.85 + 0.05 * t); col[i * 3 + 2] = v * (0.7 - 0.1 * t);
+    }
+    geo.setAttribute('color', new THREE.BufferAttribute(col, 3));
+  };
+  const wood = track(new THREE.MeshBasicMaterial({ map: track(woodTexture()), vertexColors: true, depthTest: false }));
   const hg = track(new THREE.CylinderGeometry(0.021, 0.016, 0.52, 12, 10, true));
   const hp = hg.attributes.position;
   for (let i = 0; i < hp.count; i++) {
@@ -116,15 +129,17 @@ export function createTorch({ camera }) {
     hp.setX(i, hp.getX(i) * k); hp.setZ(i, hp.getZ(i) * k);
   }
   hg.computeVertexNormals();
+  bake(hg);
   const handle = new THREE.Mesh(hg, wood);
   handle.position.y = 0.26;
   handle.renderOrder = 1000;
   // end cap
-  const cap = new THREE.Mesh(track(new THREE.CircleGeometry(0.016, 12)), wood);
+  const capG = track(new THREE.CircleGeometry(0.016, 12)); bake(capG, 0.5);
+  const cap = new THREE.Mesh(capG, wood);
   cap.rotation.x = Math.PI / 2; cap.position.y = 0; cap.renderOrder = 1000;
 
   // --- cloth wrap + rope binding + charred head ---
-  const clothMat = track(new THREE.MeshStandardMaterial({ map: track(clothTexture()), roughness: 1, metalness: 0, depthTest: false }));
+  const clothMat = track(new THREE.MeshBasicMaterial({ map: track(clothTexture()), vertexColors: true, depthTest: false }));
   const prof = [[0.019, 0.46], [0.028, 0.49], [0.037, 0.53], [0.041, 0.57], [0.038, 0.61], [0.030, 0.64], [0.020, 0.655], [0.004, 0.66]]
     .map(([r, y]) => new THREE.Vector2(r, y));
   const wg = track(new THREE.LatheGeometry(prof, 14));
@@ -135,22 +150,30 @@ export function createTorch({ camera }) {
     wp.setX(i, wp.getX(i) * k); wp.setZ(i, wp.getZ(i) * k);
   }
   wg.computeVertexNormals();
+  bake(wg, 1.1);
   const wrap = new THREE.Mesh(wg, clothMat);
   wrap.renderOrder = 1001;
-  const ropeMat = track(new THREE.MeshStandardMaterial({ color: 0x6b5030, roughness: 1, depthTest: false }));
+  const ropeMat = track(new THREE.MeshBasicMaterial({ color: 0x5a4328, depthTest: false }));
   const ropes = [];
   for (const [y, r] of [[0.495, 0.03], [0.535, 0.038]]) {
     const rope = new THREE.Mesh(track(new THREE.TorusGeometry(r, 0.0045, 6, 18)), ropeMat);
     rope.rotation.x = Math.PI / 2; rope.position.y = y; rope.renderOrder = 1002; ropes.push(rope);
   }
-  const headMat = track(new THREE.MeshStandardMaterial({ color: 0x1a0f08, emissive: 0xff4d10, emissiveIntensity: 1.1, roughness: 1, depthTest: false }));
+  const headMat = track(new THREE.MeshBasicMaterial({ color: 0xffffff, vertexColors: true, depthTest: false }));
   const headGeo = track(new THREE.IcosahedronGeometry(0.034, 2));
   const hgp = headGeo.attributes.position;
   for (let i = 0; i < hgp.count; i++) {
     const n = 1 + 0.18 * Math.sin(hgp.getX(i) * 150 + hgp.getY(i) * 90) * Math.cos(hgp.getZ(i) * 130);
     hgp.setXYZ(i, hgp.getX(i) * n, hgp.getY(i) * n * 0.9, hgp.getZ(i) * n);
   }
-  headGeo.computeVertexNormals();
+  {
+    const hc = new Float32Array(hgp.count * 3);
+    for (let i = 0; i < hgp.count; i++) {
+      const u = THREE.MathUtils.clamp(hgp.getY(i) / 0.034 * 0.5 + 0.5, 0, 1);
+      hc[i * 3] = 0.14 + 0.95 * u * u; hc[i * 3 + 1] = 0.06 + 0.22 * u * u; hc[i * 3 + 2] = 0.025 + 0.03 * u * u;
+    }
+    headGeo.setAttribute('color', new THREE.BufferAttribute(hc, 3));
+  }
   const head = new THREE.Mesh(headGeo, headMat);
   head.position.y = 0.665; head.renderOrder = 1003;
   model.add(handle, cap, wrap, ...ropes, head);
@@ -184,7 +207,6 @@ export function createTorch({ camera }) {
   const glow = new THREE.Mesh(track(new THREE.PlaneGeometry(1, 1).translate(0, 0.0, 0)), glowMat);
   glow.position.y = 0.07; glow.frustumCulled = false; glow.renderOrder = 1009;
   tip.add(glow);
-  // fix: glow quad centred on the tip (plane is centred, FLAME_VERT offsets by position.xy)
 
   // --- embers ---
   const ePos = new Float32Array(EMBERS * 3);
@@ -217,7 +239,7 @@ export function createTorch({ camera }) {
   camera.add(light);
 
   // --- state ---
-  const BASE_POS = new THREE.Vector3(0.27, -0.30, -0.5);
+  const BASE_POS = new THREE.Vector3(0.26, -0.34, -0.52);
   let on = false;
   let anim = 0;            // 0 lowered .. 1 raised
   let phase = 0, lastYaw = 0, lastPitch = 0, swayX = 0, swayY = 0, bob = 0;
@@ -278,7 +300,7 @@ export function createTorch({ camera }) {
         flames[i].scale.setScalar(0.92 + 0.12 * Math.sin(time * (11 + i * 4) + i));
       }
       glowMat.uniforms.uIntensity.value = inten * (0.8 + 0.4 * f);
-      headMat.emissiveIntensity = 0.8 + 0.8 * f;
+      headMat.color.setScalar(0.8 + 0.4 * f);
 
       // embers
       for (let i = 0; i < EMBERS; i++) {

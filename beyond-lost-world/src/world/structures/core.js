@@ -62,14 +62,14 @@ export class Builder {
     _loc.compose(_p.set(x, y, z), _q, _sc);
     _mat.multiplyMatrices(this.m, _loc);
     g.applyMatrix4(_mat);
-    for (const n of Object.keys(g.attributes)) if (n !== 'position' && n !== 'normal' && n !== 'uv') g.deleteAttribute(n);
+    for (const n of Object.keys(g.attributes)) if (n !== 'position' && n !== 'normal' && n !== 'uv' && !(o.keepColor && n === 'color')) g.deleteAttribute(n);
     if (!g.attributes.uv) g.setAttribute('uv', new THREE.BufferAttribute(new Float32Array(g.attributes.position.count * 2), 2));
     const n = g.attributes.position.count;
     const j = o.j ?? 0.07, f = 1 + (this.rand() - 0.5) * 2 * j;
     if (o.tint === undefined) _col.setRGB(1, 1, 1); else if (Array.isArray(o.tint)) _col.setRGB(o.tint[0], o.tint[1], o.tint[2]); else _col.set(o.tint);
     _col.multiplyScalar(f);
-    const col = new Float32Array(n * 3);
-    for (let i = 0; i < n; i++) { col[i * 3] = _col.r; col[i * 3 + 1] = _col.g; col[i * 3 + 2] = _col.b; }
+    const col = (o.keepColor && g.attributes.color) ? g.attributes.color.array : new Float32Array(n * 3);
+    if (!o.keepColor) for (let i = 0; i < n; i++) { col[i * 3] = _col.r; col[i * 3 + 1] = _col.g; col[i * 3 + 2] = _col.b; }
     // optional vertical darkening toward the ground (dirt) – cheap ambient-occlusion feel
     if (o.ao) {
       const pos = g.attributes.position;

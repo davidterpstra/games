@@ -138,13 +138,13 @@ function dirtTile(size, rand) {
     const k = 0.85 + 0.3 * m;
     return [col[0] * k, col[1] * k, col[2] * k];
   });
-  for (let i = 0; i < 700; i++) { // pebbles
+  for (let i = 0; i < 420; i++) { // pebbles
     const x = rand() * size, y = rand() * size, r = 1.5 + rand() * rand() * 6;
-    const g = 90 + rand() * 90, tint = rand();
+    const g = 70 + rand() * 60, tint = rand();
     wrapped(size, x, y, r + 2, (ox, oy) => {
       ctx.fillStyle = 'rgba(20,14,8,0.35)'; ctx.beginPath(); ctx.ellipse(x + ox + 1, y + oy + 1.5, r * 1.1, r * 0.8, 0.4, 0, 7); ctx.fill();
       ctx.fillStyle = rgb([g + tint * 25, g + tint * 8, g - tint * 15]); ctx.beginPath(); ctx.ellipse(x + ox, y + oy, r, r * 0.78, 0.4, 0, 7); ctx.fill();
-      ctx.fillStyle = 'rgba(255,255,240,0.25)'; ctx.beginPath(); ctx.ellipse(x + ox - r * 0.2, y + oy - r * 0.25, r * 0.5, r * 0.3, 0.4, 0, 7); ctx.fill();
+      ctx.fillStyle = 'rgba(255,255,240,0.12)'; ctx.beginPath(); ctx.ellipse(x + ox - r * 0.2, y + oy - r * 0.25, r * 0.5, r * 0.3, 0.4, 0, 7); ctx.fill();
     });
   }
   return canvas;
@@ -157,7 +157,7 @@ function rockTile(size) {
     const n = pfbm(u, v, 6, 6, 5, 47);
     const [f1, edge] = worley(u + warp * 0.05, v, 7, 49);
     const crack = 1 - sstep(0.0, 0.07, edge);
-    let k = 0.55 + 0.35 * n + 0.2 * (strata - 0.5) - 0.38 * crack - 0.12 * (1 - sstep(0, 0.5, f1));
+    let k = 0.62 + 0.35 * n + 0.28 * (strata - 0.5) - 0.2 * crack - 0.08 * (1 - sstep(0, 0.5, f1));
     const warm = pn(u, v, 4, 4, 51);
     return [(100 + 18 * warm) * k * 1.25, (96 + 10 * warm) * k * 1.25, (90 - 6 * warm) * k * 1.25];
   });
