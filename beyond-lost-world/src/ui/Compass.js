@@ -43,9 +43,9 @@ export function createCompass() {
       if (Math.abs(rel) > FOV / 2) continue;
       const x = cx + rel * ppd;
       const major = b % 45 === 0;
-      c.strokeStyle = major ? 'rgba(241,233,216,0.55)' : 'rgba(241,233,216,0.28)';
+      c.strokeStyle = major ? 'rgba(241,233,216,0.75)' : 'rgba(241,233,216,0.42)';
       c.lineWidth = 1;
-      c.beginPath(); c.moveTo(x + 0.5, h - 6); c.lineTo(x + 0.5, h - (major ? 14 : 10)); c.stroke();
+      c.beginPath(); c.moveTo(x + 0.5, h - 3); c.lineTo(x + 0.5, h - (major ? 10 : 7)); c.stroke();
     }
     for (const [name, b] of CARD) {
       const rel = wrap(b - heading);
@@ -53,7 +53,7 @@ export function createCompass() {
       const x = cx + rel * ppd;
       c.fillStyle = name === 'N' ? '#e3b866' : name.length === 1 ? '#f1e9d8' : 'rgba(241,233,216,0.62)';
       c.font = name.length === 1 ? '700 14px system-ui, "Segoe UI", sans-serif' : '600 11px system-ui, "Segoe UI", sans-serif';
-      c.fillText(name, x, h - 24);
+      c.fillText(name, x, h - 19);
     }
     // location markers
     let nearest = null, nearestAbs = 999;
@@ -75,11 +75,9 @@ export function createCompass() {
       c.font = '600 11px system-ui, "Segoe UI", sans-serif';
       const tw = c.measureText(label).width;
       let lx = Math.max(tw / 2 + 4, Math.min(w - tw / 2 - 4, nearest.x));
-      c.fillStyle = 'rgba(8,10,9,0.72)';
-      c.fillRect(lx - tw / 2 - 6, h - 4 - 0, 0, 0);
       c.fillStyle = '#f3dba5';
       c.globalAlpha = Math.max(0, 1 - nearestAbs / 11);
-      c.fillText(label, lx, 24 + 0);
+      c.fillText(label, lx, 26);
       c.globalAlpha = 1;
     }
     c.restore();

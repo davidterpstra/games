@@ -39,6 +39,7 @@ export function icon(name, cls = '') {
   const s = document.createElement('span');
   s.className = 'ic ' + cls;
   s.setAttribute('aria-hidden', 'true');
+  s.dataset.i = name;
   s.innerHTML = icons[name] || icons.info;
   return s;
 }

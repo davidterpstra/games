@@ -1,0 +1,6 @@
+<!doctype html><html><head><meta charset="utf-8"><title>UI icons</title><link rel="stylesheet" href="../src/ui/ui.css">
+<style>body{background:#12171a;margin:20px;color:#e9dfc8;font:12px system-ui}#g{display:grid;grid-template-columns:repeat(8,110px);gap:14px}.c{display:flex;flex-direction:column;align-items:center;gap:8px;padding:10px;border:1px solid #333;border-radius:8px}.c .ic{width:56px;height:56px;color:#e0b865}</style></head>
+<body class="ui-root"><div id="g"></div><script type="module">
+import { icons } from '../src/ui/icons.js'; import { icon } from '../src/ui/dom.js';
+const g=document.getElementById('g'); for(const k of Object.keys(icons)){const d=document.createElement('div');d.className='c';d.append(icon(k),k);g.append(d);}
+</script></body></html>

@@ -55,7 +55,7 @@ export function createToasts(ctx) {
     bannerEl.replaceChildren(
       h('div', { class: 'banner-kicker' }, h('span', { class: 'banner-line' }), h('span', { text: b.kicker }), h('span', { class: 'banner-line' })),
       h('div', { class: 'banner-title', text: b.title }),
-      b.sub ? h('div', { class: 'banner-sub', text: b.sub }) : null);
+      ...(b.sub ? [h('div', { class: 'banner-sub', text: b.sub })] : []));
     void bannerEl.offsetWidth;
     bannerEl.classList.add('is-on');
     setTimeout(() => {

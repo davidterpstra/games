@@ -1,0 +1,23 @@
+<!doctype html>
+<html lang="nl"><head><meta charset="utf-8"><title>Environment preview</title>
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<style>
+html,body{margin:0;height:100%;background:#000;overflow:hidden;font:12px system-ui,sans-serif;color:#fff}
+canvas{display:block;width:100%;height:100%}
+#panel{position:fixed;left:8px;top:8px;background:rgba(0,0,0,.55);padding:8px 10px;border-radius:6px;display:flex;flex-direction:column;gap:6px;max-width:360px}
+#panel.hidden{display:none}
+#panel button,#panel select{font:inherit;padding:3px 7px}
+#panel .row{display:flex;gap:6px;align-items:center;flex-wrap:wrap}
+#info{opacity:.8}
+</style>
+<script type="importmap">{"imports":{"three":"../vendor/three/three.module.min.js","three/addons/":"../vendor/three/addons/"}}</script>
+</head><body>
+<div id="panel">
+  <div class="row"><label>Tijd <input id="time" type="range" min="0" max="24" step="0.05" value="7.5"></label><span id="tl"></span></div>
+  <div class="row"><select id="wsel"><option>clear</option><option>cloudy</option><option>rain</option><option>fog</option><option>storm</option></select>
+    <button id="torch">Toorts (F)</button><button id="audio">Audio aan</button><label><input type="checkbox" id="sim"> klok loopt</label></div>
+  <div class="row"><select id="sfx"></select><button id="playsfx">Speel</button></div>
+  <div id="info">WASD lopen, slepen = kijken, Shift snel, H = paneel</div>
+</div>
+<script type="module" src="environment-preview.js"></script>
+</body></html>

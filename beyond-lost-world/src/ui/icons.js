@@ -27,7 +27,7 @@ const cloud = '<path d="M7 17.5a4 4 0 0 1-.4-7.98A5.5 5.5 0 0 1 17.2 8.6 4.5 4.5
 
 export const icons = {
   // ---- items ---------------------------------------------------------------------------------
-  wood: wrap('<ellipse cx="6.5" cy="12" rx="2.6" ry="5.2"/><ellipse cx="6.5" cy="12" rx="1" ry="2.1" opacity=".6"/><path d="M6.5 6.8H18a2.6 5.2 0 0 1 0 10.4H6.5"/><path d="M10.5 8.6v1.6M13.5 14v1.8M16 9v1.4" opacity=".55"/>'),
+  wood: wrap('<g transform="rotate(-38 12 12)"><path d="M5.500 8h12.500a3 4 0 0 1 0 8H5.500" fill="currentColor" fill-opacity=".14"/><ellipse cx="5.500" cy="12" rx="3" ry="4"/><ellipse cx="5.500" cy="12" rx="1.500" ry="2" opacity=".6"/><path d="M10 9.800v1.400M13 13.200v1.500M16 10v1.200M20 12.800" opacity=".5"/><path d="M11.500 8V5.500l2-1.500" opacity=".8"/></g>'),
   stone: wrap('<path d="M3.5 16.5 6.8 9 12 5.5l5.7 2.3 2.8 6.2-3.5 4.7H7z"/><path d="M6.8 9l4.4 3.4L12 5.5M11.2 12.4l6.5-4.6M11.2 12.4 9.6 18.7M11.2 12.4l9.3 1.6" opacity=".6"/>'),
   fiber: wrap('<path d="M7 21C5 15 9.5 9.5 7 3M12 21.5c-2-6 2.5-11.5 0-18M17 21c-2-6 2.5-11.5 0-18"/><path d="M5 14.5h14" stroke-width="2.4" opacity=".75"/>'),
   resin: wrap('<path d="M12 3s-6.5 7-6.5 11.5a6.5 6.5 0 0 0 13 0C18.5 10 12 3 12 3z" fill="currentColor" fill-opacity=".18"/><path d="M9 14.6a3 3 0 0 0 2.3 2.9" opacity=".7"/>'),
