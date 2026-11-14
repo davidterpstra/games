@@ -241,7 +241,7 @@ export function buildStation(S) {
   const dx = (ox - 0.5 + 0.2) - sx, dz = (oz + 2 + 4.35) - sz;
   S.anchor('player.start', [sx, oy + 0.05, sz], Math.atan2(-dx, -dz));
   placeBeacon(S, 'station.beacon', ox + 3.8, oy, oz - 6.8, -0.35, -1, 1);
-  S.zone('station.interior', ox, oz + 2, 8.1, 5.1, 0, oy - 1, oy + 3.4, 0.35);
+  S.zone('station_main', ox, oz + 2, 8.1, 5.1, 0, oy - 1, oy + 3.4, 0.35);
   S.commit(b);
   return { broken };
 }

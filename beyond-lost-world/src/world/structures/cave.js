@@ -183,8 +183,8 @@ export function buildCave(S) {
 
   // ------------------------------------------------------------ interior zones
   const [tzx, tzz] = world(0, (MOUTH - 3 + TEND) / 2);
-  S.zone('cave.tunnel', tzx, tzz, 7.5, (MOUTH - 3 - TEND) / 2, th, oy - 2, oy + 9, 0.95);
-  S.zone('cave.chamber', cha.x, cha.z, 12.8, 12.8, th, oy - 2, oy + 12, 0.95);
+  S.zone('cave_tunnel', tzx, tzz, 7.5, (MOUTH - 3 - TEND) / 2, th, oy - 2, oy + 9, 0.95);
+  S.zone('cave_chamber', cha.x, cha.z, 12.8, 12.8, th, oy - 2, oy + 12, 0.95);
   S.commit(b);
 }
 

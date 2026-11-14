@@ -98,10 +98,10 @@ export function buildBunker(S) {
 
   // zones (darkness 1.0 unpowered, 0.35 powered)
   const zs = [
-    S.zone('bunker.corridor', ox + 2.2, oz, 5.6, 1.9, 0, oy - 1, oy + 3.4, 1.0),
-    S.zone('bunker.generator', ox + 4, oz + 7, 3.9, 5.2, 0, oy - 1, oy + 3.4, 1.0),
-    S.zone('bunker.bunkroom', ox + 4, oz - 7, 3.9, 5.2, 0, oy - 1, oy + 3.4, 1.0),
-    S.zone('bunker.control', ox - 8.8, oz, 5.5, 6.8, 0, oy - 1, oy + 3.4, 1.0),
+    S.zone('bunker_corridor', ox + 2.2, oz, 5.6, 1.9, 0, oy - 1, oy + 3.4, 1.0),
+    S.zone('bunker_generator', ox + 4, oz + 7, 3.9, 5.2, 0, oy - 1, oy + 3.4, 1.0),
+    S.zone('bunker_bunkroom', ox + 4, oz - 7, 3.9, 5.2, 0, oy - 1, oy + 3.4, 1.0),
+    S.zone('bunker_control', ox - 8.8, oz, 5.5, 6.8, 0, oy - 1, oy + 3.4, 1.0),
   ];
   // lights
   const lights = [[2.5, 0], [5.0, 7.0], [-8.5, 0]].map(([lx, lz]) => {

@@ -168,7 +168,7 @@ export function buildTemple(S) {
   S.box(pad.x, pad.z - 12, 2.2, 0.6, 0, oy + F, oy + F + 4.8, { id: 'temple.gate', surface: 'stone' });
 
   placeBeacon(S, 'temple.beacon', pad.x + 6, oy, pad.z + 33.5, 0.1, 1, 3);
-  S.zone('temple.sanctum', pad.x, pad.z - 21, 7.2, 10.5, 0, oy + F - 0.6, oy + F + 6.4, 0.9);
+  S.zone('temple_sanctum', pad.x, pad.z - 21, 7.2, 10.5, 0, oy + F - 0.6, oy + F + 6.4, 0.9);
   S.commit(b);
   return { pillars, altar, gate };
 }

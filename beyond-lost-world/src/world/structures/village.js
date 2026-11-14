@@ -101,7 +101,7 @@ export function buildVillage(S) {
       S.anchor('village.scrap1', b.wp(2.6, 0.12, 2.4));
       S.anchor('village.scrap2', b.wp(-1.9, 0.12, 0.9));
       S.resource('scrap_s2', 'scrap', b.wp(0.2, 0.15, 3.0));
-      S.zone('village.workshop', b.wp(0, 0, 0).x, b.wp(0, 0, 0).z, w / 2, d / 2, b.yaw, oy - 1, oy + 3.4, 0.15);
+      S.zone('village_workshop', b.wp(0, 0, 0).x, b.wp(0, 0, 0).z, w / 2, d / 2, b.yaw, oy - 1, oy + 3.4, 0.15);
     });
 
     // houses
@@ -201,7 +201,7 @@ function house(S, b, o, R, oy) {
 
     // interior zone
     const c = b.wp(0, 0, 0);
-    S.zone('village.' + o.id, c.x, c.z, w / 2 + 0.05, d / 2 + 0.05, b.yaw, oy - 1, oy + H + rise * 0.7, elder ? 0.35 : 0.3);
+    S.zone(elder ? 'village_elder_house' : 'village_house_' + o.id.replace('h', ''), c.x, c.z, w / 2 + 0.05, d / 2 + 0.05, b.yaw, oy - 1, oy + H + rise * 0.7, elder ? 0.35 : 0.3);
     void inter;
   });
 }
