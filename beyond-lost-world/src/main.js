@@ -120,11 +120,13 @@ async function boot() {
   const menuTarget = new THREE.Vector3(layout.MENU_CAMERA.target.x, layout.MENU_CAMERA.target.y, layout.MENU_CAMERA.target.z);
   const menuBase = new THREE.Vector3(layout.MENU_CAMERA.position.x, layout.MENU_CAMERA.position.y, layout.MENU_CAMERA.position.z);
   let menuTime = 0;
+  const menuOff = new THREE.Vector3();
+  const UP = new THREE.Vector3(0, 1, 0);
   const updateMenuCamera = (dt) => {
     menuTime += dt;
     const a = Math.sin(menuTime * 0.05) * 0.35;
-    const off = menuBase.clone().sub(menuTarget);
-    off.applyAxisAngle(new THREE.Vector3(0, 1, 0), a);
+    const off = menuOff.copy(menuBase).sub(menuTarget);
+    off.applyAxisAngle(UP, a);
     camera.position.copy(menuTarget).add(off);
     camera.position.y += Math.sin(menuTime * 0.13) * 1.5;
     camera.lookAt(menuTarget);

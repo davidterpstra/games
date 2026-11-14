@@ -48,17 +48,19 @@ void main() {
   p.y *= uStretch;
   vec2 q = p + vec2(sin(p.y * 0.9 + uTime * 0.3), cos(p.x * 0.8 - uTime * 0.25)) * 0.25;
   float dx = 0.0, dz = 0.0;
-  for (int i = 0; i < 5; i++) {
+  for (int i = 0; i < WAVES; i++) {
     vec4 w = WV[i];
     float ph = dot(w.xy, q) * w.z + uTime * w.w * (uFoam > 0.5 ? 0.35 : 1.0);
     float a = 0.045 / (0.6 + w.z);
     float c = cos(ph) * a * w.z;
     dx += c * w.x; dz += c * w.y;
   }
+  #ifndef CHEAP_WATER
   float e = 0.04;
   float n0 = vnoise(q * 9.0 + uTime * 0.2);
   dx += (vnoise(q * 9.0 + vec2(e, 0.0) + uTime * 0.2) - n0) * 0.9;
   dz += (vnoise(q * 9.0 + vec2(0.0, e) + uTime * 0.2) - n0) * 0.9;
+  #endif
   float dist = distance(cameraPosition, vWorld);
   float calm = smoothstep(70.0, 260.0, dist);
   vec3 N = normalize(vec3(-dx * (1.0 - 0.7 * calm), 1.0, -dz * (1.0 - 0.7 * calm)));
@@ -189,7 +191,10 @@ export function createWater({ hf, scene, renderer, quality }) {
     uDeep: { value: new THREE.Color(0.02, 0.17, 0.2) },
   };
   const fogU = THREE.UniformsUtils.clone(THREE.UniformsLib.fog);
+  // mobile/low: fewer wave layers and no per-pixel noise normals (the shader is fill-rate bound on phones)
+  const waterDefines = quality === 'low' ? { WAVES: 3, CHEAP_WATER: 1 } : { WAVES: 5 };
   const mkWater = (flow, scale, foam, stretch = 1) => new THREE.ShaderMaterial({
+    defines: { ...waterDefines },
     vertexShader: WATER_VERT, fragmentShader: WATER_FRAG, transparent: true, depthWrite: false, fog: true,
     uniforms: {
       ...fogU, ...shared,

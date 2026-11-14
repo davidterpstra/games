@@ -22,7 +22,7 @@ export function createEnvironment({ scene, renderer, camera, world, bus, setting
   const dn = new DayNight();
   const sky = createSky(qualityName);
   scene.add(sky.mesh);
-  const lighting = createLighting({ scene, quality: qualityName, shadows: settings.get('shadows') });
+  const lighting = createLighting({ scene, quality: qualityName, shadows: settings.get('shadows'), renderer });
   const rain = createRain(qualityName);
   scene.add(rain.mesh);
   const torch = createTorch({ camera });
@@ -67,10 +67,17 @@ export function createEnvironment({ scene, renderer, camera, world, bus, setting
     const vf = preset.viewDistance;
     const mist = 0.25 * dn.twilight + 0.18 * clamp01(1 - Math.abs(dn.time - 6.5) / 2.2);
     const f = Math.max(wx.fog, wx.rain * 0.15);
-    const far = Math.max(48, vf * 0.92 * (1 - 0.8 * f) * (1 - 0.3 * mist));
+    let far = Math.max(48, vf * 0.92 * (1 - 0.8 * f) * (1 - 0.3 * mist));
+    // pitch-black interiors (caves, unpowered bunker): nothing beyond a few dozen metres can be seen anyway
+    const deep = clamp01((dark - 0.8) / 0.15);
+    far += (Math.min(far, 70) - far) * deep;
     const near = Math.max(0.5, vf * 0.22 * (1 - 0.97 * f) * (1 - 0.4 * mist));
     const fog = scene.fog;
-    fog.near = near; fog.far = far;
+    fog.near = Math.min(near, far * 0.8); fog.far = far;
+    // everything beyond the fog's far distance is pure fog colour, so the camera never needs to see further:
+    // objects past it are skipped by frustum culling (saves draw calls in haze, rain, fog and at dusk)
+    const wantFar = Math.max(130, far + 12);
+    if (Math.abs(camera.far - wantFar) > 2) { camera.far = wantFar; camera.updateProjectionMatrix(); }
     fogColor.copy(sky.uniforms.uHorizon.value);
     if (wx.fog > 0.01) fogColor.lerp(sky.uniforms.uZenith.value, 0.15 * wx.fog);
     fogColor.multiplyScalar(1 - 0.95 * dark);
@@ -121,6 +128,11 @@ export function createEnvironment({ scene, renderer, camera, world, bus, setting
       a.indoor = indoor; a.zoneId = zone ? String(zone.id) : ''; a.zoneDark = zone ? zone.darkness : 0;
       audio.update(dt, a);
     },
+
+    /** Interior darkness 0..1 (smoothed). 1 = pitch black room/cave. */
+    get darkness() { return dark; },
+    /** 0..1 how far the camera is inside an interior zone (smoothed). */
+    get indoor() { return indoor; },
 
     getTimeOfDay() { return dn.time; },
     setTimeOfDay(h) { dn.setTime(Number(h) || 0); },

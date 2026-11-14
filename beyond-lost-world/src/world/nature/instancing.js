@@ -3,6 +3,7 @@
 // frustum culling works per chunk. update() re-sorts the items of nearby chunks into LOD buckets.
 import * as THREE from 'three';
 import { WORLD_SIZE, WORLD_HALF } from '../layout.js';
+import { addShadowProxy } from '../../perf/shadowHook.js';
 
 export const ITEM = 12; // x, y, z, rotY, sx, sy, sz, r, g, b, rank, variant
 const CHUNK = 192;
@@ -42,6 +43,19 @@ export class InstanceSystem {
       const ci = Math.min(NC - 1, Math.max(0, Math.floor((x + WORLD_HALF) / CHUNK))), cj = Math.min(NC - 1, Math.max(0, Math.floor((z + WORLD_HALF) / CHUNK)));
       bins[cj * NC + ci].push(i);
     }
+    // Shadow casting is done by dedicated proxies (see updateShadow): one InstancedMesh per variant/LOD for the
+    // whole group, refilled before each shadow-map render with only the instances inside the shadow frustum.
+    const varTotal = new Array(nv).fill(0);
+    for (let i = 0; i < g.count; i++) varTotal[g.items[i * ITEM + 11] | 0]++;
+    const mkProxy = (geo, cap) => {
+      const m = new THREE.InstancedMesh(geo, g.material, Math.max(cap, 1));
+      m.instanceMatrix.setUsage(THREE.DynamicDrawUsage);
+      m.count = 0; m.frustumCulled = false; m.name = g.name + ':shadow';
+      addShadowProxy(m); this.root.add(m);
+      return m;
+    };
+    g.sp0 = g.cast[0] ? g.lod0.map((geo, v) => (varTotal[v] ? mkProxy(geo, varTotal[v]) : null)) : [];
+    g.sp1 = (g.cast[1] && g.lod1) ? mkProxy(g.lod1, g.count) : null;
     this.chunks.forEach((chunk, ci) => {
       const list = bins[ci];
       if (!list.length) return;
@@ -51,7 +65,7 @@ export class InstanceSystem {
         m.instanceColor = new THREE.InstancedBufferAttribute(new Float32Array(Math.max(cap, 1) * 3), 3);
         m.instanceMatrix.setUsage(THREE.DynamicDrawUsage); m.instanceColor.setUsage(THREE.DynamicDrawUsage);
         m.boundingSphere = sphere.clone(); m.count = 0; m.visible = false;
-        m.castShadow = castShadow; m.receiveShadow = g.receive; m.matrixAutoUpdate = false; m.name = g.name;
+        m.castShadow = false; m.receiveShadow = g.receive; m.matrixAutoUpdate = false; m.name = g.name;
         this.root.add(m);
         return m;
       };
@@ -71,6 +85,7 @@ export class InstanceSystem {
   /** Rebuild instance buffers around the camera. p = { density, lodScale, viewDistance } */
   update(cam, p) {
     this.lastCam.copy(cam);
+    this.params = p;
     let inst = 0, meshes = 0;
     const R = CHUNK * 0.72;
     for (const chunk of this.chunks) {
@@ -119,6 +134,52 @@ export class InstanceSystem {
       }
     }
     this.stats.instances = inst; this.stats.meshes = meshes;
+  }
+
+  /**
+   * Refills the shadow proxies with the instances that can land inside the shadow camera's box.
+   * Near instances (within the LOD-0 distance of the player camera) use the detailed model, the rest the LOD-1 model.
+   */
+  updateShadow(shadowCam, cam) {
+    const p = this.params;
+    if (!p) return;
+    const e = shadowCam.matrixWorldInverse.elements;
+    const ext = shadowCam.right + 14; // tall casters just outside the box still shadow into it
+    for (const g of this.groups) {
+      const s0 = g.sp0, s1 = g.sp1;
+      if (!s0.length && !s1) continue;
+      const rankMax = g.thin ? p.density : 1.01;
+      const d0 = g.dist[0] * p.lodScale, d0s = d0 * d0;
+      const items = g.items;
+      const nv = g.lod0.length;
+      const counts = g.shadowCounts || (g.shadowCounts = new Int32Array(nv + 1));
+      counts.fill(0);
+      for (let i = 0, n = g.count; i < n; i++) {
+        const o = i * ITEM;
+        const x = items[o], y = items[o + 1], z = items[o + 2];
+        const lx = e[0] * x + e[4] * y + e[8] * z + e[12];
+        if (lx > ext || lx < -ext) continue;
+        const ly = e[1] * x + e[5] * y + e[9] * z + e[13];
+        if (ly > ext || ly < -ext) continue;
+        if (items[o + 10] > rankMax) continue;
+        const dx = x - cam.x, dz = z - cam.z;
+        let m, slot;
+        if (dx * dx + dz * dz < d0s || (!s1)) { slot = items[o + 11] | 0; m = s0[slot]; } else { slot = nv; m = s1; }
+        if (!m) continue;
+        const n2 = counts[slot]++;
+        const a = m.instanceMatrix.array, q = n2 * 16;
+        const rot = items[o + 3], c = Math.cos(rot), sn = Math.sin(rot), sx = items[o + 4], sy = items[o + 5], sz = items[o + 6];
+        a[q] = sx * c; a[q + 1] = 0; a[q + 2] = -sx * sn; a[q + 3] = 0;
+        a[q + 4] = 0; a[q + 5] = sy; a[q + 6] = 0; a[q + 7] = 0;
+        a[q + 8] = sz * sn; a[q + 9] = 0; a[q + 10] = sz * c; a[q + 11] = 0;
+        a[q + 12] = x; a[q + 13] = y; a[q + 14] = z; a[q + 15] = 1;
+      }
+      for (let v = 0; v <= nv; v++) {
+        const m = v < nv ? s0[v] : s1;
+        if (!m) continue;
+        m.count = counts[v]; m.instanceMatrix.needsUpdate = true;
+      }
+    }
   }
 
   dispose() {

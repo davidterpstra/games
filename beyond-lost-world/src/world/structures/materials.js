@@ -3,6 +3,7 @@
 // merged geometry can still carry per-piece tints (weathering, moss, paint variation).
 import * as THREE from 'three';
 import { mulberry32 } from '../layout.js';
+import { QUALITY_PRESETS } from '../../core/quality.js';
 
 const TAU = Math.PI * 2;
 
@@ -578,10 +579,23 @@ function paintSunRelief(rand) {
  * Creates the shared material library.
  * @returns {{ M: Object<string, THREE.Material>, tile: Object<string, number>, noShadow: Set<string>, glyph: THREE.MeshStandardMaterial[], dispose(): void }}
  */
-export function createMaterials({ renderer, quality = 'medium' } = {}) {
+export function createMaterials(opts = {}) {
+  const b = buildMaterials(opts);
+  for (const job of b.jobs) job();
+  return b.finish();
+}
+
+/** Same library, but yields to the browser between the texture-painting steps so the loading screen keeps animating. */
+export async function createMaterialsAsync(opts = {}) {
+  const b = buildMaterials(opts);
+  for (const job of b.jobs) { job(); await new Promise((r) => setTimeout(r, 0)); }
+  return b.finish();
+}
+
+function buildMaterials({ renderer, quality = 'medium' } = {}) {
   const rand = mulberry32(90210);
   const S = quality === 'low' ? 256 : 512;
-  const aniso = Math.min(8, renderer?.capabilities?.getMaxAnisotropy?.() || 1);
+  const aniso = Math.min(QUALITY_PRESETS[quality]?.maxAnisotropy || 8, renderer?.capabilities?.getMaxAnisotropy?.() || 1);
   const textures = [];
   const T = (canvas, repeat = true) => {
     const t = new THREE.CanvasTexture(canvas);
@@ -596,55 +610,59 @@ export function createMaterials({ renderer, quality = 'medium' } = {}) {
   const tile = {};
   const def = (key, material, tileSize) => { M[key] = material; tile[key] = tileSize; material.name = key; };
 
-  def('wood', bump(std(T(paintPlanks(S, rand, [124, 96, 66])), { roughness: 0.92 }), 1.2), 2);
-  def('woodDark', bump(std(T(paintPlanks(S, rand, [78, 58, 40], 6, 1.4)), { roughness: 0.92 }), 1.2), 2);
-  def('plaster', bump(std(T(paintPlaster(S, rand, [198, 186, 160])), { roughness: 0.95 }), 0.8), 3);
-  def('timber', bump(std(T(paintPlaster(S, rand, [190, 176, 148], true)), { roughness: 0.95 }), 0.8), 3);
-  def('stone', bump(std(T(paintStoneBlocks(S, rand)), { roughness: 0.95 }), 2.2), 2.4);
-  def('stoneDark', bump(std(T(paintStoneBlocks(S, rand, [96, 96, 92], 5, true)), { roughness: 0.95 }), 2.2), 2.4);
-  def('temple', bump(std(T(paintTemple(S, rand)), { roughness: 0.92 }), 2.5), 3);
-  def('templeCarved', bump(std(T(paintTemple(S, rand, 'carved')), { roughness: 0.92 }), 2.5), 3);
-  def('flag', bump(std(T(paintFlag(S, rand)), { roughness: 0.9 }), 2), 3);
-  def('concrete', bump(std(T(paintConcrete(S, rand)), { roughness: 0.95 }), 1), 3);
-  def('rust', bump(std(T(paintRust(S, rand)), { roughness: 0.7, metalness: 0.35 }), 0.8), 2);
-  def('corrugated', bump(std(T(paintCorrugated(S, rand)), { roughness: 0.6, metalness: 0.4 }), 1.4), 2);
-  def('panel', std(T(paintPanel(S, rand)), { roughness: 0.55, metalness: 0.35 }), 3);
-  def('dish', Object.assign(M.panel.clone(), { side: THREE.DoubleSide }), 3);
-  def('tile', bump(std(T(paintRoofTile(S, rand, 'clay')), { roughness: 0.85 }), 1.4), 2);
-  def('slate', bump(std(T(paintRoofTile(S, rand, 'slate')), { roughness: 0.85 }), 1.4), 2);
-  def('shingle', bump(std(T(paintShingle(S, rand)), { roughness: 0.95 }), 1.2), 2);
-  def('cloth', std(T(paintCloth(Math.min(S, 256), rand)), { roughness: 1, side: THREE.DoubleSide }), 1.5);
-  def('cobble', bump(std(T(paintCobble(S, rand)), { roughness: 0.95 }), 2), 3);
-  def('earth', std(T(paintEarth(S, rand)), { roughness: 1 }), 6);
-  def('rock', bump(std(T(paintRock(S, rand)), { roughness: 0.55, metalness: 0.05, side: THREE.DoubleSide }), 2.5), 4);
-  def('steel', std(null, { color: 0x4a4e52, roughness: 0.45, metalness: 0.75 }), 2);
-  def('black', std(null, { color: 0x151515, roughness: 0.7, metalness: 0.2 }), 2);
-  def('paper', std(T(paintPaper(rand)), { roughness: 1, side: THREE.DoubleSide }), 1);
-  def('map', std(T(paintMap(rand)), { roughness: 1, side: THREE.DoubleSide }), 1);
-  def('dials', std(T(paintDials(), false), { roughness: 0.6 }), 1);
-  def('signs', std(T(paintSigns(rand), false), { roughness: 0.85, side: THREE.DoubleSide }), 1);
-  def('sunRelief', bump(std(T(paintSunRelief(rand), false), { roughness: 0.92 }), 2.5), 1);
-  def('ivy', std(T(paintLeaves(rand)), { roughness: 0.9, side: THREE.DoubleSide, alphaTest: 0.5 }), 1.5);
-  def('chain', std(T(paintChain()), { roughness: 0.6, metalness: 0.6, side: THREE.DoubleSide, alphaTest: 0.5 }), 2);
-  def('glass', new THREE.MeshStandardMaterial({ color: 0x9fb8c0, roughness: 0.08, metalness: 0.1, transparent: true, opacity: 0.32, depthWrite: false, side: THREE.DoubleSide, vertexColors: true }), 2);
-  def('lampOff', std(null, { color: 0xddd8c0, emissive: 0xfff2c8, emissiveIntensity: 0, roughness: 0.4 }), 1);
-  def('ember', std(null, { color: 0x2a1408, emissive: 0xff5a14, emissiveIntensity: 1.4, roughness: 0.6 }), 1);
-  M.ivy.shadowSide = THREE.DoubleSide;
+  const jobs = [
+    () => { def('wood', bump(std(T(paintPlanks(S, rand, [124, 96, 66])), { roughness: 0.92 }), 1.2), 2); },
+    () => { def('woodDark', bump(std(T(paintPlanks(S, rand, [78, 58, 40], 6, 1.4)), { roughness: 0.92 }), 1.2), 2); },
+    () => { def('plaster', bump(std(T(paintPlaster(S, rand, [198, 186, 160])), { roughness: 0.95 }), 0.8), 3); },
+    () => { def('timber', bump(std(T(paintPlaster(S, rand, [190, 176, 148], true)), { roughness: 0.95 }), 0.8), 3); },
+    () => { def('stone', bump(std(T(paintStoneBlocks(S, rand)), { roughness: 0.95 }), 2.2), 2.4); },
+    () => { def('stoneDark', bump(std(T(paintStoneBlocks(S, rand, [96, 96, 92], 5, true)), { roughness: 0.95 }), 2.2), 2.4); },
+    () => { def('temple', bump(std(T(paintTemple(S, rand)), { roughness: 0.92 }), 2.5), 3); },
+    () => { def('templeCarved', bump(std(T(paintTemple(S, rand, 'carved')), { roughness: 0.92 }), 2.5), 3); },
+    () => { def('flag', bump(std(T(paintFlag(S, rand)), { roughness: 0.9 }), 2), 3); },
+    () => { def('concrete', bump(std(T(paintConcrete(S, rand)), { roughness: 0.95 }), 1), 3); },
+    () => { def('rust', bump(std(T(paintRust(S, rand)), { roughness: 0.7, metalness: 0.35 }), 0.8), 2); },
+    () => { def('corrugated', bump(std(T(paintCorrugated(S, rand)), { roughness: 0.6, metalness: 0.4 }), 1.4), 2); },
+    () => { def('panel', std(T(paintPanel(S, rand)), { roughness: 0.55, metalness: 0.35 }), 3); },
+    () => { def('dish', Object.assign(M.panel.clone(), { side: THREE.DoubleSide }), 3); },
+    () => { def('tile', bump(std(T(paintRoofTile(S, rand, 'clay')), { roughness: 0.85 }), 1.4), 2); },
+    () => { def('slate', bump(std(T(paintRoofTile(S, rand, 'slate')), { roughness: 0.85 }), 1.4), 2); },
+    () => { def('shingle', bump(std(T(paintShingle(S, rand)), { roughness: 0.95 }), 1.2), 2); },
+    () => { def('cloth', std(T(paintCloth(Math.min(S, 256), rand)), { roughness: 1, side: THREE.DoubleSide }), 1.5); },
+    () => { def('cobble', bump(std(T(paintCobble(S, rand)), { roughness: 0.95 }), 2), 3); },
+    () => { def('earth', std(T(paintEarth(S, rand)), { roughness: 1 }), 6); },
+    () => { def('rock', bump(std(T(paintRock(S, rand)), { roughness: 0.55, metalness: 0.05, side: THREE.DoubleSide }), 2.5), 4); },
+    () => { def('steel', std(null, { color: 0x4a4e52, roughness: 0.45, metalness: 0.75 }), 2); },
+    () => { def('black', std(null, { color: 0x151515, roughness: 0.7, metalness: 0.2 }), 2); },
+    () => { def('paper', std(T(paintPaper(rand)), { roughness: 1, side: THREE.DoubleSide }), 1); },
+    () => { def('map', std(T(paintMap(rand)), { roughness: 1, side: THREE.DoubleSide }), 1); },
+    () => { def('dials', std(T(paintDials(), false), { roughness: 0.6 }), 1); },
+    () => { def('signs', std(T(paintSigns(rand), false), { roughness: 0.85, side: THREE.DoubleSide }), 1); },
+    () => { def('sunRelief', bump(std(T(paintSunRelief(rand), false), { roughness: 0.92 }), 2.5), 1); },
+    () => { def('ivy', std(T(paintLeaves(rand)), { roughness: 0.9, side: THREE.DoubleSide, alphaTest: 0.5 }), 1.5); },
+    () => { def('chain', std(T(paintChain()), { roughness: 0.6, metalness: 0.6, side: THREE.DoubleSide, alphaTest: 0.5 }), 2); },
+    () => { def('glass', new THREE.MeshStandardMaterial({ color: 0x9fb8c0, roughness: 0.08, metalness: 0.1, transparent: true, opacity: 0.32, depthWrite: false, side: THREE.DoubleSide, vertexColors: true }), 2); },
+    () => { def('lampOff', std(null, { color: 0xddd8c0, emissive: 0xfff2c8, emissiveIntensity: 0, roughness: 0.4 }), 1); },
+    () => { def('ember', std(null, { color: 0x2a1408, emissive: 0xff5a14, emissiveIntensity: 1.4, roughness: 0.6 }), 1); },
+    () => { M.ivy.shadowSide = THREE.DoubleSide; },
+  ];
 
   const noShadow = new Set(['glass', 'ivy', 'chain', 'ember', 'rock']);
 
-  // glyph pillar faces (own materials, not vertex coloured)
-  const glyph = ['sun', 'moon', 'wave', 'mountain'].map((k) => {
-    const m = new THREE.MeshStandardMaterial({ map: T(paintGlyphFace(k, rand), false), roughness: 0.92 });
-    m.bumpMap = m.map; m.bumpScale = 2.5; m.name = 'glyph_' + k; return m;
-  });
-  const pillarStone = new THREE.MeshStandardMaterial({ map: T(paintTemple(S, rand)), roughness: 0.92, name: 'pillarStone' });
-  pillarStone.map.wrapS = pillarStone.map.wrapT = THREE.RepeatWrapping;
-
-  return {
-    M, tile, noShadow, glyph, pillarStone,
-    dispose() { textures.forEach((t) => t.dispose()); Object.values(M).forEach((m) => m.dispose()); glyph.forEach((m) => m.dispose()); pillarStone.dispose(); },
-  };
+  function finish() {
+    // glyph pillar faces (own materials, not vertex coloured) – painted after all jobs to keep the random sequence
+    const glyph = ['sun', 'moon', 'wave', 'mountain'].map((k) => {
+      const m = new THREE.MeshStandardMaterial({ map: T(paintGlyphFace(k, rand), false), roughness: 0.92 });
+      m.bumpMap = m.map; m.bumpScale = 2.5; m.name = 'glyph_' + k; return m;
+    });
+    const pillarStone = new THREE.MeshStandardMaterial({ map: T(paintTemple(S, rand)), roughness: 0.92, name: 'pillarStone' });
+    pillarStone.map.wrapS = pillarStone.map.wrapT = THREE.RepeatWrapping;
+    return {
+      M, tile, noShadow, glyph, pillarStone,
+      dispose() { textures.forEach((t) => t.dispose()); Object.values(M).forEach((m) => m.dispose()); glyph.forEach((m) => m.dispose()); pillarStone.dispose(); },
+    };
+  }
+  return { jobs, finish };
 }
 
 export { cv, grain, blot, blots, streaks, paintPlanks };

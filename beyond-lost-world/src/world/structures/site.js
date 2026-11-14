@@ -1,6 +1,7 @@
 // Shared registry handed to every site builder: colliders, anchors, zones, resource spots, animation hooks.
 import * as THREE from 'three';
 import { Builder } from './core.js';
+import { mergeShadowCasters } from '../../perf/shadowHook.js';
 import { mulberry32, WORLD_SEED } from '../layout.js';
 
 /**
@@ -20,6 +21,8 @@ export function createSite(lib, terrain, root) {
       const g = b.build();
       g.traverse((m) => { if (m.isMesh && m.userData.clutter) S.clutter.push(m); });
       root.add(g);
+      // static site: one merged position-only shadow proxy instead of one shadow draw per material
+      mergeShadowCasters(g.children.filter((m) => m.isMesh), g, b.name);
       return g;
     },
     anchor(id, pos, rotationY = 0, object) {

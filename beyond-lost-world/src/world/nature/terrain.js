@@ -146,7 +146,7 @@ export async function createTerrainMesh({ hf, textures, quality, onProgress }) {
   const group = new THREE.Group(); group.name = 'terrain';
   for (let cj = 0; cj < CHUNKS; cj++) for (let ci = 0; ci < CHUNKS; ci++) {
     const mesh = new THREE.Mesh(buildChunkGeometry(hf, ci, cj), material);
-    mesh.receiveShadow = true; mesh.castShadow = false; mesh.name = `terrain_${ci}_${cj}`;
+    mesh.receiveShadow = true; mesh.castShadow = false; mesh.name = `terrain_${ci}_${cj}`; mesh.matrixAutoUpdate = false;
     group.add(mesh);
     if ((cj * CHUNKS + ci) % 4 === 3) await tick();
   }

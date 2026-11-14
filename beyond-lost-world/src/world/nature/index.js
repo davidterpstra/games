@@ -3,7 +3,7 @@
 import * as THREE from 'three';
 import { QUALITY_PRESETS } from '../../core/quality.js';
 import { createHeightField } from './heightfield.js';
-import { createTerrainTextures, createFloraAtlas } from './textures.js';
+import { createTerrainTexturesAsync, createFloraAtlas } from './textures.js';
 import { createTerrainMesh } from './terrain.js';
 import { createWater } from './water.js';
 import { createVegetation } from './vegetation.js';
@@ -19,7 +19,7 @@ const tick = () => new Promise((r) => setTimeout(r, 0));
  */
 export async function createNature({ scene, renderer, quality = 'high', onProgress = () => {} }) {
   const preset = QUALITY_PRESETS[quality] || QUALITY_PRESETS.high;
-  const aniso = Math.min(8, renderer.capabilities.getMaxAnisotropy());
+  const aniso = Math.min(preset.maxAnisotropy || 8, renderer.capabilities.getMaxAnisotropy());
   const prog = (a, b) => (p, label) => onProgress(a + (b - a) * p, label);
 
   onProgress(0.01, 'Terrein vormen…'); await tick();
@@ -27,7 +27,7 @@ export async function createNature({ scene, renderer, quality = 'high', onProgre
   await hf.fill((p) => onProgress(0.01 + p * 0.14, 'Terrein vormen…'));
 
   onProgress(0.16, 'Texturen schilderen…'); await tick();
-  const textures = createTerrainTextures(aniso, quality === 'low' ? 256 : 512);
+  const textures = await createTerrainTexturesAsync(aniso, quality === 'low' ? 256 : 512);
   await tick();
   const atlas = createFloraAtlas(aniso);
   await tick();

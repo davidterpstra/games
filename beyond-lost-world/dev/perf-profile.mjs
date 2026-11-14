@@ -14,7 +14,7 @@ const opt = (n, d) => { const i = args.indexOf('--' + n); return i >= 0 ? args[i
 const port = opt('port', '5188');
 const presets = opt('presets', 'low,medium,high').split(',');
 const SPOTS = {
-  station: { x: 20, z: 190, yaw: 0, dy: 0 },
+  station: { x: 20, z: 172, yaw: Math.PI },
   forest: { x: 10, z: 120, yaw: 0.3 },
   village: { x: 165, z: 10, yaw: 0.2 },
   temple: { x: 0, z: -140, yaw: 0 },
@@ -31,7 +31,8 @@ const browser = await chromium.launch({ args: ['--use-angle=swiftshader', '--ena
 const results = [];
 
 for (const preset of presets) {
-  const page = await browser.newPage({ viewport: { width: 800, height: 450 } });
+ try {
+  const page = await browser.newPage({ viewport: { width: 640, height: 360 } });
   const msgs = [];
   page.on('console', (m) => { if (m.type() === 'error' || m.type() === 'warning') msgs.push(`[${m.type()}] ${m.text().slice(0, 160)}`); });
   page.on('pageerror', (e) => msgs.push(`[pageerror] ${e.message}`));
@@ -69,28 +70,28 @@ for (const preset of presets) {
       }
       player.teleport(new B.THREE.Vector3(x, y, z), spot.yaw, 0);
       if (name === 'lake') player.state.pitch = -0.15;
-      await new Promise((r) => setTimeout(r, 2500));
+      // sample real frames for 4 s: how many of them re-render the shadow map
+      const smS = renderer.shadowMap, origS = smS.render.bind(smS);
+      let frames = 0, shadowed = 0;
+      smS.render = (...a) => { frames++; if (smS.autoUpdate || smS.needsUpdate) shadowed++; return origS(...a); };
+      await new Promise((r) => setTimeout(r, 4000));
+      smS.render = origS;
+      const shadowRenders = frames ? +(shadowed / frames).toFixed(2) : 0;
       const heapBefore = performance.memory ? performance.memory.usedJSHeapSize : 0;
       // count a full frame including the shadow pass
       renderer.info.autoReset = false;
-      let shadowRenders = 0;
       const sm = renderer.shadowMap;
-      const origRender = sm.render.bind(sm);
-      sm.render = (...a) => { shadowRenders++; return origRender(...a); };
+      const wasAuto = sm.autoUpdate;
+      sm.autoUpdate = false;
+      sm.needsUpdate = true;      // full frame including a shadow-map render
       renderer.info.reset();
       renderer.render(scene, camera);
       const total = { calls: renderer.info.render.calls, tris: renderer.info.render.triangles };
-      // main pass alone: disable shadows for one render
-      const sunOn = scene.children.find((c) => c.isDirectionalLight && c.castShadow);
-      let main = total;
-      if (sunOn) {
-        sunOn.castShadow = false;
-        renderer.info.reset();
-        renderer.render(scene, camera);
-        main = { calls: renderer.info.render.calls, tris: renderer.info.render.triangles };
-        sunOn.castShadow = true;
-      }
-      sm.render = origRender;
+      sm.needsUpdate = false;     // main pass alone
+      renderer.info.reset();
+      renderer.render(scene, camera);
+      const main = { calls: renderer.info.render.calls, tris: renderer.info.render.triangles };
+      sm.autoUpdate = wasAuto;
       renderer.info.autoReset = true;
       renderer.info.reset();
       let shadowCasters = 0;
@@ -110,6 +111,7 @@ for (const preset of presets) {
     if (shotsDir && m.shot) fs.writeFileSync(`${shotsDir}/${preset}-${name}.jpg`, Buffer.from(m.shot.split(',')[1], 'base64'));
     delete m.shot;
     results.push({ preset, ...m });
+    console.log(`[${preset}] ${name}: calls ${m.calls} (main ${m.mainCalls} + shadow ${m.shadowCalls}), tris ${Math.round(m.tris / 1000)}k (shadow ${Math.round(m.shadowTris / 1000)}k), progs ${m.programs}`);
   }
 
   if (leak) {
@@ -130,6 +132,7 @@ for (const preset of presets) {
 
   results.push({ preset, spot: 'BOOT', loadMs, ...boot, messages: [...new Set(msgs)].slice(0, 12), msgCount: msgs.length });
   await page.close();
+ } catch (err) { console.log(`[${preset}] FAILED: ${err.message.split('\n')[0]}`); }
 }
 await browser.close();
 
@@ -140,6 +143,7 @@ for (const preset of presets) {
     console.log(`${r.spot.padEnd(9)} ${String(r.calls).padStart(5)} ${String(Math.round(r.tris / 1000)).padStart(8)}   ${String(r.mainCalls).padStart(5)}/${String(r.shadowCalls).padEnd(5)}         ${String(Math.round(r.mainTris / 1000)).padStart(6)}/${String(Math.round(r.shadowTris / 1000)).padEnd(6)}   ${String(r.shadowRenders).padStart(4)}  ${String(r.programs).padStart(5)} ${String(r.geometries).padStart(6)} ${String(r.textures).padStart(5)} ${String(r.heapMB).padStart(7)} ${String(r.cpuMs).padStart(6)} ${String(r.shadowCasters).padStart(7)}`);
   }
   const b = results.find((x) => x.preset === preset && x.spot === 'BOOT');
+  if (!b) continue;
   console.log(`load (to playing): ${b.loadMs} ms; longest long-tasks ms: ${b.long.join(', ')}; console msgs: ${b.msgCount}`);
   console.log('stages: ' + b.stages.map(([l, t]) => `${l}@${t}`).join(' | '));
   if (b.messages.length) console.log('messages:\n  ' + b.messages.join('\n  '));

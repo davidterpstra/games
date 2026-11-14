@@ -1,11 +1,13 @@
 // Sun/moon directional light with texel-snapped shadows centred on the player, plus hemisphere light.
 import * as THREE from 'three';
 import { QUALITY_PRESETS } from '../core/quality.js';
+import { installShadowHook } from '../perf/shadowHook.js';
+import { tuning } from '../perf/tuning.js';
 
 const UP = new THREE.Vector3(0, 1, 0);
 
 /** Creates sun + hemisphere lights and adds them to the scene. */
-export function createLighting({ scene, quality, shadows }) {
+export function createLighting({ scene, quality, shadows, renderer }) {
   const sun = new THREE.DirectionalLight(0xffffff, 3);
   sun.castShadow = !!shadows;
   sun.name = 'Sun';
@@ -17,12 +19,22 @@ export function createLighting({ scene, quality, shadows }) {
   const R = new THREE.Vector3();
   const U = new THREE.Vector3();
   const snapped = new THREE.Vector3();
-  let extent = 70, mapSize = 2048, lightDist = 200;
+  let extent = 70, mapSize = 2048, lightDist = 200, interval = 0;
+  // Shadow-map scheduling: the map is a world-fixed texture, so it only has to be re-rendered when the player
+  // has moved a few metres, the sun has turned noticeably, or a refresh interval (quality preset) elapsed.
+  // Skipping most of those renders is the biggest single CPU/GPU saving on low/medium.
+  const sm = renderer && renderer.shadowMap;
+  if (sm) { sm.autoUpdate = false; installShadowHook(renderer); }
+  const lastL = new THREE.Vector3(0, 1, 0), lastSnap = new THREE.Vector3(1e9, 0, 0);
+  let force = true, lastShadowAt = 0, moveThr2 = 9;
 
   function configure(preset) {
     extent = preset.shadowDistance;
     mapSize = preset.shadowMapSize;
     lightDist = extent * 1.5 + 90;
+    interval = preset.shadowInterval || 0;
+    moveThr2 = (extent * 0.05) * (extent * 0.05);
+    force = true;
     const sh = sun.shadow;
     if (sh.mapSize.x !== mapSize) {
       sh.mapSize.set(mapSize, mapSize);
@@ -42,7 +54,9 @@ export function createLighting({ scene, quality, shadows }) {
   return {
     sun, hemi,
     setQuality(name) { configure(QUALITY_PRESETS[name] || QUALITY_PRESETS.medium); },
-    setShadows(on) { sun.castShadow = !!on; },
+    setShadows(on) { sun.castShadow = !!on; force = true; },
+    /** Forces the shadow map to re-render on the next frame (call after moving casters). */
+    refreshShadows() { force = true; },
     /**
      * @param dn DayNight, @param wx weather values, @param dark interior darkness 0..1,
      * @param flash lightning 0..1, @param focus Vector3 (player position)
@@ -72,6 +86,18 @@ export function createLighting({ scene, quality, shadows }) {
       snapped.set(0, 0, 0).addScaledVector(R, cr).addScaledVector(U, cu).addScaledVector(L, focus.dot(L));
       sun.target.position.copy(snapped);
       sun.position.copy(snapped).addScaledVector(L, lightDist);
+
+      if (sm) {
+        // no point rendering shadows when the sun is off (interiors, caves) – the stale map is invisible
+        const active = sun.castShadow && sun.intensity > 0.02 && dark < 0.985;
+        if (!active) force = true;
+        else {
+          const now = performance.now();
+          if (force || now - lastShadowAt >= interval * tuning.shadowInterval || snapped.distanceToSquared(lastSnap) > moveThr2 || L.dot(lastL) < 0.99998) {
+            sm.needsUpdate = true; force = false; lastShadowAt = now; lastSnap.copy(snapped); lastL.copy(L);
+          }
+        }
+      }
     },
   };
 }

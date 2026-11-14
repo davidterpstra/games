@@ -7,6 +7,7 @@ import { createFloraMaterial, createRockMaterial } from './materials.js';
 import { buildSpruce, buildOak, buildOakFar, buildBirch, buildBirchFar, buildBush, buildFern, buildFlowers, buildTallGrass, buildMushrooms, buildStump, buildLog } from './flora.js';
 import { buildRock, buildPebble, buildPoolRim } from './rocks.js';
 import { createPlantCells } from './plantcells.js';
+import { addShadowUpdater } from '../../perf/shadowHook.js';
 import { generateTrees, ensureTrees, generatePlants, generateRocks } from './scatter.js';
 
 const tick = () => new Promise((r) => setTimeout(r, 0));
@@ -23,6 +24,7 @@ function itemsFrom(list, fn) {
  */
 export async function createVegetation({ scene, hf, atlas, rockTexture, quality, water, onProgress = () => {} }) {
   const sys = new InstanceSystem(scene);
+  addShadowUpdater((shadowCam, cam) => sys.updateShadow(shadowCam, cam));
   const flora = createFloraMaterial(atlas.texture);
   const rockMat = createRockMaterial(rockTexture);
   const mean = atlas.mean;
@@ -111,7 +113,7 @@ export async function createVegetation({ scene, hf, atlas, rockTexture, quality,
 
   // ---- runtime state ----------------------------------------------------------------------------------------
   let q = QUALITY_PRESETS[quality] || QUALITY_PRESETS.high;
-  let params = { density: q.vegetationDensity, lodScale: LOD_SCALE[quality] ?? 1, viewDistance: q.viewDistance };
+  let params = { density: q.vegetationDensity, lodScale: LOD_SCALE[quality] ?? 1, viewDistance: q.viewDistance, plantDistance: q.plantDistance ?? 105 * (LOD_SCALE[quality] ?? 1) };
   let dirty = true, timer = 0;
   const last = new THREE.Vector3(1e9, 0, 1e9);
   function applyColliders() {
@@ -125,7 +127,7 @@ export async function createVegetation({ scene, hf, atlas, rockTexture, quality,
     get stats() { return sys.stats; },
     setQuality(name) {
       q = QUALITY_PRESETS[name] || QUALITY_PRESETS.high;
-      params = { density: q.vegetationDensity, lodScale: LOD_SCALE[name] ?? 1, viewDistance: q.viewDistance };
+      params = { density: q.vegetationDensity, lodScale: LOD_SCALE[name] ?? 1, viewDistance: q.viewDistance, plantDistance: q.plantDistance ?? 105 * (LOD_SCALE[name] ?? 1) };
       applyColliders(); dirty = true; timer = 1;
     },
     update(cam, dt) {
@@ -134,7 +136,7 @@ export async function createVegetation({ scene, hf, atlas, rockTexture, quality,
         timer = 0; dirty = false; last.copy(cam);
         sys.update(cam, params);
       }
-      plantCells.update(cam, params.density, 105 * params.lodScale);
+      plantCells.update(cam, params.density, params.plantDistance);
     },
   };
 }

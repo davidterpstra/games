@@ -57,7 +57,7 @@ export function createPlantCells(parent, material, sources) {
     g.setIndex(new THREE.BufferAttribute(I, 1));
     g.computeBoundingSphere();
     const mesh = new THREE.Mesh(g, material);
-    mesh.castShadow = false; mesh.receiveShadow = true; mesh.name = `plants_${key}`;
+    mesh.castShadow = false; mesh.receiveShadow = true; mesh.name = `plants_${key}`; mesh.matrixAutoUpdate = false;
     root.add(mesh);
     meshes.push({ mesh, ranks, idxEnd, center: g.boundingSphere.center.clone(), radius: g.boundingSphere.radius });
   }

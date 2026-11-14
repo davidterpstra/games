@@ -5,6 +5,7 @@ import * as THREE from 'three';
 import { QUALITY_PRESETS } from '../../core/quality.js';
 import { WORLD_SIZE } from '../layout.js';
 import { wind } from './materials.js';
+import { tuning } from '../../perf/tuning.js';
 
 function bladeGeometry() {
   const pos = [], blade = [], idx = [];
@@ -100,9 +101,8 @@ vGrassCol = mix(baseC, tipC, y) * aBlade.z * (0.85 + 0.3 * h1);
   mesh.frustumCulled = false; mesh.castShadow = false; mesh.receiveShadow = true; mesh.name = 'grass';
   scene.add(mesh);
 
-  function setQuality(name) {
-    const q = QUALITY_PRESETS[name] || QUALITY_PRESETS.high;
-    const dens = Math.max(q.grassDensity, 0.0);
+  let presetDens = 1;
+  function configure(dens) {
     const perM2 = 3.0 * dens;
     const cell = 1 / Math.sqrt(Math.max(perM2, 0.05));
     const radius = 14 + 22 * Math.sqrt(dens);
@@ -111,6 +111,20 @@ vGrassCol = mix(baseC, tipC, y) * aBlade.z * (0.85 + 0.3 * h1);
     geo.instanceCount = M * M;
     mesh.visible = dens > 0;
   }
+  function setQuality(name) {
+    const q = QUALITY_PRESETS[name] || QUALITY_PRESETS.high;
+    presetDens = Math.max(q.grassDensity, 0.0);
+    configure(presetDens * tuning.grass);
+  }
   setQuality(quality);
-  return { mesh, setQuality, update(cam) { uniforms.uCam.value.copy(cam); }, get instances() { return geo.instanceCount; } };
+  let appliedScale = tuning.grass;
+  return {
+    mesh, setQuality,
+    update(cam) {
+      uniforms.uCam.value.copy(cam);
+      // adaptive quality: thin the field (fewer, farther-apart clumps and a smaller radius) when the frame rate struggles
+      if (tuning.grass !== appliedScale) { appliedScale = tuning.grass; configure(presetDens * appliedScale); }
+    },
+    get instances() { return geo.instanceCount; },
+  };
 }

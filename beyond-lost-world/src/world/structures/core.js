@@ -131,30 +131,58 @@ export class Builder {
     this.add(key, g, x, y, z, o);
   }
 
-  /** Merge everything into meshes (one per material, plus a '#c' clutter mesh). */
+  /**
+   * Merge everything into meshes (one per material, plus a '#c' clutter mesh).
+   * Builders that spread over a large area (camps, ruins, bridges along the whole map) are additionally split into
+   * 256 m cells so that frustum culling (main and shadow pass) can discard the parts that are far away.
+   */
   build() {
     const group = new THREE.Group();
     group.name = this.name;
-    for (const [k, list] of this.buckets) {
+    // overall extent of everything collected so far
+    let minX = Infinity, maxX = -Infinity, minZ = Infinity, maxZ = -Infinity;
+    for (const list of this.buckets.values()) for (const g of list) {
+      if (!g.boundingBox) g.computeBoundingBox();
+      const b = g.boundingBox;
+      minX = Math.min(minX, b.min.x); maxX = Math.max(maxX, b.max.x); minZ = Math.min(minZ, b.min.z); maxZ = Math.max(maxZ, b.max.z);
+    }
+    const spread = Math.max(maxX - minX, maxZ - minZ) > SPLIT_EXTENT;
+    for (const [k, all] of this.buckets) {
       const [key, flag] = k.split('#');
-      const anyIndexed = list.some((g) => g.index), allIndexed = list.every((g) => g.index);
-      const geoms = (anyIndexed && !allIndexed) ? list.map((g) => (g.index ? g.toNonIndexed() : g)) : list;
-      const merged = mergeGeometries(geoms, false);
-      if (!merged) { console.warn('[structures] merge failed', this.name, key); continue; }
-      merged.computeBoundingSphere();
-      const mesh = new THREE.Mesh(merged, this.M[key]);
-      mesh.name = `${this.name}:${key}${flag ? ':clutter' : ''}`;
-      mesh.castShadow = !this.lib.noShadow.has(key);
-      mesh.receiveShadow = true;
-      mesh.userData.clutter = !!flag;
-      group.add(mesh);
-      list.forEach((g) => g.dispose());
+      const cells = new Map();
+      if (spread) {
+        for (const g of all) {
+          const b = g.boundingBox;
+          const cx = Math.floor((b.min.x + b.max.x) / 2 / CELL_SIZE), cz = Math.floor((b.min.z + b.max.z) / 2 / CELL_SIZE);
+          const ck = cx + ',' + cz;
+          (cells.get(ck) || cells.set(ck, []).get(ck)).push(g);
+        }
+      } else cells.set('', all);
+      for (const [ck, list] of cells) {
+        const anyIndexed = list.some((g) => g.index), allIndexed = list.every((g) => g.index);
+        const geoms = (anyIndexed && !allIndexed) ? list.map((g) => (g.index ? g.toNonIndexed() : g)) : list;
+        const merged = mergeGeometries(geoms, false);
+        if (!merged) { console.warn('[structures] merge failed', this.name, key); continue; }
+        merged.computeBoundingSphere();
+        const mesh = new THREE.Mesh(merged, this.M[key]);
+        mesh.name = `${this.name}:${key}${flag ? ':clutter' : ''}`;
+        mesh.castShadow = !this.lib.noShadow.has(key);
+        mesh.receiveShadow = true;
+        mesh.userData.clutter = !!flag;
+        if (ck) mesh.userData.cell = ck;
+        mesh.matrixAutoUpdate = false; // merged meshes sit at the group origin and never move on their own
+        group.add(mesh);
+        list.forEach((g) => g.dispose());
+      }
     }
     this.buckets.clear();
     return group;
   }
 }
 
+const CELL_SIZE = 256;
+// Only builders that span (nearly) the whole map are split; measured: splitting mid-sized sites (village) costs more draw calls than it saves.
+const SPLIT_EXTENT = 420;
 const TAU = Math.PI * 2;
 
 /** Builds a standalone object (own origin, colliders discarded) from a builder callback. */

@@ -1,7 +1,7 @@
 // Structures module: research station, village, temple, bunker, cave, bridges, beacons, props.
 // See docs/ARCHITECTURE.md → createStructures.
 import * as THREE from 'three';
-import { createMaterials } from './materials.js';
+import { createMaterialsAsync } from './materials.js';
 import { createSite } from './site.js';
 import { buildStation } from './station.js';
 import { buildVillage } from './village.js';
@@ -22,7 +22,7 @@ export async function createStructures({ scene, renderer, quality = 'medium', te
   scene.add(root);
   onProgress(0.0, 'Materialen en texturen maken…');
   await nextFrame();
-  const lib = createMaterials({ renderer, quality });
+  const lib = await createMaterialsAsync({ renderer, quality });
   const S = createSite(lib, terrain, root);
 
   const steps = [

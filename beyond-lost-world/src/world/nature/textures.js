@@ -208,6 +208,20 @@ export function createTerrainTextures(maxAniso = 8, size = 512) {
 }
 
 // ---- flora atlas (bark strips + leaf cards) ----------------------------------------------------------
+/** Same textures as createTerrainTextures, but yields to the browser between tiles (keeps the loading screen alive). */
+export async function createTerrainTexturesAsync(maxAniso = 8, size = 512) {
+  const rand = mulberry32(WORLD_SEED + 900);
+  const tick = () => new Promise((r) => setTimeout(r, 0));
+  const out = {};
+  out.grass = finishTexture(grassTile(size, rand), { maxAniso }); await tick();
+  out.forest = finishTexture(forestTile(size, rand), { maxAniso }); await tick();
+  out.dirt = finishTexture(dirtTile(size, rand), { maxAniso }); await tick();
+  out.rock = finishTexture(rockTile(size), { maxAniso }); await tick();
+  out.sand = finishTexture(sandTile(size, rand), { maxAniso }); await tick();
+  out.macro = finishTexture(macroTile(256), { srgb: false, maxAniso: 4 });
+  return out;
+}
+
 export const ATLAS = 1024;
 /** Pixel rectangles of the flora atlas ({x,y,w,h}, y from the top). */
 export const CELLS = {
