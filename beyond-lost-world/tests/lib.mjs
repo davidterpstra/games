@@ -120,7 +120,7 @@ export async function installHelpers(page) {
         const x = cx + s * (t + d), z = cz + c * (t + d);
         for (const dy of [0.05, -0.4, -0.9, -1.4]) {
           const r = QA.canStand(x, z, cy + dy);
-          if (r.ok && r.y > cy - 1.9 && r.y < cy + 0.4) { out.push({ x, y: r.y, z, a, d }); break; }
+          if (r.ok && r.y > cy - 2.6 && r.y < cy + 0.4) { out.push({ x, y: r.y, z, a, d }); break; }
         }
       }
       return out;
@@ -145,6 +145,106 @@ export async function installHelpers(page) {
         if (last === id) return { ok: true, spot: s, prompt: QA.focus.prompt, tried: spots.indexOf(s) + 1 };
       }
       return { ok: false, why: `focus was ${last} (tried ${spots.length} spots)`, box: [cx, cy, cz], first: spots[0] };
+    };
+
+    /** focusOn + E + a few frames. Returns the focusOn result. */
+    QA.use = (id, from = 0, frames = 3, opts = {}) => {
+      const r = QA.focusOn(id, from, opts);
+      if (r.ok) { B.bus.emit('input:action', { action: 'interact' }); QA.step(frames); }
+      return r;
+    };
+    QA.teleportXZ = (x, z, yaw = 0) => { B.player.teleport(new T.Vector3(x, B.world.getHeightAt(x, z), z), yaw, 0); QA.step(2); };
+
+    // ---- path planning (A* over the real collision rules) and scripted walking --------------------
+    QA.plan = (sx, sz, sy, gx, gz, opts = {}) => {
+      const col = B.player.collision; col.sync();
+      const cell = opts.cell || 0.5, Rp = opts.R || 0.5, W = B.world, b = W.bounds;
+      const maxNodes = opts.maxNodes || 600000, goalTol = opts.goalTol || 1.0;
+      const tmp = { y: 0, collider: null };
+      const key = (i, j) => (i + 2000) * 4096 + (j + 2000);
+      const open = [], nodes = new Map();
+      const h = (x, z) => Math.hypot(x - gx, z - gz);
+      const push = (n) => { open.push(n); let i = open.length - 1; while (i > 0) { const p = (i - 1) >> 1; if (open[p].f <= open[i].f) break; [open[p], open[i]] = [open[i], open[p]]; i = p; } };
+      const pop = () => { const top = open[0], last = open.pop(); if (open.length) { open[0] = last; let i = 0; for (;;) { let l = 2 * i + 1, r = l + 1, m = i; if (l < open.length && open[l].f < open[m].f) m = l; if (r < open.length && open[r].f < open[m].f) m = r; if (m === i) break; [open[m], open[i]] = [open[i], open[m]]; i = m; } } return top; };
+      const si = Math.round(sx / cell), sj = Math.round(sz / cell);
+      const start = { i: si, j: sj, x: sx, z: sz, y: sy, g: 0, f: h(sx, sz), parent: null, closed: false };
+      nodes.set(key(si, sj), start); push(start);
+      let best = start, count = 0;
+      const dirs = [[1, 0], [-1, 0], [0, 1], [0, -1], [1, 1], [1, -1], [-1, 1], [-1, -1]];
+      while (open.length && count < maxNodes) {
+        const n = pop();
+        if (n.closed) continue;
+        n.closed = true; count++;
+        if (h(n.x, n.z) < h(best.x, best.z)) best = n;
+        if (h(n.x, n.z) <= goalTol) { best = n; break; }
+        for (const [di, dj] of dirs) {
+          const i = n.i + di, j = n.j + dj, x = i * cell, z = j * cell;
+          if (x < b.minX || x > b.maxX || z < b.minZ || z > b.maxZ) continue;
+          const old = nodes.get(key(i, j));
+          if (old && old.closed) continue;
+          const g = col.groundInfoAt(x, z, Rp, n.y, tmp);
+          const ny = g.y;
+          if (ny - n.y > 0.45 || n.y - ny > 0.7) continue;
+          if (col.resolve({ x, z }, ny, Rp, 1.75, null)) continue;
+          const ws = W.getWaterSurfaceAt(x, z);
+          if (ws !== null && ws !== undefined && !g.collider && ws - W.getHeightAt(x, z) > 1.0 && ny < ws + 0.05) continue;
+          if (B.player._terrainBlocked(n.x, n.z, x, z, n.y)) continue;
+          const ng = n.g + Math.hypot(di, dj) * cell;
+          if (old && old.g <= ng) continue;
+          const nn = { i, j, x, z, y: ny, g: ng, f: ng + h(x, z) * 1.05, parent: n, closed: false };
+          nodes.set(key(i, j), nn); push(nn);
+        }
+      }
+      const reached = h(best.x, best.z) <= goalTol;
+      const path = [];
+      for (let n = best; n; n = n.parent) path.push({ x: n.x, z: n.z, y: n.y });
+      path.reverse();
+      return { reached, explored: count, closest: { x: best.x, z: best.z, y: best.y, dist: h(best.x, best.z) }, path: reached ? path : [] };
+    };
+    /** Plans with a wide body first (clearance), then with the exact player radius. */
+    QA.planAuto = (gx, gz, opts = {}) => {
+      const p = B.player.state.position;
+      for (const R of opts.radii || [0.5, 0.4, 0.36]) {
+        const r = QA.plan(p.x, p.z, p.y, gx, gz, { ...opts, R });
+        if (r.reached) { r.R = R; return r; }
+        if (R === (opts.radii || [0.5, 0.4, 0.36]).slice(-1)[0]) { r.R = R; return r; }
+      }
+    };
+    /** Holds W and steers towards the waypoints [{x,z}] with the real controller. */
+    QA.walk = (points, opts = {}) => {
+      const tol = opts.tol ?? 0.7, st = B.player.state, p = st.position;
+      const out = { reached: false, frames: 0, nan: false, sunk: false, inWater: false, stuck: false, minAboveTerrain: Infinity, maxStepUp: 0, last: null };
+      let i = 0, lastProg = [p.x, p.z], lastCheck = 0, lastY = p.y;
+      const total = opts.maxFrames || 6000;
+      QA.hold('KeyW');
+      for (let f = 0; f < total; f++) {
+        while (i < points.length - 1 && Math.hypot(points[i].x - p.x, points[i].z - p.z) < tol) i++;
+        const tgt = points[i];
+        if (i === points.length - 1 && Math.hypot(tgt.x - p.x, tgt.z - p.z) < (opts.endTol ?? tol)) { out.reached = true; break; }
+        st.yaw = Math.atan2(-(tgt.x - p.x), -(tgt.z - p.z)); st.pitch = 0;
+        QA.step(1);
+        out.frames++;
+        if (!Number.isFinite(p.x + p.y + p.z)) { out.nan = true; break; }
+        const above = p.y - B.world.getHeightAt(p.x, p.z);
+        out.minAboveTerrain = Math.min(out.minAboveTerrain, above);
+        if (above < -0.6) { out.sunk = true; }
+        if (st.inWater) out.inWater = true;
+        out.maxStepUp = Math.max(out.maxStepUp, p.y - lastY); lastY = p.y;
+        if (f - lastCheck >= 45) { if (Math.hypot(p.x - lastProg[0], p.z - lastProg[1]) < 0.4) { out.stuck = true; break; } lastProg = [p.x, p.z]; lastCheck = f; }
+      }
+      QA.release();
+      out.last = { x: p.x, y: p.y, z: p.z, targetIndex: i, target: points[i] };
+      return out;
+    };
+    /** Plan + walk to (gx,gz). Waypoints are the planned nodes every ~1 m. */
+    QA.goTo = (gx, gz, opts = {}) => {
+      const pl = QA.planAuto(gx, gz, opts);
+      if (!pl.reached) return { planned: false, closest: pl.closest, explored: pl.explored };
+      const pts = pl.path.filter((_, k) => k % 2 === 0); pts.push(pl.path[pl.path.length - 1]);
+      const w = QA.walk(pts, { tol: 0.8, endTol: opts.endTol ?? 1.2, maxFrames: Math.ceil(pl.path.length * 0.5 / 0.1) + 400 });
+      const p = B.player.state.position;
+      w.planned = true; w.R = pl.R; w.pathLen = pl.path.length * 0.5; w.endDist = Math.hypot(gx - p.x, gz - p.z);
+      return w;
     };
     QA.hold = (...codes) => { B.input.keys.clear(); for (const c of codes) B.input.keys.add(c); };
     QA.release = () => B.input.keys.clear();

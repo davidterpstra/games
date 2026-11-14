@@ -190,6 +190,7 @@ runMain('chapter', async (t, browser) => {
       t.check(!s.inv.sundisc, 'm5: disc removed from inventory');
       t.eq(await ev(() => !!window.BEYOND.world.anchors.get('temple.altar').object.getObjectByName('socket').children.length), true, 'm5: disc model shown on the socket');
     }
+    const gate0 = await ev(() => window.BEYOND.world.anchors.get('temple.gate').object.position.toArray());
     const turn = async (id, n) => { for (let i = 0; i < n; i++) { if (await use(id, null, `${id} turn ${i + 1}`, 0)) await ev(() => window.QA.step(40)); } };
     await turn('temple.pillar1', 3);
     t.eq((await S()).flags.pillars, [3, 0, 0], 'm5: pillar 1 shows Berg');
@@ -204,8 +205,8 @@ runMain('chapter', async (t, browser) => {
     t.eq(s.flags.pillars, [3, 0, 2], 'm5: pillars Berg-Zon-Golf');
     t.eq(s.flags.gateOpen, true, 'm5: gate opened');
     t.eq(await ev(() => window.BEYOND.world.colliders.find((c) => c.id === 'temple.gate').enabled), false, 'm5: gate collider disabled');
-    const gateY = await ev(() => { const a = window.BEYOND.world.anchors.get('temple.gate'); return [a.object.position.y, window.BEYOND.world.getHeightAt(a.position.x, a.position.z)]; });
-    t.check(gateY[0] < gateY[1] + 0.5 || true, 'm5: gate slab moved', JSON.stringify(gateY));
+    const gate1 = await ev(() => window.BEYOND.world.anchors.get('temple.gate').object.position.toArray());
+    t.check(Math.hypot(gate1[0] - gate0[0], gate1[1] - gate0[1], gate1[2] - gate0[2]) > 2, 'm5: gate slab moved out of the doorway', JSON.stringify([gate0, gate1]));
     if (await use('temple.keycard', 'Oppakken: Sleutelkaart K-7', 'keycard', 0)) t.eq((await S()).inv.keycard, 1, 'm5: keycard picked up');
     if (await use('temple.recording', 'Afspelen: Bandrecorder', 'recording', 0)) {
       t.eq(await ev(() => window.QA.events.filter((e) => e.ev === 'document:open').pop().p.kind), 'recording', 'm5: recording document kind');
@@ -218,7 +219,7 @@ runMain('chapter', async (t, browser) => {
 
   // --- Mission 6: bunker ---
   await t.guard('m6', async () => {
-    await teleport(-150, 55);
+    await teleport(-160, 55);
     t.eq(await ev(() => window.BEYOND.gameplay.locations.list().find((l) => l.id === 'bunker').discovered), true, 'm6: bunker discovered');
     if (await use('bunker.reader', 'Sleutelkaart gebruiken', 'reader', 0)) {
       await ev(() => window.QA.step(200));

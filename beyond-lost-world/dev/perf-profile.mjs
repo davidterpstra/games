@@ -31,7 +31,7 @@ const browser = await chromium.launch({ args: ['--use-angle=swiftshader', '--ena
 const results = [];
 
 for (const preset of presets) {
-  const page = await browser.newPage({ viewport: { width: 1280, height: 720 } });
+  const page = await browser.newPage({ viewport: { width: 800, height: 450 } });
   const msgs = [];
   page.on('console', (m) => { if (m.type() === 'error' || m.type() === 'warning') msgs.push(`[${m.type()}] ${m.text().slice(0, 160)}`); });
   page.on('pageerror', (e) => msgs.push(`[pageerror] ${e.message}`));
