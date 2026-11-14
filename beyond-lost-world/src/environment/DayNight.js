@@ -26,7 +26,7 @@ export { smooth as smoothstep };
 export class DayNight {
   constructor() {
     this.time = 7.5;
-    this.day = 0;
+    this.day = 1;
     this.sunDir = new THREE.Vector3(0, 1, 0);
     this.moonDir = new THREE.Vector3(0, -1, 0);
     this.elev = 0.3;

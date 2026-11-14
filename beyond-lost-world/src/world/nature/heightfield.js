@@ -84,7 +84,7 @@ function natural(x, z) {
   // hill that wraps the cave (rock shell is added by the structures agent)
   const dt = padDistance(TUNNEL, x, z), dc = Math.min(dt, padDistance(CHAMBER, x, z));
   if (dc < 30) {
-    let wc = 1 - sstep(16, 28, dc);
+    let wc = 1 - sstep(19, 31, dc);
     // keep the mouth (entrance end of the tunnel pad) open towards the pool
     const c = Math.cos(TUNNEL.rot), s = Math.sin(TUNNEL.rot);
     const dx = x - TUNNEL.x, dz = z - TUNNEL.z;

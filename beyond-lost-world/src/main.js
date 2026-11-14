@@ -237,6 +237,7 @@ async function boot() {
     const focus = state === 'menu' ? camera.position : player.state.position;
     tmp.copy(focus);
     environment.update(dt, tmp, { simulate: state === 'playing' });
+    world.setWind(0.6 + (environment.wind ?? 0.3) * 1.4);
     world.update(dt, elapsed, camera.position);
     ui.update(dt);
 

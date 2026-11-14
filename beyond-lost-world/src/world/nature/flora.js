@@ -27,12 +27,12 @@ export function buildSpruce(seed, lod, mean) {
   const Lmax = 2.9 + rand() * 0.5;
 
   if (lod === 2) {
-    const col = [mean.spruce.r * 0.95, mean.spruce.g * 0.95, mean.spruce.b * 0.95];
+    const col = [mean.spruce.r * 1.0, mean.spruce.g * 1.0, mean.spruce.b * 1.0];
     const uvv = [0, 0]; cellUV('white', 0.5, 0.5, uvv);
     const layers = 4;
     for (let i = 0; i < layers; i++) {
       const t = i / layers;
-      const y0 = 1.7 + (H - 2.0) * t * 0.92, hh = (H - 1.5) / layers * 1.7, R = Lmax * Math.pow(1 - t, 0.9) * 0.95 + 0.3;
+      const y0 = 2.4 + (H - 2.7) * t * 0.92, hh = (H - 1.5) / layers * 1.7, R = Lmax * Math.pow(1 - t, 0.9) * 0.95 + 0.3;
       const apex = g.vert(trunkAt(y0 + hh).x, y0 + hh, 0, 0, 1, 0, uvv[0], uvv[1], 1.0, 0.5, 1, col[0], col[1], col[2]);
       const ring = [];
       const seg = 9;
@@ -65,8 +65,8 @@ export function buildSpruce(seed, lod, mean) {
   };
   for (let k = 0; k < K; k++) {
     const t = (k + 0.5) / K;
-    const y = 1.5 + (H - 2.3) * Math.pow(t, 0.9);
-    const rel = (y - 1.5) / (H - 2.3);
+    const y = 2.3 + (H - 3.1) * Math.pow(t, 0.9);
+    const rel = (y - 2.3) / (H - 3.1);
     const L = (Lmax * Math.pow(1 - rel, 0.78) + 0.45) * (0.9 + rand() * 0.2);
     const nb = lod === 0 ? Math.max(4, Math.round(7 * (1 - rel) + 3)) : Math.max(3, Math.round(5 * (1 - rel) + 2));
     const phi0 = rand() * TAU;
@@ -168,7 +168,7 @@ export function buildOakFar(seed, mean) {
   const g = new GeoBuilder();
   const hf = 2.6;
   tube(g, [V(0, 0, 0), V(0, hf * 0.6, 0), V(0.2, hf, 0)], [0.5, 0.38, 0.3], 4, { bark: 'bark', v0: 0.03, v1: 0.3 });
-  const col = [mean.oak.r * 0.92, mean.oak.g * 0.92, mean.oak.b * 0.92];
+  const col = [mean.oak.r * 0.72, mean.oak.g * 0.74, mean.oak.b * 0.72];
   const nf = (x, y, z) => 0.18 * noise2(x * 2.1 + seed, y * 2.1 + z * 1.7);
   blob(g, V(0, hf + 3.3, 0), 4.6, 3.3, 4.6, 1, col, nf, 0.5, 1, (y) => 0.55 + 0.45 * (y * 0.5 + 0.5));
   blob(g, V(2.0, hf + 2.3, 1.2), 2.8, 2.2, 2.8, 1, col, nf, 0.5, 1, (y) => 0.5 + 0.45 * (y * 0.5 + 0.5));
@@ -212,7 +212,7 @@ export function buildBirchFar(seed, mean) {
   const g = new GeoBuilder();
   const H = 9.5;
   tube(g, [V(0, 0, 0), V(0.1, H * 0.5, 0), V(0.3, H * 0.85, 0)], [0.16, 0.1, 0.04], 4, { bark: 'birch', v0: 0.02, v1: 0.7 });
-  const col = [mean.birchLeaf.r * 0.98, mean.birchLeaf.g * 0.98, mean.birchLeaf.b * 0.98];
+  const col = [mean.birchLeaf.r * 0.8, mean.birchLeaf.g * 0.82, mean.birchLeaf.b * 0.78];
   const nf = (x, y, z) => 0.16 * noise2(x * 2.3 + seed, y * 2 + z * 1.9);
   blob(g, V(0.1, H * 0.68, 0), 2.8, 3.6, 2.8, 1, col, nf, 0.6, 1, (y) => 0.55 + 0.45 * (y * 0.5 + 0.5));
   return g.build();

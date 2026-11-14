@@ -134,6 +134,7 @@ export function createGameplay({ scene, camera, world, player, environment, bus,
       const start = world.anchors.get('player.start');
       if (start) player.teleport(start.position.clone(), start.rotationY || 0, 0);
       environment.setTimeOfDay(7.5);
+      environment.day = 1;
       environment.setWeather('clear');
       quiet = false;
       missions.begin();

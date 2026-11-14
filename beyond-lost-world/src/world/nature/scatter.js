@@ -45,14 +45,14 @@ const tint = (rand, base, spread) => [base[0] + (rand() - 0.5) * spread[0], base
 export function generateTrees(hf) {
   const out = [];
   const rand = mulberry32(WORLD_SEED + 201);
-  const cell = 6, n = Math.ceil(2 * WORLD_HALF / cell);
+  const cell = 5.5, n = Math.ceil(2 * WORLD_HALF / cell);
   for (let j = 0; j < n; j++) for (let i = 0; i < n; i++) {
     const r = [rand(), rand(), rand(), rand(), rand(), rand(), rand(), rand(), rand()];
     const x = -WORLD_HALF + (i + 0.1 + 0.8 * r[0]) * cell, z = -WORLD_HALF + (j + 0.1 + 0.8 * r[1]) * cell;
     const f = forestDensity(x, z);
     const edge = Math.max(Math.abs(x), Math.abs(z)) - 250;
     const h = hf.getHeightAt(x, z);
-    let p = f * 0.8;
+    let p = f * 0.88;
     if (edge > 0) p *= (1 - sstep(0, 60, edge)) * (1 - sstep(40, 75, h));
     const dv = Math.hypot(x - VILLAGE.x, z - VILLAGE.z);
     const inVillageEdge = padDistance(VILLAGE, x, z) < 3 && dv > 42;

@@ -3,6 +3,7 @@
 import { createNature } from './nature/index.js';
 import { createStructures } from './structures/index.js';
 import { LOCATIONS, PLAY_BOUNDS } from './layout.js';
+import { wind as natureWind } from './nature/materials.js';
 
 export async function createWorld({ scene, renderer, quality, onProgress = () => {} }) {
   const nature = await createNature({
@@ -43,6 +44,8 @@ export async function createWorld({ scene, renderer, quality, onProgress = () =>
     bounds: PLAY_BOUNDS,
     terrainMaterial: terrain.material,
     setPowered: (group, on) => structures.setPowered(group, on),
+    /** Wind strength multiplier for foliage and grass sway (driven by the weather). */
+    setWind(strength) { natureWind.uWind.value = strength; },
     setQuality(name) {
       nature.setQuality(name);
       structures.setQuality?.(name);

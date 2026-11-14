@@ -41,7 +41,7 @@ addEventListener('resize', () => { renderer.setSize(innerWidth, innerHeight); ca
 const t0 = performance.now();
 const nature = await createNature({ scene, renderer, quality: q, onProgress: (p, label) => { hud.textContent = `${(p * 100) | 0}% ${label}`; } });
 window.__nature = nature; window.__scene = scene; window.__renderer = renderer; window.__camera = camera; window.THREE = THREE;
-const loadMs = performance.now() - t0;
+const loadMs = performance.now() - t0; window.__loadMs = loadMs;
 
 const x = num('x', 20), z = num('z', 215);
 const ground = nature.terrain.getHeightAt(x, z);
