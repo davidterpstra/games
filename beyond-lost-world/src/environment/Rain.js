@@ -60,7 +60,7 @@ export function createRain(quality = 'medium') {
   };
   const material = new THREE.ShaderMaterial({
     uniforms, vertexShader: VERT, fragmentShader: FRAG,
-    transparent: true, depthWrite: false, fog: false,
+    transparent: true, depthWrite: false, fog: false, side: THREE.DoubleSide,
   });
   const mesh = new THREE.Mesh(geo, material);
   mesh.frustumCulled = false;
