@@ -37,7 +37,7 @@ if (ev) {
     console.log('EVAL:', JSON.stringify(result, null, 2));
   } catch (e) { console.log('EVAL ERROR:', e.message); errors.push('[eval] ' + e.message); }
 }
-await page.screenshot({ path: out });
+await page.screenshot({ path: out, timeout: 180000 });
 await browser.close();
 if (errors.length) console.log('CONSOLE:\n' + errors.join('\n'));
 console.log('saved', out);
