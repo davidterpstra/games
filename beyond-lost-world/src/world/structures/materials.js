@@ -420,7 +420,7 @@ function paintEarth(S, rand) {
 
 function paintRock(S, rand) {
   const [c, g] = cv(S);
-  g.fillStyle = rgbs(58, 62, 70); g.fillRect(0, 0, S, S);
+  g.fillStyle = rgbs(92, 96, 104); g.fillRect(0, 0, S, S);
   blots(g, S, rand, 80, 14, 60, '30,34,44', 0.2, 0.5);
   blots(g, S, rand, 60, 14, 50, '100,108,120', 0.08, 0.22);
   blots(g, S, rand, 20, 14, 40, '44,70,66', 0.12, 0.3);
@@ -631,7 +631,7 @@ export function createMaterials({ renderer, quality = 'medium' } = {}) {
   def('ember', std(null, { color: 0x2a1408, emissive: 0xff5a14, emissiveIntensity: 1.4, roughness: 0.6 }), 1);
   M.ivy.shadowSide = THREE.DoubleSide;
 
-  const noShadow = new Set(['glass', 'ivy', 'chain', 'ember']);
+  const noShadow = new Set(['glass', 'ivy', 'chain', 'ember', 'rock']);
 
   // glyph pillar faces (own materials, not vertex coloured)
   const glyph = ['sun', 'moon', 'wave', 'mountain'].map((k) => {

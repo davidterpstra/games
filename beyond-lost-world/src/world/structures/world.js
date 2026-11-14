@@ -2,6 +2,7 @@
 import * as THREE from 'three';
 import { PADS, padDistance, nearestPath, riverInfo, LAKE, getPad } from '../layout.js';
 import * as P from './props.js';
+import { buildBridges } from './bridges.js';
 
 const TAU = Math.PI * 2;
 const signRect = (i) => [0, 1 - (i + 1) / 8, 1, 1 - i / 8];
@@ -62,7 +63,7 @@ export function buildWorldProps(S) {
     m.castShadow = true; S.root.add(m); cloths.push(m);
   }
   S.anim.push((dt, t) => cloths.forEach((m, i) => { m.rotation.x = Math.sin(t * 1.6 + i * 1.7) * 0.12; m.rotation.z = Math.sin(t * 1.1 + i) * 0.05; }));
-  S.resource('cloth_s2', 'cloth', [cx + 0.2, cy + 0.12, cz + 0.5]);
+  S.resource('cloth_s2', 'cloth', [cx + 1.05, gh(cx + 1.05, cz + 2.4) + 0.12, cz + 2.4]);
   S.resource('scrap_s6', 'scrap', [cx + 5.2, gh(cx + 5.2, cz - 1.4) + 0.1, cz - 1.4]);
   b.clutter = true;
   for (let i = 0; i < 5; i++) ground(cx + 3 + R() * 4, cz - 3 + R() * 4, R() * 3, () => b.box('paper', 0, 0.02, 0, 0.21, 0.005, 0.3, { tile: 0.3 }));
@@ -89,11 +90,13 @@ export function buildWorldProps(S) {
     const x = -200 + R() * 400, z = -100 + R() * 330;
     if (okSpot(x, z)) spots.push([x, z, spots.length]);
   }
+  S.ruinSpots = spots;
   spots.forEach(([x, z, i]) => {
     const kind = i % 6;
     ground(x, z, R() * TAU, () => ruin(b, kind, R));
   });
 
+  buildBridges(S, b);
   S.commit(b);
 }
 

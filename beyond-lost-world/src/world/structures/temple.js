@@ -138,7 +138,7 @@ export function buildTemple(S) {
     a.box('templeCarved', 0, 0.62, 0, 2.5, 0.7, 1.6, { tint: [0.95, 0.93, 0.86] });
     a.box('temple', 0, 1.06, 0, 2.7, 0.16, 1.8, { tint: [0.92, 0.9, 0.84] });
     a.quad('sunRelief', 0, 0.62, 0.805, 1.2, 0.62, { j: 0, uv: [1, 1] });
-    a.cyl('black', 0, 1.145, 0, 0.5, 0.5, 0.012, 24, { tint: [0.6, 0.6, 0.6] });
+    a.cyl('temple', 0, 1.145, 0, 0.5, 0.5, 0.012, 24, { tint: [0.25, 0.25, 0.25] });
     for (let i = 0; i < 12; i++) { const an = (i / 12) * TAU; a.box('temple', Math.cos(an) * 0.6, 1.15, Math.sin(an) * 0.6, 0.14, 0.05, 0.1, { ry: -an }); }
     for (const sx of [-1, 1]) a.box('templeCarved', sx * 1.0, 1.25, 0, 0.3, 0.2, 1.3, { tint: [0.9, 0.9, 0.85] });
   });

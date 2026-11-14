@@ -3,8 +3,8 @@ import { RIVER, findPathRiverCrossings, riverInfo } from '../layout.js';
 import { rod } from './props.js';
 
 /** Builds one bridge per path/river crossing. */
-export function buildBridges(S) {
-  const b = S.builder('bridges', 61);
+export function buildBridges(S, shared) {
+  const b = shared || S.builder('bridges', 61);
   const R = b.rand;
   const crossings = findPathRiverCrossings();
   crossings.forEach((cr, idx) => {
@@ -68,5 +68,5 @@ export function buildBridges(S) {
     });
     void idx;
   });
-  S.commit(b);
+  if (!shared) S.commit(b);
 }

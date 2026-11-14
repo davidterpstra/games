@@ -286,7 +286,7 @@ export function createHeightField(segments) {
       const lvl = Math.min(rwy, getHeightAt(rcx, rcz) + 0.45);
       sand = Math.max(sand, (1 - sstep(0.3, 1.5, h - lvl + 0.25 * noise2(x / 4, z / 4))) * (1 - sstep(HALF_W + 4, HALF_W + 9, rd)));
     }
-    const litter = (litterValue ?? 0) * (1 - dirt) * (1 - sand);
+    const litter = (litterValue ?? 0) * (1 - dirt) * (1 - sand) * sstep(0, 14, minPadDistance(x, z));
     // normal.y from the grid
     let fx = (x + WORLD_HALF) / cell, fz = (z + WORLD_HALF) / cell;
     fx = clamp(fx, 1, N - 1); fz = clamp(fz, 1, N - 1);

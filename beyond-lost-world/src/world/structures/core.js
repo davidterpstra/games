@@ -48,7 +48,7 @@ export class Builder {
   wp(x, y, z, out = new THREE.Vector3()) { return out.set(x, y, z).applyMatrix4(this.m); }
 
   _push(key, g) {
-    const k = this.clutter ? key + '#c' : key;
+    const k = (this.clutter && (key === 'paper' || key === 'ivy')) ? key + '#c' : key;
     let list = this.buckets.get(k);
     if (!list) this.buckets.set(k, list = []);
     list.push(g);
@@ -105,8 +105,13 @@ export class Builder {
   cyl(key, x, y, z, rt, rb, h, seg = 12, o = {}) {
     const g = new THREE.CylinderGeometry(rt, rb, h, seg, 1, !!o.open);
     const tile = o.tile ?? this.lib.tile[key] ?? 2;
-    const uv = g.attributes.uv, circ = TAU * Math.max(rt, rb), ou = this.rand(), ov = this.rand();
-    for (let i = 0; i < uv.count; i++) uv.setXY(i, uv.getX(i) * circ / tile + ou, uv.getY(i) * h / tile + ov);
+    const uv = g.attributes.uv, pos = g.attributes.position, circ = TAU * Math.max(rt, rb), ou = this.rand(), ov = this.rand();
+    const idx = g.index.array, capVert = new Uint8Array(uv.count);
+    for (let gi = 1; gi < g.groups.length; gi++) { const gr = g.groups[gi]; for (let k = gr.start; k < gr.start + gr.count; k++) capVert[idx[k]] = 1; }
+    for (let i = 0; i < uv.count; i++) {
+      if (capVert[i]) uv.setXY(i, pos.getX(i) / tile + ou, pos.getZ(i) / tile + ov);
+      else uv.setXY(i, uv.getX(i) * circ / tile + ou, uv.getY(i) * h / tile + ov);
+    }
     this.add(key, g, x, y, z, o);
     if (o.cc) this.circleCollider(x, y, z, o.cr ?? Math.max(rt, rb), h, o.cc === true ? {} : o.cc);
   }

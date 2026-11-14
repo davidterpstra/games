@@ -90,7 +90,7 @@ export function bunk(b, x, z, rot = 0, o = {}) {
     b.box('cloth', 0.02, 0.62, 0.3, w - 0.06, 0.06, 1.0, { tint: [0.45, 0.5, 0.4], tile: 1.2, rz: 0.03 });
     b.box('steel', 0, 1.62, d / 2 - 0.03, w + 0.1, 0.05, 0.05); // top guard rail
     for (let i = 0; i < 5; i++) b.box('steel', w / 2 + 0.1, 0.25 + i * 0.3, d / 2 - 0.25, 0.04, 0.04, 0.3); // ladder rungs side
-    b.solid(0, H / 2, 0, w + 0.1, H, d, { surface: 'metal' });
+    b.solid(0, 0.3, 0, w + 0.1, 0.6, d, { surface: 'metal' });
     if (o.onTop) o.onTop(b.wp(0.05, 1.5, 0.25));
   });
 }
@@ -367,7 +367,7 @@ export function backpack(b, x, z, rot = 0, o = {}) {
     b.box('cloth', 0, 0.55, 0, 0.3, 0.12, 0.18, { tint: [0.32, 0.38, 0.26], rx: 0.1, tile: 1 });
     b.box('black', -0.12, 0.3, -0.12, 0.05, 0.4, 0.02); b.box('black', 0.12, 0.3, -0.12, 0.05, 0.4, 0.02);
     b.box('steel', 0, 0.2, 0.19, 0.12, 0.03, 0.02);
-    b.solid(0, 0.3, 0, 0.4, 0.6, 0.3, { surface: 'dirt', yMax: 0.3 });
+    b.solid(0, 0.15, 0, 0.4, 0.3, 0.3, { surface: 'dirt' });
   });
 }
 
@@ -404,34 +404,29 @@ export function plinth(b, x, z, h = 1.0, w = 1.0, key = 'temple', o = {}) {
  */
 export function makeBeacon(lib, rand, name = 'beacon') {
   const g = makeObject(lib, rand, name, (b) => {
+    const T = (k) => ({ tint: k });
     for (let i = 0; i < 3; i++) {
       b.at(0, 0, 0, (i / 3) * TAU + 0.4, () => {
-        b.cyl('steel', 0.3, 0.6, 0, 0.025, 0.035, 1.3, 6, { rz: Math.atan2(0.6, 1.15), tint: [0.8, 0.85, 0.8] });
-        b.geo('stone', new THREE.DodecahedronGeometry(0.16, 0), 0.62, 0.07, 0, { sy: 0.6, tint: [0.7, 0.7, 0.68], uv: [0.3, 0.3] });
+        b.cyl('steel', 0.3, 0.6, 0, 0.025, 0.035, 1.3, 6, { rz: Math.atan2(0.6, 1.15), tint: [1.3, 1.4, 1.3] });
+        b.geo('steel', new THREE.DodecahedronGeometry(0.16, 0), 0.62, 0.07, 0, { sy: 0.6, tint: [1.5, 1.5, 1.45], uv: [0.3, 0.3] });
       });
     }
-    b.cyl('steel', 0, 1.7, 0, 0.032, 0.04, 1.4, 8);
+    b.cyl('steel', 0, 1.7, 0, 0.032, 0.04, 1.4, 8, T([1.3, 1.4, 1.3]));
     b.cyl('steel', 0, 1.2, 0, 0.1, 0.1, 0.06, 8);
-    // radio box
-    b.at(0.17, 1.15, 0.0, 0, () => {
-      b.box('panel', 0.14, 0, 0, 0.3, 0.3, 0.46, { tint: [0.45, 0.55, 0.45], tile: 0.5 });
+    b.at(0.17, 1.15, 0.0, 0, () => { // radio box
+      b.box('steel', 0.14, 0, 0, 0.3, 0.3, 0.46, { tint: [0.9, 1.3, 0.95], tile: 0.5 });
       b.quad('dials', 0.292, 0.0, 0, 0.4, 0.25, { ry: Math.PI / 2, uv: [1, 1], j: 0 });
-      b.box('black', 0.14, 0.17, 0, 0.32, 0.03, 0.48);
-      b.cyl('black', 0.14, 0.2, 0.18, 0.012, 0.012, 0.12, 5);
-      b.box('steel', 0.14, 0.12, -0.26, 0.02, 0.2, 0.04); // handle
+      b.box('steel', 0.14, 0.17, 0, 0.32, 0.03, 0.48, { tint: [0.3, 0.3, 0.3] });
+      b.box('steel', 0.14, 0.12, -0.26, 0.02, 0.2, 0.04, { tint: [1.6, 1.6, 1.6] });
     });
-    // solar panel + antennas
-    b.box('black', -0.25, 1.78, 0, 0.04, 0.4, 0.3, { rz: -0.4 });
-    b.box('steel', 0, 2.0, 0, 0.012, 0.012, 0.9); b.box('steel', 0, 2.22, 0, 0.012, 0.012, 0.6);
+    b.box('steel', -0.25, 1.78, 0, 0.04, 0.4, 0.3, { rz: -0.4, tint: [0.3, 0.4, 0.8] });
+    b.box('steel', 0, 2.0, 0, 0.012, 0.012, 0.9, { tint: [1.5, 1.5, 1.5] }); b.box('steel', 0, 2.22, 0, 0.012, 0.012, 0.6);
     b.cyl('steel', 0, 2.1, 0, 0.012, 0.01, 0.9, 4);
-    b.cyl('steel', 0.1, 2.05, 0.05, 0.006, 0.004, 0.7, 4, { rz: -0.12 });
-    b.quad('cloth', -0.12, 1.5, 0, 0.3, 0.2, { rz: 0.1, tint: [0.9, 0.3, 0.15], uv: [0.3, 0.3], ry: 0.4 });
-    b.circleCollider(0, 0.6, 0, 0.55, 1.2, { surface: 'metal' });
+    b.box('steel', -0.12, 1.5, 0, 0.3, 0.2, 0.01, { rz: 0.1, ry: 0.4, tint: [2.0, 0.6, 0.3] });
   });
   const mat = new THREE.MeshStandardMaterial({ color: 0x6a3a14, emissive: 0xff7a1a, emissiveIntensity: 0, roughness: 0.4 });
   const lamp = new THREE.Mesh(new THREE.SphereGeometry(0.085, 12, 8), mat);
   lamp.name = 'lamp'; lamp.position.set(0, 2.5, 0);
-  const cap = new THREE.Mesh(new THREE.CylinderGeometry(0.05, 0.11, 0.05, 8), lib.M.steel); cap.position.y = 0.075; lamp.add(cap);
   g.add(lamp);
   g.userData.lampMaterial = mat;
   return g;

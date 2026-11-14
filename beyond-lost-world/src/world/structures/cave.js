@@ -172,14 +172,12 @@ export function buildCave(S) {
   const pool = WATERFALL.pool;
   const bx = pool.x + 15.5, bz = pool.z - 2.0;
   placeBeacon(S, 'waterfall.beacon', bx, S.terrain.getHeightAt(bx, bz), bz, -1, 0.15, 5);
-  const nb = S.builder('cave_pool', 52);
   const nx = bx - 2.0, nz = bz + 2.4, ny = S.terrain.getHeightAt(nx, nz);
-  nb.at(nx, ny, nz, 0.5, () => {
-    P.crate(nb, 0, 0, 0, { w: 0.7, d: 0.55, h: 0.45, nc: false });
-    S.anchor('note.waterfall', nb.wp(0, 0.5, 0));
-    P.barrel(nb, 0.9, 0.4); P.sack(nb, -0.8, 0.5);
+  b.at(nx, ny, nz, 0.5, () => {
+    P.crate(b, 0, 0, 0, { w: 0.7, d: 0.55, h: 0.45, nc: false });
+    S.anchor('note.waterfall', b.wp(0, 0.5, 0));
+    P.barrel(b, 0.9, 0.4); P.sack(b, -0.8, 0.5);
   });
-  S.commit(nb);
 
   // ------------------------------------------------------------ interior zones
   const [tzx, tzz] = world(0, (MOUTH - 3 + TEND) / 2);

@@ -4,6 +4,7 @@ import { getPad } from '../layout.js';
 import { roomWalls, wall, floorSlab } from './arch.js';
 import * as P from './props.js';
 import { placeBeacon } from './beacons.js';
+import { makeObject } from './core.js';
 
 const TAU = Math.PI * 2;
 const signRect = (i) => [0, 1 - (i + 1) / 8, 1, 1 - i / 8];
@@ -152,7 +153,7 @@ export function buildStation(S) {
     b.at(-18, 0, 11, 0, () => {
       for (let r = 0; r < 2; r++) for (let i = 0; i < 3; i++) {
         const px = (i - 1) * 1.85, pz = r * 2.2 - 0.5;
-        b.box('black', px, 0.9 + (r === 0 ? 0 : 0.05), pz, 1.75, 0.05, 1.05, { rx: 0.55, tint: [0.18, 0.3, 0.55], j: 0.04, tile: 0.6 });
+        b.box('black', px, 0.9 + (r === 0 ? 0 : 0.05), pz, 1.75, 0.05, 1.05, { rx: 0.55, tint: [0.5, 0.75, 1.5], j: 0.04, tile: 0.6 });
         for (const gx of [-0.58, 0, 0.58]) b.box('steel', px + gx, 0.93, pz - 0.0, 0.025, 0.06, 1.1, { rx: 0.55, tint: [0.9, 0.95, 1] });
         b.box('steel', px, 0.9, pz + 0.0, 1.8, 0.06, 0.04, { rx: 0.55 });
         for (const sx of [-0.8, 0.8]) { b.box('steel', px + sx, 0.4, pz + 0.3, 0.05, 0.8, 0.05); b.box('steel', px + sx, 0.2, pz - 0.35, 0.05, 0.4, 0.05, { rx: 0.3 }); }
@@ -188,24 +189,15 @@ export function buildStation(S) {
       for (const sx of [-0.3, 0.3]) for (const sz of [-0.2, 0.2]) b.box('steel', 1.4 + sx, 0.33, sz, 0.04, 0.66, 0.04);
       b.circleCollider(0, 1, 0, 0.2, 2, { surface: 'metal' });
     });
-    // spinning cups (animated)
-    const cupsMat = S.M.steel;
-    const cups = new THREE.Group();
+    // spinning cups + wind vane (animated, one merged mesh each)
+    const cups = makeObject(S.lib, S.rand(1111), 'cups', (c) => {
+      for (let i = 0; i < 3; i++) { const a = (i / 3) * TAU; c.box('steel', Math.cos(a) * 0.15, 0, -Math.sin(a) * 0.15, 0.3, 0.02, 0.02, { ry: a }); c.geo('rust', new THREE.SphereGeometry(0.06, 8, 6, 0, TAU, 0, Math.PI * 0.6), Math.cos(a) * 0.3, 0, -Math.sin(a) * 0.3, { rx: Math.PI / 2, uv: [0.3, 0.3] }); }
+    });
     cups.position.set(pad.x - 6, oy + 3.12, oz + 13.5);
-    for (let i = 0; i < 3; i++) {
-      const a = (i / 3) * TAU, arm = new THREE.Mesh(new THREE.CylinderGeometry(0.01, 0.01, 0.3, 4), cupsMat);
-      arm.rotation.z = Math.PI / 2; arm.rotation.y = -a; arm.position.set(Math.cos(a) * 0.15, 0, -Math.sin(a) * 0.15);
-      const cup = new THREE.Mesh(new THREE.SphereGeometry(0.06, 8, 6, 0, TAU, 0, Math.PI * 0.6), S.M.rust);
-      cup.position.set(Math.cos(a) * 0.3, 0, -Math.sin(a) * 0.3); cup.rotation.x = Math.PI / 2; cup.rotation.z = a;
-      cups.add(arm, cup);
-    }
-    const vane = new THREE.Group(); // wind vane
-    const vaneBody = new THREE.Mesh(new THREE.BoxGeometry(0.5, 0.03, 0.03), S.M.steel); vaneBody.position.set(0, 0.4, 0);
-    const vaneTail = new THREE.Mesh(new THREE.BoxGeometry(0.02, 0.18, 0.12), S.M.rust); vaneTail.position.set(-0.22, 0.4, 0);
-    vane.add(vaneBody, vaneTail); vane.position.set(pad.x - 6, oy + 3.0, oz + 13.5);
+    const vane = makeObject(S.lib, S.rand(1112), 'vane', (c) => { c.box('steel', 0, 0.4, 0, 0.5, 0.03, 0.03); c.box('rust', -0.22, 0.4, 0, 0.02, 0.18, 0.12); });
+    vane.position.set(pad.x - 6, oy + 3.0, oz + 13.5);
     S.root.add(cups, vane);
     S.anim.push((dt, t) => { cups.rotation.y += dt * (1.2 + Math.sin(t * 0.4)); vane.rotation.y = 0.6 + Math.sin(t * 0.3) * 0.35; });
-    cups.children.forEach((c) => { c.castShadow = true; });
     // scrap pile and loose junk near crates
     b.clutter = true;
     for (let i = 0; i < 6; i++) b.box('rust', -9.5 + R3(i, 1) * 1.2, 0.05 + i * 0.01, -4.3 + R3(i, 2) * 1.0, 0.5 + R3(i, 3) * 0.4, 0.04, 0.3 + R3(i, 4) * 0.3, { ry: i * 1.3, rz: R3(i, 5) * 0.2 - 0.1, tile: 1 });
@@ -221,9 +213,8 @@ export function buildStation(S) {
     const g = new THREE.Group();
     g.position.set(ox - 2.4, oy + 3.0, oz + 2.4);
     const tube = new THREE.Mesh(new THREE.BoxGeometry(1.3, 0.04, 0.12), mat); tube.position.x = 0.65; tube.position.y = -0.02;
-    const casing = new THREE.Mesh(new THREE.BoxGeometry(1.4, 0.05, 0.2), S.M.steel); casing.position.set(0.65, 0.03, 0);
-    const cord = new THREE.Mesh(new THREE.CylinderGeometry(0.012, 0.012, 0.45, 4), S.M.black); cord.position.set(1.28, 0.2, 0);
-    g.add(tube, casing, cord);
+    const body = makeObject(S.lib, S.rand(1113), 'lampbody', (c) => { c.box('steel', 0.65, 0.03, 0, 1.4, 0.05, 0.2); c.box('steel', 1.28, 0.2, 0, 0.025, 0.45, 0.025, { tint: [0.3, 0.3, 0.3] }); });
+    g.add(tube, body);
     g.rotation.z = -0.5; g.rotation.y = 0.25;
     g.traverse((m) => { if (m.isMesh) m.castShadow = true; });
     S.root.add(g);

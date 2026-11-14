@@ -124,7 +124,7 @@ export function generatePlants(hf, trees) {
     const patch = 0.5 + 0.5 * noise2(x / 14 + 3, z / 14 - 2);
     if (r[2] > (0.62 * m * (0.25 + patch) + 0.025) * (1 - 0.4 * f)) return null;
     if (!spotOK(hf, x, z, { villageEdge: true, pad: 2, path: 0.8, slope: 0.85, water: 0.6 })) return null;
-    const pi = patch > 0.62 ? (patch > 0.8 ? 2 : 1) : r[4] < 0.55 ? 0 : r[4] < 0.8 ? 1 : r[4] < 0.92 ? 3 : 4;
+    const pi = Math.floor((patch * 2.6 + r[4] * 1.1) * palette.length) % palette.length;
     const c = palette[pi];
     return { x, y: y(x, z) - 0.02, z, rot: r[3] * 6.28, scale: 0.8 + r[5] * 0.7, variant: 0, color: [c[0], c[1], c[2]] };
   });
@@ -186,12 +186,12 @@ export function generateRocks(hf, waterInfo) {
     const edge = Math.max(Math.abs(x), Math.abs(z)) - 238;
     const h = y(x, z);
     const steep = clamp((0.9 - ny) * 5, 0, 1);
-    const p = 0.55 * steep * (edge > 0 ? 1 : 0.35) + (edge > 20 ? 0.18 : 0);
+    const p = 0.16 * steep * (edge > 0 ? 1 : 0.25) + (edge > 20 ? 0.03 : 0);
     if (r[2] > p) return null;
     if (!spotOK(hf, x, z, { pad: 3, path: 2.0, slope: 0.0, water: 0.8 })) return null;
-    const s = 1.4 + r[4] * r[4] * 4.2 + (edge > 40 ? 1.5 : 0);
+    const s = 2.2 + r[4] * r[4] * 4.5 + (edge > 40 ? 1.8 : 0);
     const sx = s * (0.9 + r[3] * 0.5), sy = s * (0.8 + r[5] * 0.7), sz = s * (0.9 + r[6] * 0.4);
-    cliffs.push({ x, z, y: h - sy * 0.3, rot: r[3] * 6.28, sx, sy, sz, variant: 0, rc: Math.max(sx, sz) * 0.8, top: sy * 0.8, color: [1, 1, 1] });
+    cliffs.push({ x, z, y: h - sy * 0.55, rot: r[3] * 6.28, sx, sy, sz, variant: 0, rc: Math.max(sx, sz) * 0.8, top: sy * 0.8, color: [1, 1, 1] });
     return null;
   });
   // river banks
@@ -222,16 +222,6 @@ export function generateRocks(hf, waterInfo) {
     if (!spotOK(hf, x, z, { pad: 1, path: 1, water: -3, slope: 0.6, cave: false })) continue;
     if (rand() < 0.35) pushBoulder(x, z, 0.4 + rand() * 0.9, (rand() * 3) | 0, { sink: 0.4 });
     else for (let q = 0; q < 4; q++) pebbles.push({ x: x + (rand() - 0.5) * 2, z: z + (rand() - 0.5) * 2, y: 0, rot: rand() * 6.28, sx: 0.1 + rand() * 0.18, sy: 0.07 + rand() * 0.08, sz: 0.1 + rand() * 0.18, variant: 0, color: [1, 1, 1] });
-  }
-  // pool rim: a ring of big mossy boulders holds the water back (gap where the river leaves)
-  const gapAng = Math.atan2(-140 - (WATERFALL.pool.z + PLUNGE.z) / 2, -132 - (WATERFALL.pool.x + PLUNGE.x) / 2);
-  for (const o of waterInfo.poolOutline) {
-    const ang = Math.atan2(Math.sin(o.th - gapAng), Math.cos(o.th - gapAng));
-    if (Math.abs(ang) < 0.3) continue;
-    const gx = o.x + Math.cos(o.th) * 0.5, gz = o.z + Math.sin(o.th) * 0.5;
-    if (y(gx, gz) > POOL.waterY + 0.5) continue;   // the cliff / ground already holds the water here
-    const s = 1.15 + rand() * 0.55;
-    boulders.push({ x: gx, z: gz, y: POOL.waterY - 0.7 - s * 0.1, rot: rand() * 6.28, sx: s * 1.15, sy: s * 0.95, sz: s, variant: (rand() * 3) | 0, rc: s * 0.85, top: s * 0.85, color: [1, 1, 1] });
   }
   // rocks at the foot of the waterfall
   for (let k = 0; k < 9; k++) {

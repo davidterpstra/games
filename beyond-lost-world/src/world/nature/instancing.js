@@ -1,11 +1,11 @@
 // Chunked, LOD-aware instancing. Every group (e.g. "spruce", "fern") owns a list of items; items are
-// binned into 128 m chunks. Each chunk has one InstancedMesh per LOD (and per variant for LOD 0) so
+// binned into 192 m chunks. Each chunk has one InstancedMesh per LOD (and per variant for LOD 0) so
 // frustum culling works per chunk. update() re-sorts the items of nearby chunks into LOD buckets.
 import * as THREE from 'three';
 import { WORLD_SIZE, WORLD_HALF } from '../layout.js';
 
 export const ITEM = 12; // x, y, z, rotY, sx, sy, sz, r, g, b, rank, variant
-const CHUNK = 128;
+const CHUNK = 192;
 const NC = Math.ceil(WORLD_SIZE / CHUNK);
 
 /** Writes an item into a Float32Array list at index i. */

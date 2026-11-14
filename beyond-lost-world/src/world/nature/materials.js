@@ -20,7 +20,7 @@ uniform float uWind;`)
   #ifdef USE_INSTANCING
   vec3 iPos = vec3(instanceMatrix[3][0], instanceMatrix[3][1], instanceMatrix[3][2]);
   #else
-  vec3 iPos = vec3(0.0);
+  vec3 iPos = vec3(position.x, 0.0, position.z);
   #endif
   float ph = uTime * 1.25 + iPos.x * 0.11 + iPos.z * 0.09;
   float gust = sin(uTime * 0.43 + iPos.x * 0.021 + iPos.z * 0.017) * 0.5 + 0.5;

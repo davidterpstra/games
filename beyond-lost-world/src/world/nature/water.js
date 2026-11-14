@@ -77,7 +77,7 @@ void main() {
   // shore foam + rapids
   float fn = vnoise(vUv * uScale * vec2(5.0, 5.0 * uStretch) - uFlow * uTime * 2.0 + 7.0);
   float shore = (1.0 - smoothstep(0.04, 0.42, vDepth)) * smoothstep(0.38, 0.72, fn) * smoothstep(0.0, 0.06, vDepth);
-  float rapids = uFoam * smoothstep(0.62, 0.86, vnoise(vec2(vUv.x * uScale * 2.6, vUv.y * uScale * 0.5 * uStretch - uTime * uFlow.y * 3.0))) * 0.8;
+  float rapids = uFoam * smoothstep(0.62, 0.86, vnoise(vec2(vUv.x * uScale * 2.6, vUv.y * uScale * 0.5 * uStretch - uTime * uFlow.y * 3.0))) * 0.35;
   float foam = clamp(shore * 0.85 + rapids, 0.0, 1.0);
   col = mix(col, vec3(0.92, 0.96, 0.96) * (0.55 + 0.6 * lit), foam);
   alpha = clamp(max(alpha, foam * 0.9), 0.0, 0.96);
@@ -218,6 +218,7 @@ export function createWater({ hf, scene, renderer, quality }) {
   const pool = new THREE.Mesh(polarWater(cx, cz, POOL.waterY, radiusAtTheta, 18, 128, getH, 1 / 7), mkWater([0.0, 0.0], 1.0, 0));
   pool.name = 'pool'; pool.renderOrder = 2; group.add(pool);
   const poolOutline = [];
+  let riverExit = { x: -132, z: -140 };
   for (let s = 0; s < 128; s++) { const th = s / 128 * Math.PI * 2, r = radii[s] - 0.35; poolOutline.push({ x: cx + Math.cos(th) * r, z: cz + Math.sin(th) * r, th }); }
 
   // ---- river ribbon -------------------------------------------------------------------------------------
@@ -236,6 +237,7 @@ export function createWater({ hf, scene, renderer, quality }) {
     let start = 0;
     while (start < samples.length - 1 && inPool(samples[start].x, samples[start].z)) start++;
     const S = samples.slice(start);
+    riverExit = { x: S[0].x, z: S[0].z };
     const M = 12, hw = HALF_W + 3.2;
     const pos = [], uv = [], depth = [], idx = [];
     const s0 = S[0].s;
@@ -374,5 +376,5 @@ void main() {
     if (scene.fog) shared.uSkyHor.value.multiplyScalar(0.55 + 0.45 * lum);
     mistPx.value = renderer.domElement.height * 0.086;
   }
-  return { group, update, poolOutline, foot, mistMaterial: group.userData.mist.material };
+  return { group, update, poolOutline, poolCenter: { x: cx, z: cz }, riverExit, foot, mistMaterial: group.userData.mist.material };
 }

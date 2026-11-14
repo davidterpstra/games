@@ -120,7 +120,7 @@ export function bentCard(g, rows, cell, nrm, shade = 1, tint = 1, color = [1, 1,
 
 /** Solid-colour lathe / blob helper: appends an icosphere-like blob (UV in the white cell). */
 export function blob(g, center, rx, ry, rz, detail, color, noiseFn, wind = 0.3, tint = 1, shadeFn = null) {
-  const ico = new THREE.IcosahedronGeometry(1, detail).toNonIndexed();
+  const ico = new THREE.IcosahedronGeometry(1, detail);
   const pos = ico.attributes.position;
   const uvv = [0, 0]; cellUV('white', 0.5, 0.5, uvv);
   const idxMap = new Map();

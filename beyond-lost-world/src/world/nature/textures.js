@@ -140,11 +140,11 @@ function dirtTile(size, rand) {
   });
   for (let i = 0; i < 420; i++) { // pebbles
     const x = rand() * size, y = rand() * size, r = 1.5 + rand() * rand() * 6;
-    const g = 70 + rand() * 60, tint = rand();
+    const g = 55 + rand() * 45, tint = rand();
     wrapped(size, x, y, r + 2, (ox, oy) => {
       ctx.fillStyle = 'rgba(20,14,8,0.35)'; ctx.beginPath(); ctx.ellipse(x + ox + 1, y + oy + 1.5, r * 1.1, r * 0.8, 0.4, 0, 7); ctx.fill();
       ctx.fillStyle = rgb([g + tint * 25, g + tint * 8, g - tint * 15]); ctx.beginPath(); ctx.ellipse(x + ox, y + oy, r, r * 0.78, 0.4, 0, 7); ctx.fill();
-      ctx.fillStyle = 'rgba(255,255,240,0.12)'; ctx.beginPath(); ctx.ellipse(x + ox - r * 0.2, y + oy - r * 0.25, r * 0.5, r * 0.3, 0.4, 0, 7); ctx.fill();
+      
     });
   }
   return canvas;
@@ -159,7 +159,7 @@ function rockTile(size) {
     const crack = 1 - sstep(0.0, 0.07, edge);
     let k = 0.62 + 0.35 * n + 0.28 * (strata - 0.5) - 0.2 * crack - 0.08 * (1 - sstep(0, 0.5, f1));
     const warm = pn(u, v, 4, 4, 51);
-    return [(100 + 18 * warm) * k * 1.25, (96 + 10 * warm) * k * 1.25, (90 - 6 * warm) * k * 1.25];
+    return [(100 + 18 * warm) * k * 1.5, (96 + 10 * warm) * k * 1.5, (90 - 6 * warm) * k * 1.5];
   });
   return canvas;
 }
@@ -285,22 +285,21 @@ function leafPath(ctx, x, y, len, wid, ang) {
 function paintSpruce(ctx, cell, rand) {
   ctx.save(); ctx.translate(cell.x, cell.y); ctx.lineCap = 'round';
   const cx = 128;
-  ctx.strokeStyle = 'rgb(78,56,38)'; ctx.lineWidth = 4;
+  ctx.strokeStyle = 'rgb(70,50,34)'; ctx.lineWidth = 3.4;
   ctx.beginPath(); ctx.moveTo(cx, 252); ctx.lineTo(cx, 6); ctx.stroke();
-  for (let y = 250; y > 8; y -= 2.2) {
+  for (let y = 250; y > 8; y -= 1.5) {
     const t = (250 - y) / 242;
     const maxLen = 116 * Math.pow(clamp(Math.sin(Math.PI * (0.06 + 0.9 * t)), 0.1, 1), 0.85);
     for (const side of [-1, 1]) {
-      const len = maxLen * (0.78 + rand() * 0.25);
-      const ang = -Math.PI / 2 + side * (0.95 + rand() * 0.25 - 0.3 * t); // forward sweep
-      const droop = 0.18 * side;
+      const len = maxLen * (0.7 + rand() * 0.32);
+      const ang = -Math.PI / 2 + side * (0.95 + rand() * 0.25 - 0.3 * t);
       for (let n = -1; n <= 1; n++) {
-        const a = ang + n * 0.14 + droop * 0.2;
-        const g = 0.8 + rand() * 0.45;
-        ctx.strokeStyle = `rgb(${(24 + rand() * 20) * g | 0},${(66 + rand() * 40) * g | 0},${(30 + rand() * 18) * g | 0})`;
-        ctx.lineWidth = 2.2 + rand() * 1.2;
+        const a = ang + n * 0.12 + (rand() - 0.5) * 0.08;
+        const g = 0.72 + rand() * 0.55, tipL = rand() * 0.25;
+        const col = `rgb(${(20 + rand() * 18 + tipL * 40) * g | 0},${(58 + rand() * 38 + tipL * 40) * g | 0},${(28 + rand() * 14) * g | 0})`;
+        ctx.strokeStyle = col; ctx.lineWidth = 1.2 + rand() * 0.9;
         ctx.beginPath(); ctx.moveTo(cx, y);
-        ctx.quadraticCurveTo(cx + Math.cos(a) * len * 0.55, y + Math.sin(a) * len * 0.55 + 4, cx + Math.cos(a) * len, y + Math.sin(a) * len + 8);
+        ctx.quadraticCurveTo(cx + Math.cos(a) * len * 0.55, y + Math.sin(a) * len * 0.55 + 3, cx + Math.cos(a) * len, y + Math.sin(a) * len + 7);
         ctx.stroke();
       }
     }
@@ -396,8 +395,8 @@ export function createFloraAtlas(maxAniso = 8) {
   paintBark(ctx, CELLS.birch, rand, true);
   paintSpruce(ctx, CELLS.spruce, rand);
   paintLeafCluster(ctx, CELLS.oak, rand, { count: 230, size: 34, radius: 112, twig: true, colors: [[62, 98, 30], [78, 116, 36], [48, 82, 26], [96, 128, 40], [70, 106, 34]] });
-  paintLeafCluster(ctx, CELLS.birchLeaf, rand, { count: 330, size: 21, radius: 112, twig: true, colors: [[110, 148, 44], [132, 164, 56], [92, 130, 38], [148, 172, 70]] });
-  paintLeafCluster(ctx, CELLS.bush, rand, { count: 260, size: 26, radius: 108, twig: true, colors: [[44, 82, 30], [58, 98, 34], [38, 70, 28], [72, 106, 40]] });
+  paintLeafCluster(ctx, CELLS.birchLeaf, rand, { count: 330, size: 21, radius: 112, twig: true, colors: [[96, 134, 42], [116, 148, 52], [84, 120, 38], [130, 156, 62]] });
+  paintLeafCluster(ctx, CELLS.bush, rand, { count: 260, size: 26, radius: 108, twig: true, colors: [[62, 108, 40], [80, 126, 46], [54, 96, 36], [98, 134, 52]] });
   paintFern(ctx, CELLS.fern, rand);
   ctx.fillStyle = '#fff'; ctx.fillRect(CELLS.white.x, CELLS.white.y, 256, 256);
   paintRings(ctx, CELLS.rings, rand);

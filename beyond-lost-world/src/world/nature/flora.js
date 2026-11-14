@@ -226,7 +226,7 @@ export function buildBush(seed) {
   for (let k = 0; k < 15; k++) {
     const a = rand() * TAU, r = Math.sqrt(rand()) * 0.55;
     const pos = V(Math.cos(a) * r, 0.2 + rand() * 0.75, Math.sin(a) * r);
-    randomCard(g, rand, pos, 0.75 + rand() * 0.5, 'bush', c, R, 1.0, 0.9);
+    randomCard(g, rand, pos, 0.75 + rand() * 0.5, 'bush', c, R, 1.3, 0.9);
   }
   return g.build();
 }
@@ -271,7 +271,7 @@ export function buildFlowers(seed) {
       g.quad(v0, v1, v2, v3);
     }
     // petals: hexagon fan, slightly cupped
-    const hr = 0.045 + rand() * 0.03, cx = x + lean, cz = z;
+    const hr = 0.06 + rand() * 0.04, cx = x + lean, cz = z;
     const hub = g.vert(cx, h + 0.012, cz, 0, 1, 0, uvv[0], uvv[1], 1.1, 0.95, 0, 1, 0.78, 0.12);
     const hubP = g.vert(cx, h + 0.006, cz, 0, 1, 0, uvv[0], uvv[1], 1.15, 0.95, 1);
     const ring = [];
