@@ -13,7 +13,8 @@ const CSS = `
 .bl-touch .stick.run{border-color:rgba(255,196,100,.8)}
 .bl-touch .knob{position:absolute;left:50%;top:50%;width:56px;height:56px;margin:-28px 0 0 -28px;border-radius:50%;background:rgba(241,233,216,.5);box-shadow:0 2px 8px rgba(0,0,0,.4)}
 .bl-touch .btn{position:absolute;pointer-events:auto;touch-action:none;display:flex;flex-direction:column;align-items:center;justify-content:center;border-radius:50%;border:2px solid rgba(241,233,216,.4);background:rgba(20,26,22,.45);color:rgba(241,233,216,.92);font-weight:600;font-size:12px;line-height:1.1;text-shadow:0 1px 3px rgba(0,0,0,.6);-webkit-tap-highlight-color:transparent;backdrop-filter:blur(3px);-webkit-backdrop-filter:blur(3px)}
-.bl-touch .btn b{font-size:20px;font-weight:700}
+.bl-touch .btn b{font-size:20px;font-weight:700;display:flex;align-items:center;justify-content:center;line-height:1}
+.bl-touch .btn svg{display:block}
 .bl-touch .btn.down{background:rgba(241,233,216,.35);transform:scale(.94)}
 .bl-touch .btn.active{background:rgba(255,196,100,.4);border-color:rgba(255,196,100,.85)}
 .bl-touch .jump{width:84px;height:84px;right:calc(env(safe-area-inset-right,0px) + 18px);bottom:calc(env(safe-area-inset-bottom,0px) + 36px)}
@@ -53,11 +54,11 @@ export class TouchControls {
     this.knob = this._el('div', 'knob', this.stick);
 
     this.sprintBtn = this._button('sprint', 'Sprint', '', () => this.setSprint(!input.touchSprint));
-    this._button('jump', 'Springen', '▲', () => input.emitAction('jump'));
+    this._button('jump', 'Springen', `<svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 4l7 9h-4v7H9v-7H5z"/></svg>`, () => input.emitAction('jump'));
     this._button('use', 'Gebruik', 'E', () => input.emitAction('interact'));
-    this._button('torch', 'Toorts', '🔥', () => input.emitAction('torch'));
-    this._button('bag', 'Tas', '🎒', () => input.emitAction('inventory'));
-    this._button('pause', '', '⏸', () => input.emitAction('pause'));
+    this._button('torch', 'Toorts', `<svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3c1 3 4 4.5 4 8.5a4 4 0 0 1-8 0c0-1.6.7-2.7 1.5-3.5.2 1.5 1 2.2 1.8 2.5C11 8 11 5.5 12 3z"/><path d="M10 21h4"/></svg>`, () => input.emitAction('torch'));
+    this._button('bag', 'Tas', `<svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 9a3 3 0 0 1 3-3h6a3 3 0 0 1 3 3v10a1 1 0 0 1-1 1H7a1 1 0 0 1-1-1z"/><path d="M9 6V4.5a1.5 1.5 0 0 1 1.5-1.5h3A1.5 1.5 0 0 1 15 4.5V6"/><path d="M9 13h6"/></svg>`, () => input.emitAction('inventory'));
+    this._button('pause', '', `<svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 5v14M15 5v14"/></svg>`, () => input.emitAction('pause'));
     root.querySelector('.pause').setAttribute('aria-label', 'Pauze');
 
     this._bindZone(this.left, 'stick');
