@@ -51,6 +51,14 @@ function pathNear(x, z) {
 
 const TUNNEL = getPad('cave_tunnel'), CHAMBER = getPad('cave_chamber');
 const POOL = WATERFALL.pool;
+// The waterfall lands at the cliff foot: a second round "plunge basin" joined to the pool disc.
+const FALL_DIR = (() => { const dx = POOL.x - WATERFALL.top.x, dz = POOL.z - WATERFALL.top.z, l = Math.hypot(dx, dz); return { x: dx / l, z: dz / l, len: l }; })();
+export const PLUNGE = Object.freeze({ x: WATERFALL.top.x + FALL_DIR.x * 10.8, z: WATERFALL.top.z + FALL_DIR.z * 10.8, r: 8.2 });
+export const FALL = Object.freeze({ dirX: FALL_DIR.x, dirZ: FALL_DIR.z, len: FALL_DIR.len });
+/** True inside the pool water outline (pool disc ∪ plunge basin). */
+export function inPool(x, z) {
+  return Math.hypot(x - POOL.x, z - POOL.z) < POOL.r || Math.hypot(x - PLUNGE.x, z - PLUNGE.z) < PLUNGE.r;
+}
 const HALF_W = RIVER.width / 2;
 
 // ---- natural terrain ---------------------------------------------------------------------------------
@@ -68,6 +76,10 @@ function natural(x, z) {
   // north-west highland / cliff the waterfall drops from
   const cw = sstep(-152, -178, z) * (1 - sstep(38, 100, Math.abs(x + 135)));
   if (cw > 0) h = lerp(h, 49 + 2.2 * fbm2(x / 30, z / 30, 3), cw);
+
+  // calm ledge where the stream leaves the plateau
+  const dtop = Math.hypot(x - WATERFALL.top.x, z - WATERFALL.top.z);
+  if (dtop < 18) h = lerp(h, 48.75, 1 - sstep(5, 18, dtop));
 
   // hill that wraps the cave (rock shell is added by the structures agent)
   const dt = padDistance(TUNNEL, x, z), dc = Math.min(dt, padDistance(CHAMBER, x, z));
@@ -241,7 +253,7 @@ export function createHeightField(segments) {
   function getWaterSurfaceAt(x, z) {
     const h = getHeightAt(x, z);
     if (Math.hypot(x - LAKE.x, z - LAKE.z) < LAKE.radius && h < LAKE.waterY) return LAKE.waterY;
-    if (Math.hypot(x - POOL.x, z - POOL.z) < POOL.r && h < POOL.waterY) return POOL.waterY;
+    if (inPool(x, z) && h < POOL.waterY) return POOL.waterY;
     riverNear(x, z);
     if (rd < HALF_W + 1.5) {
       const wy = riverSurface(rcx, rcz, rwy);
@@ -284,7 +296,7 @@ export function createHeightField(segments) {
       const inVillage = padDistance(VILLAGE, x, z) < 1.5 && dv > 24;
       grass *= inVillage ? 0.45 * sstep(24, 34, dv) : sstep(-1, 1.5, mp);
     }
-    if (Math.hypot(x - POOL.x, z - POOL.z) < POOL.r + 1) grass = 0;
+    if (Math.hypot(x - POOL.x, z - POOL.z) < POOL.r + 1 || Math.hypot(x - PLUNGE.x, z - PLUNGE.z) < PLUNGE.r + 1) grass = 0;
     out.dirt = dirt; out.sand = sand; out.rut = rut; out.litter = litter; out.grass = grass; out.ny = ny;
     return out;
   }
