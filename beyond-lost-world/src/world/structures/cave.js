@@ -102,8 +102,9 @@ export function buildCave(S) {
       const rr = CR - 0.8;
       b.at(CX, 0, CZ, -a, () => b.solid(rr + 1.1, 3, 0, 2.2, 7, 4.4, { surface: 'stone' }));
     }
-    // back of the mouth: seal beyond the entrance (rock face)
-    b.solid(0, 3, MOUTH + 1.2, 16, 7, 1.0, { surface: 'stone' });
+    // rock faces flanking the mouth (the opening itself, |x| < Wd(MOUTH) - 0.7, stays walkable)
+    const Wm = Wd(MOUTH) - 0.7;
+    for (const sx of [-1, 1]) b.solid(sx * (Wm + 8) / 2, 3, MOUTH + 1.2, 8 - Wm, 7, 1.0, { surface: 'stone' });
 
     // ------------------------------------------------------------ boulders, stalactites, stalagmites
     const rockBlob = (r, seed) => {

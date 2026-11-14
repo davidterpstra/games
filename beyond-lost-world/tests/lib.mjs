@@ -29,7 +29,7 @@ export function createReporter(name) {
 
 /** Launches headless Chromium (software WebGL). */
 export async function launch() {
-  return chromium.launch({ args: ['--use-angle=swiftshader', '--enable-unsafe-swiftshader', '--ignore-gpu-blocklist', '--autoplay-policy=no-user-gesture-required'] });
+  return chromium.launch({ args: ['--use-angle=swiftshader', '--enable-unsafe-swiftshader', '--ignore-gpu-blocklist', '--disable-dev-shm-usage', '--autoplay-policy=no-user-gesture-required'] });
 }
 
 const NOISE = [/AudioContext/i, /autoplay/i, /user gesture/i, /GPU stall/i, /GL Driver Message/i, /WebGL.*swiftshader/i, /Automatic fallback to software WebGL/i];
@@ -159,7 +159,7 @@ export async function installHelpers(page) {
     QA.plan = (sx, sz, sy, gx, gz, opts = {}) => {
       const col = B.player.collision; col.sync();
       const cell = opts.cell || 0.5, Rp = opts.R || 0.5, W = B.world, b = W.bounds;
-      const maxNodes = opts.maxNodes || 600000, goalTol = opts.goalTol || 1.0;
+      const maxNodes = opts.maxNodes || 150000, pad = opts.margin ?? 45, rx0 = Math.min(sx, gx) - pad, rx1 = Math.max(sx, gx) + pad, rz0 = Math.min(sz, gz) - pad, rz1 = Math.max(sz, gz) + pad, goalTol = opts.goalTol || 1.0;
       const tmp = { y: 0, collider: null };
       const key = (i, j) => (i + 2000) * 4096 + (j + 2000);
       const open = [], nodes = new Map();
@@ -179,7 +179,7 @@ export async function installHelpers(page) {
         if (h(n.x, n.z) <= goalTol) { best = n; break; }
         for (const [di, dj] of dirs) {
           const i = n.i + di, j = n.j + dj, x = i * cell, z = j * cell;
-          if (x < b.minX || x > b.maxX || z < b.minZ || z > b.maxZ) continue;
+          if (x < Math.max(b.minX, rx0) || x > Math.min(b.maxX, rx1) || z < Math.max(b.minZ, rz0) || z > Math.min(b.maxZ, rz1)) continue;
           const old = nodes.get(key(i, j));
           if (old && old.closed) continue;
           const g = col.groundInfoAt(x, z, Rp, n.y, tmp);

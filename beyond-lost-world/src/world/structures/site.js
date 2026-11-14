@@ -33,7 +33,7 @@ export function createSite(lib, terrain, root) {
       return a;
     },
     zone(id, x, z, hx, hz, rot, yMin, yMax, darkness) { const zn = { id, x, z, hx, hz, rot, yMin, yMax, darkness }; S.zones.push(zn); return zn; },
-    resource(id, type, pos) { S.resources.push({ id, type, position: new THREE.Vector3(pos[0], pos[1], pos[2]) }); },
+    resource(id, type, pos) { S.resources.push({ id, type, position: pos.isVector3 ? pos.clone() : new THREE.Vector3(pos[0], pos[1], pos[2]) }); },
     /** Registers a box collider in world space. */
     box(x, z, hx, hz, rot, yMin, yMax, extra = {}) { const c = { type: 'box', x, z, hx, hz, rot, yMin, yMax, enabled: true, ...extra }; S.colliders.push(c); return c; },
     circle(x, z, r, yMin, yMax, extra = {}) { const c = { type: 'circle', x, z, r, yMin, yMax, enabled: true, ...extra }; S.colliders.push(c); return c; },

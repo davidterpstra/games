@@ -93,12 +93,15 @@ export class Builder {
     this.wp(x, y, z, _p);
     this.ctx.colliders.push({
       id: c.id, type: 'box', x: _p.x, z: _p.z, hx: w / 2, hz: d / 2, rot: this.yaw + (o.ry || 0),
-      yMin: c.yMin ?? _p.y - h / 2, yMax: c.yMax ?? _p.y + h / 2, enabled: true, surface: c.surface,
+      // explicit yMin/yMax are frame-local heights, like x/y/z: offset them by the frame origin's height
+      yMin: c.yMin !== undefined ? c.yMin + this.m.elements[13] : _p.y - h / 2,
+      yMax: c.yMax !== undefined ? c.yMax + this.m.elements[13] : _p.y + h / 2,
+      enabled: true, surface: c.surface,
     });
   }
   circleCollider(x, y, z, r, h, c = {}) {
     this.wp(x, y, z, _p);
-    this.ctx.colliders.push({ id: c.id, type: 'circle', x: _p.x, z: _p.z, r, yMin: c.yMin ?? _p.y - h / 2, yMax: c.yMax ?? _p.y + h / 2, enabled: true, surface: c.surface });
+    this.ctx.colliders.push({ id: c.id, type: 'circle', x: _p.x, z: _p.z, r, yMin: c.yMin !== undefined ? c.yMin + this.m.elements[13] : _p.y - h / 2, yMax: c.yMax !== undefined ? c.yMax + this.m.elements[13] : _p.y + h / 2, enabled: true, surface: c.surface });
   }
 
   /** Cylinder (or cone) centred at (x,y,z). o.cc = circle collider (true or {surface}). */
