@@ -1,0 +1,12 @@
+{
+  "name": "beyond-lost-world",
+  "version": "0.1.0",
+  "private": true,
+  "description": "BEYOND – THE LOST WORLD: a 3D first-person exploration adventure that runs in the browser (Three.js).",
+  "type": "module",
+  "scripts": {
+    "start": "node server.mjs",
+    "test": "node tests/run-all.mjs"
+  },
+  "license": "MIT"
+}
