@@ -150,8 +150,6 @@ export function createEnvironment({ scene, renderer, camera, world, bus, setting
 
     /** Wind strength 0..1 (gusty) for vegetation, water, particles. */
     get wind() { return wx.windNow; },
-    /** 0..1 how dark the surroundings are because of interior zones (smoothed). */
-    get darkness() { return dark; },
     get night() { return dn.night; },
     get sunDirection() { return dn.sunDir; },
     get interior() { return zone; },

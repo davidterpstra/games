@@ -60,6 +60,8 @@ world.locations → LOCATIONS from layout.js (with `y` filled in)
 world.bounds → PLAY_BOUNDS
 world.setPowered(group: 'bunker', on: boolean)   // turns the bunker's lights/emissives on or off
 world.setQuality(name)                          // live change of vegetation density / LOD distances
+world.setWind(strength)                         // foliage/grass sway multiplier (main drives it from env.wind)
+world.interiorAt(position) → zone|null          // interior zone containing a point
 world.update(dt, elapsed, cameraPosition)       // wind, water animation, LOD, culling
 world.terrainMaterial                           // shared terrain material (structures may reuse it for earth mounds)
 ```
@@ -119,7 +121,9 @@ Keys: WASD/arrows move, mouse looks (pointer lock), Shift sprint (drains stamina
 const env = createEnvironment({ scene, renderer, camera, world, bus, settings: Settings, quality });
 env.update(dt, playerPosition, { simulate: boolean })   // simulate=false → clock frozen (paused/menus), visuals still animate
 env.getTimeOfDay() → hours 0..24; env.setTimeOfDay(h); env.day → day counter
-env.setWeather('clear'|'cloudy'|'rain'|'fog'|'storm'); env.weather
+env.setWeather('clear'|'cloudy'|'rain'|'fog'|'storm', instant = false); env.weather; env.wind (0..1)
+env.darkness (0..1, current interior darkness); env.indoor; env.night; env.interior (current zone)
+// shadows are re-rendered on demand (movement, sun angle, interval) — see src/environment/Lighting.js
 env.setTorch(on); env.torchOn
 env.audio → { unlock(), play(name, { position?: Vector3, volume? }), setListener(camera) }  // also listens to bus 'sfx'
 env.setQuality(name)
@@ -179,6 +183,7 @@ Item ids: `wood, stone, fiber, resin, cloth, scrap, rope, torch, crowbar, sundis
 | `torch:changed` | `{ on }` | environment |
 | `game:saved` / `game:loaded` | `{ timestamp }` | gameplay |
 | `chapter:complete` | `{ chapter: 1 }` | gameplay |
+| `beacon:activated` | `{ id }` | gameplay |
 | `settings:changed` | `{ key, value, settings }` | Settings |
 | `ui:request` | `{ action: 'newGame'|'continue'|'resume'|'pause'|'save'|'loadCheckpoint'|'quitToMenu'|'openInventory'|'closeInventory'|'openMap' }` | UI → main |
 
@@ -207,3 +212,14 @@ The UI never changes game state directly; it emits `ui:request` (main performs i
 - Gameplay mutations go through named functions (`inventory.add`, `craft`, interaction handlers) and are announced on the bus, so a future `src/net/` module can forward them to a Node.js WebSocket server (authoritative for world flags, item pickups and shared missions; up to 8 players) and replay remote events.
 - World generation is fully deterministic (`mulberry32(WORLD_SEED)`), so every client builds the identical world from the seed.
 - Remote players would be rendered by a `RemotePlayer` view that consumes `player.serialize()` snapshots.
+
+## Collider heights inside builder frames
+Structures build in local frames (`b.at(x, y, z, yaw, fn)`). Explicit collider `yMin`/`yMax` passed to `b.box(..., { c: { yMin, yMax } })`
+or `b.solid(...)` are **frame-local**, exactly like the x/y/z of the box; the builder adds the frame origin's height.
+
+## Performance (`src/perf/`)
+- `Performance.js`: frame stats (`perf.stats()`), adaptive quality ladder (shadow refresh → grass density → render scale; off under WebDriver,
+  force with `?adapt`, disable with `?noadapt`), far culling of documents/pickups, outdoor vegetation hidden in pitch-black interiors.
+- `shadowHook.js`: shadow-only proxy meshes (merged per site, instanced per tree group) are visible only during the shadow pass.
+- `tuning.js`: runtime multipliers written by the adaptive controller and read by grass and lighting.
+- Tools: `node dev/perf-profile.mjs`, `node dev/perf-breakdown.mjs`, `node dev/view.mjs` (renders camera spots to JPEG).
