@@ -97,7 +97,7 @@ function grassTile(size, rand) {
 }
 
 function forestTile(size, rand) {
-  const soil = [38, 30, 20], moss = [40, 58, 26], dark = [24, 20, 14];
+  const soil = [34, 28, 19], moss = [38, 54, 24], dark = [20, 17, 12];
   const { canvas, ctx } = paintBase(size, (u, v) => {
     const n = pfbm(u, v, 7, 7, 5, 21), m = pfbm(u, v, 3, 3, 4, 23);
     let c = mixc(dark, soil, sstep(0.2, 0.7, n));
@@ -105,14 +105,14 @@ function forestTile(size, rand) {
     return c;
   });
   ctx.lineCap = 'round';
-  const leafCols = [[110, 78, 34], [140, 100, 40], [92, 62, 28], [150, 118, 52], [74, 54, 30], [120, 70, 30]];
+  const leafCols = [[84, 66, 36], [98, 78, 42], [70, 56, 32], [108, 90, 50], [58, 48, 30], [88, 62, 34], [62, 70, 36]];
   for (let i = 0; i < 1500; i++) { // needles
     const x = rand() * size, y = rand() * size, a = rand() * Math.PI * 2, l = 5 + rand() * 9;
-    ctx.strokeStyle = rgb(mixc([120, 82, 40], [66, 46, 26], rand()), 0.8 + rand() * 0.4); ctx.lineWidth = 1 + rand() * 0.8;
+    ctx.strokeStyle = rgb(mixc([96, 70, 38], [56, 42, 24], rand()), 0.8 + rand() * 0.4); ctx.lineWidth = 1 + rand() * 0.8;
     wrapped(size, x, y, l, (ox, oy) => { ctx.beginPath(); ctx.moveTo(x + ox, y + oy); ctx.lineTo(x + ox + Math.cos(a) * l, y + oy + Math.sin(a) * l); ctx.stroke(); });
   }
-  for (let i = 0; i < 520; i++) { // leaves
-    const x = rand() * size, y = rand() * size, a = rand() * Math.PI, rx = 5 + rand() * 7, ry = rx * (0.4 + rand() * 0.2);
+  for (let i = 0; i < 640; i++) { // leaves
+    const x = rand() * size, y = rand() * size, a = rand() * Math.PI, rx = 3.5 + rand() * 5.5, ry = rx * (0.4 + rand() * 0.2);
     const c = leafCols[(rand() * leafCols.length) | 0];
     wrapped(size, x, y, rx, (ox, oy) => {
       ctx.fillStyle = rgb(c, 0.7 + rand() * 0.5);

@@ -280,7 +280,10 @@ export function createHeightField(segments) {
     const dl = Math.hypot(x - LAKE.x, z - LAKE.z);
     if (dl < LAKE.radius + 16) sand = 1 - sstep(0.45, 1.9, h - LAKE.waterY + 0.4 * noise2(x / 5, z / 5));
     riverNear(x, z);
-    if (rd < HALF_W + 9) sand = Math.max(sand, (1 - sstep(0.3, 1.5, h - rwy + 0.25 * noise2(x / 4, z / 4))) * (1 - sstep(HALF_W + 4, HALF_W + 9, rd)));
+    if (rd < HALF_W + 9) {
+      const lvl = Math.min(rwy, getHeightAt(rcx, rcz) + 0.45);
+      sand = Math.max(sand, (1 - sstep(0.3, 1.5, h - lvl + 0.25 * noise2(x / 4, z / 4))) * (1 - sstep(HALF_W + 4, HALF_W + 9, rd)));
+    }
     const litter = (litterValue ?? 0) * (1 - dirt) * (1 - sand);
     // normal.y from the grid
     let fx = (x + WORLD_HALF) / cell, fz = (z + WORLD_HALF) / cell;
