@@ -49,6 +49,16 @@ ${js}
 </html>
 `;
 fs.writeFileSync(path.join(dir, 'index.html'), html);
+
+// --artifact <out.html>: body-only page for hosts that wrap the file in their own document skeleton
+const ai = process.argv.indexOf('--artifact');
+if (ai > 0 && process.argv[ai + 1]) {
+  const start = html.indexOf('<title>'), headEnd = html.indexOf('</head>');
+  const bodyStart = html.indexOf('<body>') + '<body>'.length, bodyEnd = html.lastIndexOf('</body>');
+  const page = html.slice(start, headEnd).replace('<style>', '<style>\n:root { color-scheme: dark; }') + html.slice(bodyStart, bodyEnd);
+  fs.writeFileSync(path.resolve(process.argv[ai + 1]), page);
+  console.log('Wrote artifact page', process.argv[ai + 1]);
+}
 fs.mkdirSync(path.join(dir, '.build'), { recursive: true });
 fs.writeFileSync(path.join(dir, '.build/bundle.mjs'), js);
 console.log(`Built index.html (${(html.length / 1024).toFixed(0)} KB, ${jsFiles.length} JS modules, ${js.split('\n').length} lines of JS)`);
