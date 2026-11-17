@@ -921,14 +921,16 @@ class ClawMachine {
   /* ================= per frame ================= */
   update(dt) {
     if (this.disposed) return;
-    dt = clamp(dt || 0, 0, 1 / 30);
-    this.t += dt;
-    // spawn queue
-    this.spawnCd -= dt;
-    if (this.spawnQ.length && this.spawnCd <= 0) { this._spawnNow(this.spawnQ.shift()); this.spawnCd = 0.25; }
-    this._updateClaw(dt);
-    this._physics(dt);
-    this._postPhysics(dt);
+    dt = clamp(dt || 0, 0, 0.1);
+    const n = Math.max(1, Math.ceil(dt / (1 / 30 + 1e-9))), h = dt / n;
+    for (let i = 0; i < n; i++) {
+      this.t += h;
+      this.spawnCd -= h;
+      if (this.spawnQ.length && this.spawnCd <= 0) { this._spawnNow(this.spawnQ.shift()); this.spawnCd = 0.25; }
+      this._updateClaw(h);
+      this._physics(h);
+      this._postPhysics(h);
+    }
     this._updateVisuals(dt);
   }
 
