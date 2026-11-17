@@ -521,7 +521,8 @@ kbd, .kbd {
   .hud-timer { top: calc(var(--safe-t) + 6px); }
   .timer-pill .tp-num { font-size: 30px; } .timer-pill { min-width: 80px; border-radius: 16px; }
   .hud-hover { top: calc(var(--safe-t) + 46px); right: calc(var(--safe-r) + 62px); width: 190px; }
-  #toasts { top: calc(var(--safe-t) + 60px); }
+  #toasts { top: calc(var(--safe-t) + 76px); }
+  #ui.mode-machine .boosts, #ui.mode-train .boosts { display: none; }
   .hud-dpad { left: calc(var(--safe-l) + 12px); bottom: calc(var(--safe-b) + 10px); grid-template-columns: repeat(3, 46px); grid-template-rows: repeat(3, 46px); gap: 2px; }
   .dp { width: 46px; height: 46px; font-size: 20px; border-radius: 13px; }
   .hud-play { right: calc(var(--safe-r) + 12px); bottom: calc(var(--safe-b) + 10px); gap: 4px; }
@@ -530,7 +531,7 @@ kbd, .kbd {
   .hud-hint { display: none; }
   .hud-train { top: calc(var(--safe-t) + 44px); width: 252px; overflow-y: auto; max-height: calc(100vh - 52px - var(--safe-t) - var(--safe-b)); padding: 8px 10px; gap: 5px; border-radius: 18px; }
   .t-title { font-size: 18px; } .t-cur { font-size: 12px; margin-top: -3px; }
-  .t-list { flex: 0 0 auto; max-height: 84px; } .t-item { padding: 4px 8px; }
+  .t-list { flex: 0 0 auto; max-height: 100px; } .t-item { padding: 4px 8px; }
   .t-train { min-height: 50px; font-size: 20px; } .t-train small { font-size: 12px; } .t-train .th { display: none; }
   .t-mults { display: none; }
   .t-auto, .t-leave { min-height: 34px; padding: 3px 8px; font-size: 12px; white-space: normal; line-height: 1.05; }
