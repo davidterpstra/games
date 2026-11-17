@@ -482,7 +482,10 @@ kbd, .kbd {
   .hud-nav { top: calc(var(--safe-t) + 120px); gap: 6px; }
   .nav-btn { width: 52px; height: 52px; }
   #toasts { top: calc(var(--safe-t) + 250px); }
-  .hud-train { top: auto; right: 0; left: 0; bottom: 0; width: auto; max-height: 56vh; border-radius: 22px 22px 0 0; border-width: 4px 0 0; padding: 10px 12px calc(var(--safe-b) + 10px); display: grid; grid-template-columns: 1fr 1fr; gap: 6px 8px; }
+  .hud-train { top: auto; right: 0; left: 0; bottom: 0; width: auto; max-height: 56vh; border-radius: 22px 22px 0 0; border-width: 4px 0 0; padding: 10px 12px calc(var(--safe-b) + 10px); display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 6px 8px; overflow: hidden; }
+  .hud-train > *, .t-actions > * { min-width: 0; }
+  .t-auto { white-space: normal; line-height: 1.05; font-size: 13px; }
+  .nav-btn .nb-lbl { font-size: 9px; letter-spacing: 0; }
   .t-title, .t-cur, .t-list, .t-train, .t-mults { grid-column: 1 / -1; }
   .t-title { font-size: 20px; } .t-cur { margin-top: -2px; }
   .t-list { flex-direction: row; overflow-x: auto; overflow-y: hidden; max-height: none; padding-bottom: 6px; }

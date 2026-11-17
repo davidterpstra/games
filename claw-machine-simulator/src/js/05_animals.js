@@ -326,8 +326,8 @@ function _anBuildGeo(def, key) {
     for (const sx of [-1, 1]) L.ell(sx * 0.15, 0.05, 0.14, 0.105, 0.06, 0.13, cA, 1);
   } else if (isBug) {
     for (const sx of [-1, 1]) for (const z of [0.12, -0.06, -0.24]) {
-      L.rod(sx * 0.26, 0.2, z, sx * 0.44, 0.04, z + 0.05, 0.026, cA, 1);
-      L.ell(sx * 0.45, 0.03, z + 0.055, 0.04, 0.025, 0.05, cA, 1);
+      L.rod(sx * 0.25, 0.19, z, sx * 0.36, 0.05, z + 0.04, 0.032, cA, 1);
+      L.ell(sx * 0.37, 0.035, z + 0.045, 0.045, 0.03, 0.055, cA, 1);
     }
   } else if (isBird) {
     for (const sx of [-1, 1]) {
@@ -788,7 +788,7 @@ function _anPtsMat(hex, mode, rainbow) {
   _anFxMats[key] = m;
   return m;
 }
-const _anPtsDefs = { sparkle: [7, 0.22, 0.4, 1.0, 1.35], light: [5, 0.16, 0.3, 0.8, 1.2], orbit: [5, 0.3, 0.3, 1.15, 1.3], big: [12, 0.2, 0.38, 0.8, 1.45] };
+const _anPtsDefs = { sparkle: [8, 0.34, 0.4, 0.95, 1.4], light: [5, 0.26, 0.3, 0.8, 1.2], orbit: [5, 0.38, 0.3, 1.15, 1.3], big: [14, 0.32, 0.38, 0.8, 1.5] };
 function _anPtsGeo(name) {
   let g = _anFxGeos[name];
   if (g) return g;
@@ -816,9 +816,9 @@ function _anBeamMat(hex) {
     uniforms: { uTime: U.uTime, uColor: { value: new THREE.Color(hex) } },
     vertexShader: 'varying vec2 vUv; varying vec3 vN; varying vec3 vV; void main(){ vUv = uv; vec4 mv = modelViewMatrix * vec4(position,1.0); vN = normalize(normalMatrix * normal); vV = normalize(-mv.xyz); gl_Position = projectionMatrix * mv; }',
     fragmentShader: 'uniform vec3 uColor; uniform float uTime; varying vec2 vUv; varying vec3 vN; varying vec3 vV;\n' +
-      'void main(){ float h = vUv.y; float a = (1.0 - h); a = a * a * (0.65 + 0.25 * sin(uTime * 3.0 + h * 5.0));\n' +
+      'void main(){ float h = vUv.y; float a = (1.0 - h); a = smoothstep(0.32, 0.55, h) * pow(a, 1.2) * (0.8 + 0.2 * sin(uTime * 3.0 + h * 5.0));\n' +
       'float e = pow(abs(dot(normalize(vN), normalize(vV))), 1.3); a *= e * (0.9 + 0.1 * sin(vUv.x * 40.0 + uTime * 2.0));\n' +
-      'gl_FragColor = vec4(uColor * 1.3, a * 0.75);\n#include <colorspace_fragment>\n}',
+      'gl_FragColor = vec4(uColor, a * 0.32);\n#include <colorspace_fragment>\n}',
     transparent: true, depthWrite: false, side: THREE.DoubleSide, blending: THREE.AdditiveBlending,
   });
   _anFxMats[key] = m;
@@ -831,7 +831,7 @@ function _anSpriteMat(kind, hex) {
   if (kind === 'void') {
     m = new THREE.SpriteMaterial({ map: _anTexSwirl(), transparent: true, depthWrite: false, opacity: 0.9 });
   } else {
-    m = new THREE.SpriteMaterial({ map: _anTexGlow(), color: new THREE.Color(hex), transparent: true, depthWrite: false, blending: THREE.AdditiveBlending, opacity: 0.8 });
+    m = new THREE.SpriteMaterial({ map: _anTexGlow(), color: new THREE.Color(hex), transparent: true, depthWrite: false, blending: THREE.AdditiveBlending, opacity: 0.38 });
   }
   _anFxMats[key] = m;
   return m;
@@ -839,7 +839,7 @@ function _anSpriteMat(kind, hex) {
 function _anShineMat(hex) {
   const key = 'd:' + hex;
   if (_anFxMats[key]) return _anFxMats[key];
-  const m = new THREE.MeshBasicMaterial({ map: _anTexGlow(), color: new THREE.Color(hex), transparent: true, depthWrite: false, blending: THREE.AdditiveBlending, opacity: 0.75 });
+  const m = new THREE.MeshBasicMaterial({ map: _anTexGlow(), color: new THREE.Color(hex), transparent: true, depthWrite: false, blending: THREE.AdditiveBlending, opacity: 0.45 });
   _anFxMats[key] = m;
   return m;
 }
@@ -851,7 +851,7 @@ function _anGroundGeo() {
 }
 function _anBeamGeo() {
   if (_anFxGeos.beam) return _anFxGeos.beam;
-  const g = new THREE.CylinderGeometry(0.34, 0.6, 1, 16, 1, true);
+  const g = new THREE.CylinderGeometry(0.5, 0.9, 1, 16, 1, true);
   _anFxGeos.beam = g;
   return g;
 }
@@ -1044,7 +1044,7 @@ const AnimalFactory = {
       g.updateMatrixWorld(true);
       const box = new THREE.Box3().setFromObject(g);
       const ctr = box.getCenter(new THREE.Vector3()), sz = box.getSize(new THREE.Vector3());
-      const rad = Math.max(sz.x, sz.y, sz.z) * 0.56;
+      const rad = sz.length() * 0.5 * 0.82;
       const cam = _anR.thumbCam;
       const dist = rad / Math.sin(cam.fov * Math.PI / 360) * 1.02;
       const az = 0.6, el = 0.22;
@@ -1129,7 +1129,7 @@ const PetViewer = {
           r.setSize(w, h, false);
           s.cam.aspect = w / h; s.cam.updateProjectionMatrix();
           const th = Math.tan(s.cam.fov * Math.PI / 360);
-          const e = s.R * 1.5;
+          const e = s.R * 1.75;
           const dist = Math.max(e / th, e / (th * s.cam.aspect));
           s.cam.position.set(0, s.R * 1.5 + dist * 0.16, dist);
           s.cam.lookAt(0, s.R * 0.95, 0);

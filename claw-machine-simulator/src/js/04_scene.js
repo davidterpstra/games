@@ -655,7 +655,7 @@ function _scDecorArcade(S, th, R, D) {
     S.cyl(0, y + 0.2, 0.13, 0.3, 0.3, 0.02, c2, { rx: Math.PI / 2, seg: 16 });
     S.box(0, y - 0.45, 0.13, 0.6, 0.12, 0.02, '#ffffff');
   });
-  _scBunting(S, -10, 10, 5.85, -ROOM.halfZ, R);
+  _scBunting(S, -10, 10, 6.2, -ROOM.halfZ, R);
   // floor arcade-token decor: neon corner rings
   S.setBase(0, 0, 0, 0);
   for (const [x, z] of [[-10, 8.4], [10, 8.4]]) { S.cyl(x, 0.5, z, 0.3, 0.35, 1.0, '#3c3f6b'); S.sph(x, 1.15, z, 0.3, n[(x > 0) | 0 ? 0 : 1], { e: true, seg: 10 }); _scColCircle(x, z, 0.42); }
@@ -677,7 +677,8 @@ function _scDecorJungle(S, th, R, D) {
     S.cyl(x, 0.3, z, 0.38 * s, 0.3 * s, 0.6, '#b5651d', { seg: 10 });
     S.cyl(x, 0.62, z, 0.4 * s, 0.4 * s, 0.08, '#8a4b14', { seg: 10 });
     S.cyl(x, 0.62, z, 0.33 * s, 0.33 * s, 0.1, '#3b2a1a', { seg: 10 });
-    _scLeafFan(S, x, z, 0.65, R, greens, D >= 1 ? 11 : 7, 1.6 * s);
+    _scLeafFan(S, x, z, 0.65, R, greens, D >= 1 ? 13 : 8, 2.4 * s);
+    for (let k = 0; k < 4; k++) S.sph(x + (R() - 0.5) * 1.0, 1.0 + R() * 0.8, z + (R() - 0.5) * 1.0, 0.09, _scPAL[k], { seg: 6, segH: 5 });
     _scColCircle(x, z, 0.5 * s);
   });
   // bamboo clusters
@@ -836,7 +837,7 @@ function _scDecorDesert(S, th, R, D) {
   // hanging cloth banners
   for (const p of [-3.6, 3.6]) { S.wall('back', p); S.box(0, 4.8, 0.2, 0.9, 1.6, 0.04, '#d6493a'); S.box(0, 4.8, 0.23, 0.5, 0.5, 0.02, '#ffd23f', { e: true, rz: 0.78 }); }
   // dunes
-  for (const [x, z, r] of [[-10.3, -1.0, 1.2], [10.5, 5.2, 1.3], [-4, 8.9, 1.0], [5, 8.9, 0.9]]) S.sph(x, 0, z, r, _scShade(sand, 1.06), { sy: 0.28, seg: 12, segH: 6 });
+  for (const [x, z, r] of [[-10.5, -0.2, 1.3], [10.7, 5.4, 1.4]]) S.sph(x, 0, z, r, _scShade(sand, 1.02), { sy: 0.22, seg: 12, segH: 6 });
 }
 
 function _scDecorSpace(S, th, R, D) {
@@ -877,7 +878,7 @@ function _scDecorSpace(S, th, R, D) {
   // satellite dish (back-left corner)
   S.setBase(-9.7, 0, -7.6, 0.4);
   S.cyl(0, 0.6, 0, 0.12, 0.2, 1.2, '#59648c', { seg: 8 }); S.cyl(0, 0.03, 0, 0.6, 0.6, 0.06, '#3a4366', { seg: 10 });
-  S.cone(0, 1.55, 0.2, 0.9, 0.5, '#e9eef9', { rx: -2.3, seg: 18 }); S.sph(0, 1.9, 0.62, 0.07, '#ff5c5c', { e: true, seg: 8, segH: 6 });
+  S.geo(new THREE.SphereGeometry(0.8, 18, 8, 0, TAU, 0, Math.PI / 2), 0, 1.5, 0.1, '#e9eef9', { rx: -(Math.PI / 2 + 0.6) }); S.sph(0, 1.78, 0.62, 0.07, '#ff5c5c', { e: true, seg: 8, segH: 6 });
   _scColCircle(-9.7, -7.6, 0.7);
   // glow ring around machine rug
   S.setBase(0, 0, ROOM.stations.machine.z, 0);
@@ -1082,7 +1083,7 @@ const Scene3D = {
     _sc.room.group.add(g);
 
     // world name sign above the machine
-    _scSign([world.name.toUpperCase()], 5.4, 1.0, 0, 4.7, -ROOM.halfZ + 0.12, 0, { px: 768, accent: th.neon, fg: '#ffffff' });
+    _scSign([world.name.toUpperCase()], 5.0, 0.9, 0, 5.3, -ROOM.halfZ + 0.27, 0, { px: 768, accent: th.neon, fg: '#ffffff' });
     // training sign
     const tr = ROOM.stations.training;
     _scSign(['TRAINING'], 2.6, 0.62, -ROOM.halfX + 0.14, 4.25, tr.z, Math.PI / 2, { px: 512, accent: th.accent });

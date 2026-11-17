@@ -123,7 +123,9 @@ function fmt(n) {
     let i = 0;
     while (n >= 1000 && i < _coreSuffix.length - 1) { n /= 1000; i++; }
     const d = n >= 100 ? 0 : n >= 10 ? 1 : 2;
-    out = (Math.floor(n * Math.pow(10, d)) / Math.pow(10, d)).toFixed(d).replace(/\.?0+$/, '') + _coreSuffix[i];
+    let s = (Math.floor(n * Math.pow(10, d)) / Math.pow(10, d)).toFixed(d);
+    if (s.indexOf('.') >= 0) s = s.replace(/0+$/, '').replace(/\.$/, '');
+    out = s + _coreSuffix[i];
   }
   return (neg ? '-' : '') + out;
 }
