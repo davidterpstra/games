@@ -35,7 +35,8 @@ function _mnSetMode(mode) {
   if (mode === 'machine') {
     // stand beside the machine so the avatar never blocks the view into the glass
     const st = ROOM.stations.machine;
-    const px = st.x + 1.75, pz = st.iz - 0.2;
+    // (outside the machine camera's field of view: right of the cabinet, level with its front)
+    const px = st.x + 2.9, pz = st.z + 0.6;
     _mnSafe('player', () => Player.setPosition(px, pz, Math.atan2(st.x - px, st.z - pz)));
     _mnSafe('camera', () => CameraRig.setMode('machine'));
   } else if (mode === 'train') {
@@ -161,7 +162,7 @@ function _mnBoot() {
 
     if (Game.debug) {
       window.CMS = {
-        THREE, Game, Bus, Remote, Services, SaveService, PlayerData, Scene3D, AnimalFactory, PetViewer,
+        THREE, Game, Bus, Tweens, Remote, Services, SaveService, PlayerData, Scene3D, AnimalFactory, PetViewer,
         Machines, Input, Player, CameraRig, Interact, FX, Sfx, UI, ROOM, MACHINE_DIMS,
         RARITIES, VARIANTS, ANIMALS, ANIMAL_BY_ID, WORLDS, WORLD_BY_ID, UPGRADES, TRAINING_EQUIPMENT, GEM_SHOP, ECONOMY, FORMULAS,
         setMode: _mnSetMode, enterWorld: _mnEnterWorld, errors: _mnState.errors,
