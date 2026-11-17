@@ -325,7 +325,7 @@ const FX = {
         const sp = _fxRand(700, 1250) * Math.min(1.4, Math.max(0.7, H / 800));
         pc.vx = (left ? 1 : -1) * Math.abs(Math.cos(ang)) * sp;
         pc.vy = Math.sin(ang) * sp;
-        pc.drag = 2.2;
+        pc.drag = 1.2;
       } else {
         pc.x = _fxRand(0, W); pc.y = _fxRand(-40, -10);
         pc.vx = _fxRand(-60, 60); pc.vy = _fxRand(40, 200);

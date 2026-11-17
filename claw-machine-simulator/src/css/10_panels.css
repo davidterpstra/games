@@ -26,7 +26,6 @@
 .pn-filters { display: flex; gap: 6px; overflow-x: auto; padding: 2px 0 8px; -webkit-overflow-scrolling: touch; }
 .pn-fchip { flex: 0 0 auto; min-height: 36px; padding: 0 12px; border-radius: 999px; border: 2px solid var(--rc, rgba(255,255,255,.3)); background: rgba(0,0,0,.25); color: inherit; font: inherit; font-weight: 700; font-size: 13px; cursor: pointer; }
 .pn-fchip.on { background: var(--rc, #4ea1ff); color: #fff; text-shadow: 0 1px 2px rgba(0,0,0,.5); }
-.pn-fchip[style=""].on, .pn-filters .pn-fchip:first-child.on { background: #4ea1ff; }
 .pn-sellmenu { background: rgba(10,12,30,.96); border: 2px solid rgba(255,255,255,.2); border-radius: 14px; padding: 8px; margin-bottom: 10px; display: grid; gap: 6px; }
 .pn-sellhead { font-size: 13px; opacity: .75; padding: 2px 4px; }
 .pn-sellrow { display: grid; grid-template-columns: 1fr auto auto; gap: 10px; align-items: center; min-height: 44px; padding: 0 12px; border-radius: 10px; border: 2px solid var(--rc); background: rgba(255,255,255,.05); color: inherit; font: inherit; cursor: pointer; text-align: left; }
