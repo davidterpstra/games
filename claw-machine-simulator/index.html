@@ -10,11 +10,272 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Fredoka:wght@500;600;700&family=Nunito:wght@700;800;900&display=swap">
 <style>
+/* ==== 10_panels.css ==== */
+/* =====================================================================
+   10_panels.css — panel contents (prefix .pn-). Uses shared variables/classes.
+   ===================================================================== */
+[class^="pn-"], [class*=" pn-"] { box-sizing: border-box; }
+.pn-pad { padding: 14px; }
+.pn-wide { grid-column: 1 / -1; }
+.pn-chips { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 10px; }
+.pn-chip { display: inline-flex; align-items: center; gap: 5px; padding: 6px 12px; border-radius: 999px; background: rgba(255,255,255,.1); border: 2px solid rgba(255,255,255,.14); font-weight: 700; font-size: 14px; white-space: nowrap; }
+.pn-chip b { font-family: var(--font-d); }
+.pn-chip.hi { background: linear-gradient(180deg,#ffd84d,#ffa726); color: #3a2300; border-color: #b46a00; }
+.pn-chip.warn { background: #ff5d5d33; border-color: #ff5d5d; }
+
+/* ---------- segmented ---------- */
+.pn-seg { display: inline-flex; background: rgba(0,0,0,.28); border-radius: 12px; padding: 3px; gap: 3px; }
+.pn-seg-full { display: flex; }
+.pn-seg-full .pn-segb { flex: 1; }
+.pn-segb { min-height: 44px; padding: 0 14px; border: 0; border-radius: 10px; background: transparent; color: inherit; font: inherit; font-weight: 800; cursor: pointer; }
+.pn-segb.on { background: linear-gradient(180deg,#4ea1ff,#2b6fe0); color: #fff; box-shadow: 0 2px 0 #1a4aa0; }
+
+/* ---------- pets ---------- */
+.pn-pets { display: grid; grid-template-columns: minmax(0,1fr) 300px; gap: 14px; align-items: start; }
+.pn-pets-main { min-width: 0; }
+.pn-toolbar { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; justify-content: space-between; margin-bottom: 8px; }
+.pn-toolacts { display: flex; flex-wrap: wrap; gap: 6px; }
+.pn-toolacts .btn { min-height: 44px; }
+.pn-filters { display: flex; gap: 6px; overflow-x: auto; padding: 2px 0 8px; -webkit-overflow-scrolling: touch; }
+.pn-fchip { flex: 0 0 auto; min-height: 36px; padding: 0 12px; border-radius: 999px; border: 2px solid var(--rc, rgba(255,255,255,.3)); background: rgba(0,0,0,.25); color: inherit; font: inherit; font-weight: 700; font-size: 13px; cursor: pointer; }
+.pn-fchip.on { background: var(--rc, #4ea1ff); color: #fff; text-shadow: 0 1px 2px rgba(0,0,0,.5); }
+.pn-fchip[style=""].on, .pn-filters .pn-fchip:first-child.on { background: #4ea1ff; }
+.pn-sellmenu { background: rgba(10,12,30,.96); border: 2px solid rgba(255,255,255,.2); border-radius: 14px; padding: 8px; margin-bottom: 10px; display: grid; gap: 6px; }
+.pn-sellhead { font-size: 13px; opacity: .75; padding: 2px 4px; }
+.pn-sellrow { display: grid; grid-template-columns: 1fr auto auto; gap: 10px; align-items: center; min-height: 44px; padding: 0 12px; border-radius: 10px; border: 2px solid var(--rc); background: rgba(255,255,255,.05); color: inherit; font: inherit; cursor: pointer; text-align: left; }
+.pn-sellrow b { color: var(--rc); }
+.pn-sellrow em { font-style: normal; font-weight: 800; }
+.pn-petgrid { display: grid; grid-template-columns: repeat(auto-fill, minmax(92px,1fr)); gap: 10px; padding-bottom: 8px; }
+.pn-pet { position: relative; aspect-ratio: 1/1.08; border-radius: 14px; border: 3px solid var(--rc); background: radial-gradient(circle at 50% 35%, color-mix(in srgb, var(--rc) 35%, #1b1e3a), #14172e 85%); box-shadow: 0 0 10px color-mix(in srgb, var(--rc) 55%, transparent), 0 3px 0 rgba(0,0,0,.4); padding: 4px; cursor: pointer; color: #fff; display: block; min-width: 0; min-height: 44px; transition: transform .12s; }
+.pn-pet:hover { transform: translateY(-2px) scale(1.03); }
+.pn-pet.sel { outline: 3px solid #fff; outline-offset: 1px; transform: scale(1.04); }
+.pn-pet img { width: 100%; height: 78%; object-fit: contain; display: block; pointer-events: none; }
+.pn-pet.v-golden { border-color: #ffd34d; box-shadow: 0 0 14px #ffd34daa, 0 3px 0 rgba(0,0,0,.4); }
+.pn-pet.v-rainbow { border-color: transparent; background: linear-gradient(#171a34,#171a34) padding-box, linear-gradient(120deg,#ff5d5d,#ffd34d,#5dff8a,#4ea1ff,#c06bff,#ff5d5d) border-box; background-size: 100% 100%, 300% 300%; animation: pn-rb 4s linear infinite; box-shadow: 0 0 14px #c06bff88, 0 3px 0 rgba(0,0,0,.4); }
+@keyframes pn-rb { to { background-position: 0 0, 300% 0; } }
+.pn-mult { position: absolute; left: 0; right: 0; bottom: 3px; text-align: center; font-family: var(--font-d); font-size: 14px; text-shadow: 0 2px 0 #000, 0 0 4px #000; }
+.pn-vbadge { position: absolute; top: 3px; left: 4px; font-size: 14px; filter: drop-shadow(0 1px 1px #000); }
+.pn-vbadge.golden { color: #ffd34d; }
+.pn-eqbadge { position: absolute; top: 3px; right: 3px; width: 20px; height: 20px; line-height: 20px; border-radius: 50%; background: #3ecf5a; color: #fff; font-size: 13px; font-weight: 900; border: 2px solid #146b28; text-align: center; }
+.pn-lockbadge { position: absolute; top: 24px; right: 3px; font-size: 13px; }
+.pn-pets-side { position: sticky; top: 0; background: linear-gradient(180deg,#232650,#171a38); border: 3px solid var(--rc, rgba(255,255,255,.25)); border-radius: 18px; padding: 12px; text-align: center; box-shadow: 0 0 18px color-mix(in srgb, var(--rc, #000) 35%, transparent); }
+.pn-detail-empty { padding: 40px 12px; font-weight: 700; }
+.pn-detail-empty div { font-size: 38px; margin-bottom: 6px; }
+.pn-viewer { height: 200px; border-radius: 14px; background: radial-gradient(circle at 50% 45%, color-mix(in srgb, var(--rc, #888) 35%, #10122a), #0c0e22); overflow: hidden; position: relative; }
+.pn-viewer canvas { width: 100% !important; height: 100% !important; display: block; }
+.pn-dname { font-family: var(--font-d); font-size: 24px; margin: 8px 0 4px; }
+.pn-tags { display: flex; flex-wrap: wrap; gap: 5px; justify-content: center; }
+.pn-rtag { background: var(--rc); color: #fff; text-shadow: 0 1px 2px rgba(0,0,0,.6); }
+.pn-vtag.v-golden { color: #ffd34d; }
+.pn-dstats { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin: 10px 0 6px; }
+.pn-dstats > div { background: rgba(0,0,0,.28); border-radius: 12px; padding: 6px; }
+.pn-dstats small, .pn-statrow small, .pn-uphead small, .pn-statgrid small, .pn-timer small, .pn-gembal small { display: block; opacity: .7; font-size: 12px; }
+.pn-dstats b { font-size: 17px; font-family: var(--font-d); }
+.pn-big { color: #ffd34d; font-size: 22px !important; }
+.pn-desc { font-size: 13px; margin: 6px 0 10px; }
+.pn-acts { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+.pn-acts .btn { min-height: 44px; }
+.pn-hint, .pn-maxev { font-size: 12px; }
+.pn-sheetclose { display: none; position: absolute; top: 10px; right: 10px; z-index: 3; min-width: 44px; }
+.pn-empty { text-align: center; padding: 40px 16px; background: rgba(255,255,255,.05); border: 3px dashed rgba(255,255,255,.2); border-radius: 18px; }
+.pn-empty-ico { font-size: 64px; }
+.pn-empty b { font-family: var(--font-d); font-size: 22px; }
+.pn-empty p { opacity: .85; max-width: 320px; margin: 8px auto 12px; }
+.pn-arrow { display: inline-block; font-weight: 800; color: #ffd34d; animation: pn-bob 1.2s ease-in-out infinite; }
+@keyframes pn-bob { 50% { transform: translateY(5px); } }
+
+@media (max-width: 760px) {
+  .pn-pets { grid-template-columns: 1fr; }
+  .pn-petgrid { grid-template-columns: repeat(auto-fill, minmax(78px,1fr)); gap: 8px; }
+  .pn-pets-side { display: none; position: fixed; left: 0; right: 0; bottom: 0; z-index: 60; border-radius: 22px 22px 0 0; max-height: 78vh; max-height: 78dvh; overflow-y: auto; padding-bottom: calc(14px + env(safe-area-inset-bottom)); box-shadow: 0 -8px 30px rgba(0,0,0,.6); animation: pn-sheet .22s ease-out; }
+  .pn-pets-side.open { display: block; }
+  .pn-sheetclose { display: block; }
+  .pn-viewer { height: 150px; }
+  .pn-seg { width: 100%; }
+  .pn-seg .pn-segb { flex: 1; padding: 0 6px; }
+  .pn-toolacts { width: 100%; }
+  .pn-toolacts .btn { flex: 1; padding-left: 6px; padding-right: 6px; }
+}
+@keyframes pn-sheet { from { transform: translateY(100%); } }
+
+/* ---------- upgrades ---------- */
+.pn-uphead { display: flex; gap: 10px; margin-bottom: 10px; }
+.pn-uphead > div { flex: 1; background: linear-gradient(180deg,#3b2f86,#2a2262); border: 2px solid rgba(255,255,255,.18); border-radius: 14px; padding: 8px 12px; min-width: 0; }
+.pn-uphead b { font-family: var(--font-d); font-size: 22px; }
+.pn-uplevel { flex: 0 0 120px !important; }
+.pn-statrow { display: grid; grid-template-columns: repeat(auto-fit, minmax(92px,1fr)); gap: 8px; margin-bottom: 12px; }
+.pn-stat { background: rgba(0,0,0,.28); border-radius: 12px; padding: 6px 8px; text-align: center; }
+.pn-stat span { font-size: 18px; }
+.pn-stat b { display: block; font-family: var(--font-d); font-size: 15px; }
+.pn-uplist { display: grid; gap: 10px; }
+.pn-up { display: grid; grid-template-columns: 54px minmax(0,1fr) auto; gap: 12px; align-items: center; padding: 10px 12px; }
+.pn-up.locked { opacity: .6; filter: grayscale(.6); }
+.pn-up-ico { width: 54px; height: 54px; border-radius: 14px; background: linear-gradient(180deg,#5b8cff,#6a3fd6); display: grid; place-items: center; font-size: 30px; box-shadow: inset 0 -4px 0 rgba(0,0,0,.25); }
+.pn-up-name { font-family: var(--font-d); font-size: 18px; }
+.pn-up-desc { font-size: 13px; line-height: 1.25; }
+.pn-up-lv { margin: 4px 0 3px; font-size: 13px; }
+.pn-up-bar { height: 8px; }
+.pn-up-val { margin-top: 4px; font-size: 14px; }
+.pn-up-val em { font-style: normal; opacity: .6; }
+.pn-up-val b { color: #6dff8e; }
+.pn-up-act { min-width: 104px; text-align: center; }
+.pn-up-act .btn, .pn-item-act .btn { min-height: 52px; width: 100%; line-height: 1.15; }
+.pn-cost { font-family: var(--font-d); font-size: 15px; }
+.pn-lockmsg { font-size: 13px; opacity: .85; line-height: 1.3; }
+.pn-capmsg { font-size: 12px; opacity: .8; max-width: 120px; }
+.pn-maxtag { display: inline-block; padding: 8px 16px; border-radius: 12px; background: linear-gradient(180deg,#ffd84d,#ffa726); color: #3a2300; font-family: var(--font-d); border: 2px solid #b46a00; }
+.pn-up.pulse { animation: pn-pulse .9s ease-out; }
+@keyframes pn-pulse { 0% { box-shadow: 0 0 0 0 #6dff8e; transform: scale(1); } 25% { transform: scale(1.025); box-shadow: 0 0 24px 6px #6dff8eaa; } 100% { box-shadow: 0 0 0 0 transparent; transform: scale(1); } }
+@media (max-width: 520px) {
+  .pn-up { grid-template-columns: 46px minmax(0,1fr); }
+  .pn-up-ico { width: 46px; height: 46px; font-size: 25px; }
+  .pn-up-act { grid-column: 1 / -1; min-width: 0; }
+  .pn-up-act .btn { min-height: 48px; }
+  .pn-capmsg { max-width: none; }
+  .pn-uplevel { flex-basis: 96px !important; }
+}
+
+/* ---------- worlds ---------- */
+.pn-worlds { display: grid; gap: 12px; }
+.pn-world { position: relative; display: grid; grid-template-columns: 96px minmax(0,1fr) 230px; gap: 14px; align-items: center; padding: 14px; border-radius: 20px; border: 3px solid rgba(255,255,255,.25); background: linear-gradient(120deg, color-mix(in srgb, var(--wa) 70%, #111) 0%, color-mix(in srgb, var(--wb) 45%, #111) 100%); box-shadow: 0 4px 0 rgba(0,0,0,.4); overflow: hidden; }
+.pn-world.current { border-color: #ffd34d; box-shadow: 0 0 20px #ffd34d88, 0 4px 0 rgba(0,0,0,.4); }
+.pn-world.locked { filter: saturate(.55) brightness(.85); }
+.pn-world-emoji { font-size: 74px; text-align: center; filter: drop-shadow(0 4px 4px rgba(0,0,0,.4)); }
+.pn-curbadge { position: absolute; top: 8px; right: 10px; background: #ffd34d; color: #3a2300; font-family: var(--font-d); font-size: 12px; padding: 3px 10px; border-radius: 999px; border: 2px solid #b46a00; }
+.pn-world-name { font-family: var(--font-d); font-size: 24px; text-shadow: 0 2px 0 rgba(0,0,0,.4); }
+.pn-world-desc { font-size: 13px; opacity: .9; margin: 2px 0 6px; }
+.pn-facts { display: flex; flex-wrap: wrap; gap: 4px 14px; font-size: 14px; }
+.pn-rchips { display: flex; flex-wrap: wrap; gap: 5px; margin: 8px 0 6px; }
+.pn-rchip { font-size: 12px; font-weight: 800; padding: 2px 9px; border-radius: 999px; background: var(--rc); color: #fff; text-shadow: 0 1px 2px rgba(0,0,0,.7); border: 2px solid rgba(0,0,0,.35); }
+.pn-disc { font-size: 14px; }
+.pn-world-act { display: grid; gap: 8px; background: rgba(0,0,0,.28); border-radius: 14px; padding: 10px; text-align: center; align-self: stretch; align-content: center; }
+.pn-world-act .btn { min-height: 48px; }
+.pn-here { font-family: var(--font-d); font-size: 17px; color: #ffd34d; }
+.pn-reqtxt { display: flex; justify-content: space-between; gap: 6px; font-size: 13px; margin-bottom: 3px; }
+.pn-req.ok b { color: #6dff8e; }
+@media (max-width: 760px) {
+  .pn-world { grid-template-columns: 64px minmax(0,1fr); gap: 10px; padding: 12px; }
+  .pn-world-emoji { font-size: 50px; }
+  .pn-world-name { font-size: 20px; padding-right: 70px; }
+  .pn-world-act { grid-column: 1 / -1; }
+}
+
+/* ---------- index ---------- */
+.pn-idxtop { display: flex; gap: 14px; align-items: center; background: rgba(0,0,0,.28); border-radius: 16px; padding: 10px 14px; margin-bottom: 10px; }
+.pn-idxpct b { font-family: var(--font-d); font-size: 34px; color: #ffd34d; display: block; line-height: 1; }
+.pn-idxpct small { opacity: .7; }
+.pn-idxbar { flex: 1; min-width: 0; }
+.pn-idxbar .bar { margin-top: 5px; height: 14px; }
+.pn-tabs { display: flex; gap: 6px; overflow-x: auto; padding-bottom: 6px; -webkit-overflow-scrolling: touch; }
+.pn-tab { flex: 0 0 auto; min-height: 44px; padding: 0 14px; border-radius: 12px 12px 0 0; border: 2px solid rgba(255,255,255,.18); border-bottom: 0; background: rgba(0,0,0,.3); color: inherit; font: inherit; font-weight: 800; cursor: pointer; white-space: nowrap; }
+.pn-tab.on { background: var(--wa, #4ea1ff); color: #fff; text-shadow: 0 1px 2px rgba(0,0,0,.5); }
+.pn-idxworld { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 10px 12px; margin-bottom: 10px; border-radius: 0 14px 14px 14px; background: color-mix(in srgb, var(--wa, #4ea1ff) 35%, #151833); border: 2px solid var(--wa, #4ea1ff); }
+.pn-idxw-l { flex: 1; min-width: 0; }
+.pn-idxw-l .bar { margin-top: 6px; }
+.pn-claimed { font-weight: 800; color: #6dff8e; }
+.pn-idxreward { font-size: 13px; text-align: right; }
+.pn-idxworld .btn { min-height: 46px; flex: 0 0 auto; }
+.pn-note { margin: 0 0 8px; font-size: 13px; }
+.pn-idxgrid { display: grid; grid-template-columns: repeat(auto-fill, minmax(112px,1fr)); gap: 10px; }
+.pn-idx { text-align: center; border: 3px solid var(--rc); border-radius: 14px; padding: 6px 4px 8px; background: radial-gradient(circle at 50% 30%, color-mix(in srgb, var(--rc) 28%, #1b1e3a), #14172e 85%); min-width: 0; }
+.pn-idx img { width: 100%; aspect-ratio: 1; object-fit: contain; display: block; }
+.pn-idx.unk img { filter: brightness(0); opacity: .75; }
+.pn-idx-name { font-family: var(--font-d); font-size: 14px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.pn-idx.unk .pn-idx-name { color: var(--rc); letter-spacing: 2px; }
+.pn-idx-rar { font-size: 12px; font-weight: 800; color: var(--rc); }
+.pn-idx-cnt { font-size: 12px; opacity: .8; }
+@media (max-width: 520px) {
+  .pn-idxgrid { grid-template-columns: repeat(3, minmax(0,1fr)); gap: 8px; }
+  .pn-idxworld { flex-wrap: wrap; }
+  .pn-idxworld .btn { width: 100%; }
+  .pn-idxreward { text-align: left; width: 100%; }
+}
+
+/* ---------- shop ---------- */
+.pn-gembal { display: flex; align-items: center; gap: 10px; padding: 8px 14px; border-radius: 14px; background: rgba(0,0,0,.28); margin-bottom: 10px; }
+.pn-gembal span { font-size: 30px; }
+.pn-gembal b { font-family: var(--font-d); font-size: 24px; color: var(--gem, #5de0ff); }
+.pn-daily { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 14px; margin-bottom: 14px; border-radius: 18px; border: 3px solid rgba(255,255,255,.2); background: linear-gradient(135deg,#3b2f86,#5b3aa8); }
+.pn-daily.ready { border-color: #6dff8e; background: linear-gradient(135deg,#1f7a3d,#35b35f); box-shadow: 0 0 22px #6dff8e66; animation: pn-glow 1.6s ease-in-out infinite; }
+@keyframes pn-glow { 50% { box-shadow: 0 0 34px #6dff8eaa; } }
+.pn-daily-t { font-family: var(--font-d); font-size: 20px; }
+.pn-daily-r { font-family: var(--font-d); font-size: 20px; margin-top: 4px; }
+.pn-claimbtn { min-width: 120px; min-height: 56px !important; }
+.pn-timer { text-align: center; background: rgba(0,0,0,.3); padding: 8px 14px; border-radius: 12px; }
+.pn-timer b { font-family: var(--font-d); font-size: 22px; }
+.pn-shoplist { display: grid; gap: 10px; }
+.pn-item { display: grid; grid-template-columns: 54px minmax(0,1fr) 104px; gap: 12px; align-items: center; padding: 10px 12px; }
+.pn-item.done { opacity: .75; }
+.pn-item-ico { width: 54px; height: 54px; border-radius: 14px; background: linear-gradient(180deg,#38c8ff,#2b6fe0); display: grid; place-items: center; font-size: 30px; box-shadow: inset 0 -4px 0 rgba(0,0,0,.25); }
+.pn-item-name { font-family: var(--font-d); font-size: 17px; }
+.pn-item-desc { font-size: 13px; line-height: 1.25; }
+.pn-item-own { font-size: 13px; margin-top: 3px; }
+.pn-active { margin-top: 4px; font-weight: 800; color: #6dff8e; font-size: 13px; }
+.pn-active.off { display: none; }
+.pn-item-act { text-align: center; }
+.pn-info { margin-top: 14px; padding: 12px 14px; border-radius: 14px; background: rgba(78,161,255,.14); border: 2px solid rgba(78,161,255,.4); font-size: 14px; }
+.pn-info ul { margin: 6px 0 0; padding-left: 20px; }
+@media (max-width: 520px) {
+  .pn-item { grid-template-columns: 46px minmax(0,1fr) 88px; gap: 10px; }
+  .pn-item-ico { width: 46px; height: 46px; font-size: 25px; }
+  .pn-daily { flex-direction: column; align-items: stretch; text-align: center; }
+}
+
+/* ---------- settings ---------- */
+.pn-settings { display: grid; gap: 12px; }
+.pn-sec { padding: 12px 14px; }
+.pn-sec-t { margin: 0 0 10px; font-family: var(--font-d); font-size: 18px; }
+.pn-small { font-size: 12px; margin-top: 8px; }
+.pn-toggle { display: flex; width: 100%; align-items: center; justify-content: space-between; min-height: 48px; padding: 0 4px; margin-bottom: 4px; background: transparent; border: 0; color: inherit; font: inherit; font-weight: 700; cursor: pointer; }
+.pn-sw { width: 56px; height: 30px; border-radius: 999px; background: #55587a; position: relative; transition: background .15s; border: 2px solid rgba(0,0,0,.35); }
+.pn-sw i { position: absolute; top: 2px; left: 2px; width: 22px; height: 22px; border-radius: 50%; background: #fff; transition: transform .15s; box-shadow: 0 2px 0 rgba(0,0,0,.3); }
+.pn-toggle.on .pn-sw { background: #3ecf5a; }
+.pn-toggle.on .pn-sw i { transform: translateX(26px); }
+.pn-vol { display: flex; align-items: center; gap: 10px; min-height: 48px; font-weight: 700; }
+.pn-vol input { flex: 1; min-width: 0; height: 44px; accent-color: #4ea1ff; }
+.pn-vol b { min-width: 44px; text-align: right; font-family: var(--font-d); }
+.pn-saverow { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; }
+.pn-saverow .btn, .pn-sec > .btn { min-height: 44px; }
+.pn-sub { margin: 12px 0 6px; font-weight: 800; }
+.pn-ta { width: 100%; display: block; margin-bottom: 8px; resize: vertical; padding: 8px; border-radius: 10px; border: 2px solid rgba(255,255,255,.2); background: rgba(0,0,0,.35); color: #dfe6ff; font: 12px/1.3 ui-monospace, Consolas, monospace; word-break: break-all; }
+.pn-keys { display: grid; grid-template-columns: 1fr 1fr; gap: 4px 16px; }
+.pn-keyrow { display: flex; justify-content: space-between; gap: 8px; padding: 6px 0; border-bottom: 1px solid rgba(255,255,255,.1); font-size: 14px; }
+.pn-keyrow span { opacity: .75; }
+.pn-keyrow b { text-align: right; }
+.pn-statgrid { display: grid; grid-template-columns: repeat(auto-fit, minmax(110px,1fr)); gap: 8px; }
+.pn-statgrid > div { background: rgba(0,0,0,.28); border-radius: 12px; padding: 8px 10px; }
+.pn-statgrid b { font-family: var(--font-d); font-size: 18px; }
+@media (max-width: 520px) { .pn-keys { grid-template-columns: 1fr; } }
 
 </style>
 </head>
 <body>
-<canvas id="game-canvas"></canvas><div id="ui"></div><div id="loading">Loading…</div>
+<canvas id="game-canvas"></canvas>
+<div id="ui"></div>
+<div id="loading">
+  <div class="ld-bg"></div>
+  <div class="ld-center">
+    <div class="ld-claw" aria-hidden="true">
+      <div class="ld-cable"></div>
+      <div class="ld-hub"></div>
+      <div class="ld-arms"><i class="ld-arm l"></i><i class="ld-arm r"></i></div>
+      <div class="ld-prize">🧸</div>
+    </div>
+    <h1 class="ld-title"><span>CLAW</span><span>MACHINE</span><span>SIMULATOR</span></h1>
+    <div class="ld-bar"><i></i></div>
+    <div class="ld-sub">Loading prizes<b>.</b><b>.</b><b>.</b></div>
+    <div id="loading-msg"></div>
+  </div>
+</div>
+
+<script>
+// If the 3D engine (CDN) cannot be loaded the module never runs: tell the player instead of spinning forever.
+setTimeout(function () {
+  if (window.__cmsBooted) return;
+  var m = document.getElementById('loading-msg');
+  if (m && !m.textContent) m.textContent = 'Still loading… The game needs an internet connection the first time to download the 3D engine.';
+}, 12000);
+</script>
 <script type="importmap">{ "imports": { "three": "https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js" } }</script>
 <script type="module">
 /* ==== 00_core.js ==== */
@@ -525,6 +786,2705 @@ const SaveService = {
     try { localStorage.removeItem(this.KEY); localStorage.removeItem(this.BACKUP_KEY); } catch (e) { /* ignore */ }
   },
 };
+
+/* ==== 03_services.js ==== */
+/* =====================================================================
+   03_services.js — "server" rules: Remote (action dispatcher) + Services.
+   No DOM, no Three.js. Reads/writes Game.player, talks via Bus + return values.
+   ===================================================================== */
+
+/* ---------- private helpers ---------- */
+const _svPlays = {};            // playId -> { worldId, started }
+let _svLastRep = -1e9;             // performance.now() of last manual rep
+let _svAutoT = 0;               // auto-train accumulator
+let _svBoostLive = { luck: false, coins: false };
+
+function _svFail(err) { return { ok: false, err }; }
+function _svNow() { return (typeof performance !== 'undefined' && performance.now) ? performance.now() : Date.now(); }
+function _svP() { return Game.player; }
+function _svSave(reason) { Bus.emit('save:request', { reason }); }
+function _svToast(text, kind = 'info') { Bus.emit('toast', { text, kind }); }
+function _svCurrency() { const p = _svP(); Bus.emit('currency:changed', { coins: p.coins, gems: p.gems, strength: p.strength }); }
+function _svReward(coins, gems, strength, source) { Bus.emit('reward', { coins, gems, strength, source }); }
+function _svFloor(n) { return isNum(n) ? Math.max(0, n) : 0; }
+function _svWorld(id) { return WORLD_BY_ID[id || _svP().worlds.current]; }
+function _svMachine(worldId) {
+  const p = _svP();
+  let m = p.machines[worldId];
+  if (!isObj(m)) m = p.machines[worldId] = { pit: [], plays: 0 };
+  if (!Array.isArray(m.pit)) m.pit = [];
+  if (!isNum(m.plays)) m.plays = 0;
+  return m;
+}
+function _svPet(uid) { return _svP().pets.find((x) => x.uid === uid) || null; }
+function _svRarityOrder(id) { const r = RARITY_BY_ID[id]; return r ? r.order : 0; }
+function _svBoostItem(kind) { return GEM_SHOP.find((s) => s.kind === kind) || null; }
+function _svEquipSlots() { return ECONOMY.baseEquipSlots + _svP().shop.equipSlots; }
+function _svInvSlots() { return ECONOMY.baseInvSlots + _svP().shop.invSlots * ECONOMY.invSlotsPerPurchase; }
+function _svHighestOrder() {
+  const p = _svP();
+  let o = 0;
+  for (const id of p.worlds.unlocked) { const w = WORLD_BY_ID[id]; if (w && w.order > o) o = w.order; }
+  return o;
+}
+function _svMultOfPet(pet) {
+  const a = ANIMAL_BY_ID[pet.id], v = VARIANTS[pet.variant];
+  return (a ? a.mult : 1) * (v ? v.mult : 1);
+}
+function _svEmitEquip() { Bus.emit('equip:changed', { equipped: _svP().equipped.slice() }); }
+function _svPetsChanged() { Bus.emit('pets:changed', {}); }
+
+function _svUsableEquip(eq) {
+  const p = _svP();
+  return !!eq && p.worlds.unlocked.includes(eq.world) && p.strength >= eq.requires;
+}
+/** Returns the selected equipment if usable, else switches to the best usable one. */
+function _svResolveEquip() {
+  const p = _svP();
+  let eq = EQUIPMENT_BY_ID[p.training.selected];
+  if (_svUsableEquip(eq)) return eq;
+  let best = null;
+  for (const e of TRAINING_EQUIPMENT) if (_svUsableEquip(e) && (!best || e.power > best.power)) best = e;
+  if (best) p.training.selected = best.id;
+  return best;
+}
+
+function _svPickAnimal(worldId, rarityId, lowOnly) {
+  const inWorld = ANIMALS.filter((a) => a.world === worldId);
+  let list = inWorld.filter((a) => a.rarity === rarityId);
+  if (!list.length || (lowOnly && _svRarityOrder(rarityId) > 1)) list = inWorld.filter((a) => a.rarity === 'common');
+  if (!list.length) list = inWorld;
+  return list.length ? pick(list) : null;
+}
+
+function _svRollVariant(special) {
+  const vc = FORMULAS.variantChances(special);
+  if (Math.random() < vc.rainbow) return 'rainbow';
+  if (Math.random() < vc.golden) return 'golden';
+  return 'normal';
+}
+
+/* ---------- Remote ---------- */
+const Remote = {
+  handlers: {},
+  invoke(name, args = {}) {
+    const h = Remote.handlers[name];
+    if (typeof name !== 'string' || typeof h !== 'function' || !Object.prototype.hasOwnProperty.call(Remote.handlers, name)) return { ok: false, err: 'Unknown action' };
+    if (!isObj(args)) return { ok: false, err: 'Bad request' };
+    if (!Game.player) return { ok: false, err: 'No player data' };
+    try {
+      const r = h(args);
+      return r && typeof r === 'object' ? r : { ok: true };
+    } catch (e) {
+      console.error('[Remote]', name, e);
+      return { ok: false, err: 'Something went wrong' };
+    }
+  },
+};
+const _svH = Remote.handlers;
+
+/* ---------- claw ---------- */
+_svH['claw:start'] = () => {
+  const p = _svP();
+  const w = _svWorld();
+  if (!w) return _svFail('Unknown world');
+  const cost = w.playCost || 0;
+  if (p.coins < cost) return _svFail('Not enough coins');
+  p.coins -= cost;
+  p.stats.plays++;
+  _svMachine(w.id).plays++;
+  const playId = uid('play');
+  _svPlays[playId] = { worldId: w.id, started: Date.now() };
+  const keys = Object.keys(_svPlays);
+  if (keys.length > 24) for (const k of keys.slice(0, keys.length - 24)) delete _svPlays[k];
+  _svCurrency();
+  return { ok: true, playId, cost };
+};
+
+_svH['claw:grip'] = (a) => {
+  const p = _svP();
+  const w = _svWorld();
+  const entry = _svMachine(w.id).pit.find((e) => e.pid === a.pid);
+  if (!entry) return _svFail('That animal is gone');
+  const alignment = clamp(isNum(a.alignment) ? a.alignment : 0, 0, 1);
+  const st = Services.stats();
+  const weight = FORMULAS.animalWeight(entry.id, entry.variant);
+  const ch = FORMULAS.gripChance({ power: st.gripPower, weight, alignment });
+  const success = Math.random() < ch;
+  let slipAfter;
+  if (success) {
+    const rate = FORMULAS.slipRate({ protection: st.protection, weight });
+    if (!(rate > 0)) slipAfter = null;
+    else {
+      const t = -Math.log(1 - Math.random()) / rate;
+      slipAfter = t > ECONOMY.carryTime ? null : Math.max(0.35, t);
+    }
+  } else slipAfter = randRange(0.15, 0.8);
+  return { ok: true, success, chance: ch, slipAfter };
+};
+
+_svH['claw:prize'] = (a) => {
+  const p = _svP();
+  const w = _svWorld();
+  const m = _svMachine(w.id);
+  const idx = m.pit.findIndex((e) => e.pid === a.pid);
+  if (idx < 0) return _svFail('That animal is gone');
+  const entry = m.pit.splice(idx, 1)[0];
+  Bus.emit('pit:remove', { worldId: w.id, pid: entry.pid });
+  const animal = ANIMAL_BY_ID[entry.id];
+  const st = Services.stats();
+  const pet = { uid: uid('p'), id: entry.id, variant: entry.variant, locked: false, t: Date.now() };
+  let soldForCoins = 0, added = false;
+  if (p.pets.length >= st.invSlots) {
+    soldForCoins = Math.max(0, Math.floor(FORMULAS.sellValue(entry.id, entry.variant)));
+    p.coins += soldForCoins;
+    _svToast('Inventory full! Sold ' + animal.name + ' for ' + fmt(soldForCoins) + ' coins', 'bad');
+  } else { p.pets.push(pet); added = true; }
+  const coins = FORMULAS.catchCoins({ animalId: entry.id, variant: entry.variant, coinMult: st.coinMult });
+  let gems = 0;
+  if (Math.random() < FORMULAS.catchGemChance({ animalId: entry.id, variant: entry.variant, gemFinder: st.gemFinder })) gems = FORMULAS.catchGems(entry.id);
+  p.coins += coins;
+  p.gems += gems;
+  const prev = p.discovered[entry.id] || 0;
+  p.discovered[entry.id] = prev + 1;
+  const isNew = prev === 0;
+  let discoverGems = 0;
+  if (isNew) { discoverGems = RARITY_BY_ID[animal.rarity].discoverGems || 0; p.gems += discoverGems; }
+  p.stats.wins++;
+  p.stats.coinsEarned += coins + soldForCoins;
+  if (!p.stats.bestRarity || _svRarityOrder(animal.rarity) > _svRarityOrder(p.stats.bestRarity)) p.stats.bestRarity = animal.rarity;
+  if (added) Bus.emit('pet:added', { pet, animal, isNew });
+  _svPetsChanged();
+  _svReward(coins + soldForCoins, gems, 0, 'catch');
+  if (discoverGems > 0) _svReward(0, discoverGems, 0, 'discover');
+  _svCurrency();
+  if (RARITY_BY_ID[animal.rarity].reveal || entry.variant !== 'normal' || isNew) Bus.emit('reveal', { pet, animal, isNew });
+  _svSave('prize');
+  Services.ensurePit(w.id);
+  return { ok: true, pet, animal, coins, gems: gems + discoverGems, isNew, soldForCoins };
+};
+
+_svH['claw:end'] = (a) => {
+  const p = _svP();
+  if (!isStr(a.playId) || !_svPlays[a.playId]) return _svFail('Unknown play');
+  if (!['miss', 'slip', 'empty', 'win'].includes(a.result)) return _svFail('Bad result');
+  if (a.result === 'miss') p.stats.misses++;
+  else if (a.result === 'slip') p.stats.slips++;
+  delete _svPlays[a.playId];
+  return { ok: true };
+};
+
+/* ---------- upgrades ---------- */
+_svH['upgrade:buy'] = (a) => {
+  const p = _svP();
+  const up = UPGRADE_BY_ID[a.id];
+  if (!up) return _svFail('Unknown upgrade');
+  if (!p.worlds.unlocked.includes(up.world)) { const w = WORLD_BY_ID[up.world]; return _svFail('Unlock ' + (w ? w.name : 'the world') + ' first'); }
+  const level = p.upgrades[up.id] || 0;
+  if (level >= up.maxLevel) return _svFail('Max level');
+  if (level >= FORMULAS.upgradeCap(up.id, p.worlds.unlocked.length)) return _svFail('Unlock the next world to upgrade further');
+  const cost = FORMULAS.upgradeCost(up.id, level);
+  const cur = up.currency === 'gems' ? 'gems' : 'coins';
+  if (p[cur] < cost) return _svFail('Not enough ' + cur);
+  p[cur] -= cost;
+  p.upgrades[up.id] = level + 1;
+  Bus.emit('upgrade:bought', { id: up.id, level: level + 1 });
+  _svCurrency();
+  _svSave('upgrade');
+  if (up.id === 'capacity') Services.ensurePit(p.worlds.current);
+  return { ok: true, level: level + 1, cost };
+};
+
+/* ---------- pets ---------- */
+_svH['pet:equip'] = (a) => {
+  const p = _svP();
+  const pet = _svPet(a.uid);
+  if (!pet) return _svFail('Pet not found');
+  if (p.equipped.includes(pet.uid)) return _svFail('Already equipped');
+  if (p.equipped.length >= _svEquipSlots()) return _svFail('All pet slots are full');
+  p.equipped.push(pet.uid);
+  _svEmitEquip(); _svPetsChanged(); _svSave('equip');
+  return { ok: true };
+};
+_svH['pet:unequip'] = (a) => {
+  const p = _svP();
+  const i = p.equipped.indexOf(a.uid);
+  if (i < 0) return _svFail('Not equipped');
+  p.equipped.splice(i, 1);
+  _svEmitEquip(); _svPetsChanged(); _svSave('equip');
+  return { ok: true };
+};
+_svH['pet:equipBest'] = () => {
+  const p = _svP();
+  p.equipped = Services.petsSorted('mult').slice(0, _svEquipSlots()).map((x) => x.uid);
+  _svEmitEquip(); _svPetsChanged(); _svSave('equip');
+  return { ok: true };
+};
+_svH['pet:unequipAll'] = () => {
+  const p = _svP();
+  p.equipped = [];
+  _svEmitEquip(); _svPetsChanged(); _svSave('equip');
+  return { ok: true };
+};
+_svH['pet:lock'] = (a) => {
+  const pet = _svPet(a.uid);
+  if (!pet) return _svFail('Pet not found');
+  pet.locked = !!a.locked;
+  _svPetsChanged(); _svSave('lock');
+  return { ok: true };
+};
+_svH['pet:sell'] = (a) => {
+  const p = _svP();
+  const pet = _svPet(a.uid);
+  if (!pet) return _svFail('Pet not found');
+  if (pet.locked) return _svFail('Unlock this pet first');
+  if (p.equipped.includes(pet.uid)) return _svFail('Unequip this pet first');
+  const coins = Math.max(0, Math.floor(FORMULAS.sellValue(pet.id, pet.variant)));
+  p.pets.splice(p.pets.indexOf(pet), 1);
+  p.coins += coins;
+  _svPetsChanged(); _svReward(coins, 0, 0, 'sell'); _svCurrency(); _svSave('sell');
+  return { ok: true, coins };
+};
+_svH['pet:sellBulk'] = (a) => {
+  const p = _svP();
+  if (!RARITY_BY_ID[a.rarity]) return _svFail('Unknown rarity');
+  let coins = 0, count = 0;
+  const keep = [];
+  for (const pet of p.pets) {
+    const an = ANIMAL_BY_ID[pet.id];
+    if (an && an.rarity === a.rarity && !pet.locked && !p.equipped.includes(pet.uid)) {
+      coins += Math.max(0, Math.floor(FORMULAS.sellValue(pet.id, pet.variant)));
+      count++;
+    } else keep.push(pet);
+  }
+  if (!count) return _svFail('Nothing to sell');
+  p.pets = keep;
+  p.coins += coins;
+  _svPetsChanged(); _svReward(coins, 0, 0, 'sell'); _svCurrency(); _svSave('sell');
+  return { ok: true, coins, count };
+};
+_svH['pet:evolve'] = (a) => {
+  const p = _svP();
+  const pet = _svPet(a.uid);
+  if (!pet) return _svFail('Pet not found');
+  const info = Services.evolveInfo(a.uid);
+  if (!info.next) return _svFail('Already max evolution');
+  if (pet.locked) return _svFail('Unlock this pet first');
+  if (!info.can) return _svFail('Need ' + info.need + ' of the same pet (have ' + info.have + ')');
+  const same = p.pets.filter((x) => x !== pet && x.id === pet.id && x.variant === pet.variant && !x.locked);
+  same.sort((x, y) => (p.equipped.includes(x.uid) ? 1 : 0) - (p.equipped.includes(y.uid) ? 1 : 0));
+  const used = [pet].concat(same.slice(0, info.need - 1));
+  const ids = new Set(used.map((x) => x.uid));
+  p.pets = p.pets.filter((x) => !ids.has(x.uid));
+  const oldEq = p.equipped.length;
+  p.equipped = p.equipped.filter((u) => !ids.has(u));
+  const np = { uid: uid('p'), id: pet.id, variant: info.next, locked: false, t: Date.now() };
+  p.pets.push(np);
+  const animal = ANIMAL_BY_ID[np.id];
+  Bus.emit('pet:added', { pet: np, animal, isNew: false });
+  Bus.emit('reveal', { pet: np, animal, isNew: false });
+  _svPetsChanged();
+  if (p.equipped.length !== oldEq) _svEmitEquip();
+  _svSave('evolve');
+  return { ok: true, pet: np };
+};
+
+/* ---------- training ---------- */
+_svH['train:select'] = (a) => {
+  const p = _svP();
+  const eq = EQUIPMENT_BY_ID[a.id];
+  if (!eq) return _svFail('Unknown equipment');
+  if (!p.worlds.unlocked.includes(eq.world)) return _svFail('Unlock ' + (WORLD_BY_ID[eq.world] ? WORLD_BY_ID[eq.world].name : 'the world') + ' first');
+  if (p.strength < eq.requires) return _svFail('Need ' + fmt(eq.requires) + ' strength');
+  p.training.selected = eq.id;
+  _svSave('train-select');
+  return { ok: true };
+};
+function _svRep(auto) {
+  const p = _svP();
+  const eq = _svResolveEquip();
+  if (!eq) return _svFail('No usable equipment');
+  const gain0 = FORMULAS.trainGain({ equipmentId: eq.id, trainMult: Services.stats().trainMult });
+  const gain = auto ? gain0 * ECONOMY.autoTrainFactor : gain0;
+  p.strength += gain;
+  p.stats.reps++;
+  Bus.emit('train:rep', { gain, auto: !!auto });
+  _svReward(0, 0, gain, 'train');
+  _svCurrency();
+  return { ok: true, gain };
+}
+_svH['train:rep'] = (a) => {
+  const auto = !!a.auto;
+  if (!auto) {
+    const now = _svNow();
+    if (now - _svLastRep < ECONOMY.repCooldown * 1000) return { ok: false, err: '' };
+    _svLastRep = now;
+  }
+  return _svRep(auto);
+};
+_svH['train:auto'] = (a) => {
+  const p = _svP();
+  if (!p.shop.autoTrain) return _svFail('Buy Auto Train in the shop first');
+  p.training.auto = !!a.on;
+  _svSave('train-auto');
+  return { ok: true };
+};
+
+/* ---------- worlds ---------- */
+_svH['world:unlock'] = (a) => {
+  const p = _svP();
+  const w = WORLD_BY_ID[a.id];
+  if (!w) return _svFail('Unknown world');
+  if (p.worlds.unlocked.includes(w.id)) return _svFail('Already unlocked');
+  const c = Services.canUnlockWorld(w.id);
+  if (!c.prevUnlocked) return _svFail('Unlock the previous world first');
+  if (p.strength < c.needStrength) return _svFail('Need ' + fmt(c.needStrength) + ' strength');
+  if (p.coins < c.needCoins) return _svFail('Not enough coins');
+  p.coins -= c.needCoins;
+  p.worlds.unlocked.push(w.id);
+  _svMachine(w.id);
+  Bus.emit('world:unlocked', { id: w.id });
+  _svToast('Unlocked ' + w.name + '!', 'good');
+  _svCurrency(); _svSave('world-unlock');
+  return { ok: true };
+};
+_svH['world:travel'] = (a) => {
+  const p = _svP();
+  const w = WORLD_BY_ID[a.id];
+  if (!w) return _svFail('Unknown world');
+  if (!p.worlds.unlocked.includes(w.id)) return _svFail('World is locked');
+  p.worlds.current = w.id;
+  _svMachine(w.id);
+  _svResolveEquip();
+  Bus.emit('world:changed', { id: w.id });
+  _svSave('world-travel');
+  return { ok: true };
+};
+
+/* ---------- shop ---------- */
+_svH['shop:buy'] = (a) => {
+  const p = _svP();
+  const item = GEM_SHOP.find((s) => s.id === a.id);
+  if (!item) return _svFail('Unknown item');
+  const now = Date.now();
+  let n = 0, max = Infinity;
+  if (item.kind === 'equipSlot') { n = p.shop.equipSlots; max = Math.min(isNum(item.max) ? item.max : Infinity, ECONOMY.maxEquipSlots - ECONOMY.baseEquipSlots); }
+  else if (item.kind === 'invSlots') { n = p.shop.invSlots; if (isNum(item.max)) max = item.max; }
+  else if (item.kind === 'autoTrain') { n = p.shop.autoTrain ? 1 : 0; max = 1; }
+  else if (item.kind !== 'boostLuck' && item.kind !== 'boostCoins') return _svFail('Unknown item');
+  if (n >= max) return _svFail('Sold out');
+  const cost = Array.isArray(item.cost) ? item.cost[Math.min(n, item.cost.length - 1)] : item.cost;
+  if (!isNum(cost)) return _svFail('Unavailable');
+  if (p.gems < cost) return _svFail('Not enough gems');
+  p.gems -= cost;
+  if (item.kind === 'equipSlot') p.shop.equipSlots++;
+  else if (item.kind === 'invSlots') p.shop.invSlots++;
+  else if (item.kind === 'autoTrain') p.shop.autoTrain = true;
+  else {
+    const key = item.kind === 'boostLuck' ? 'luck' : 'coins';
+    p.boosts[key] = Math.max(now, p.boosts[key] || 0) + (item.duration || 0) * 1000;
+    _svBoostLive[key] = true;
+  }
+  Bus.emit('shop:bought', { id: item.id });
+  _svCurrency();
+  if (item.kind === 'equipSlot' || item.kind === 'invSlots') _svPetsChanged();
+  _svSave('shop');
+  return { ok: true };
+};
+
+/* ---------- rewards ---------- */
+_svH['index:claim'] = (a) => {
+  const p = _svP();
+  const w = WORLD_BY_ID[a.worldId];
+  if (!w) return _svFail('Unknown world');
+  if (p.indexClaimed[w.id]) return _svFail('Already claimed');
+  const all = ANIMALS.filter((x) => x.world === w.id);
+  if (!all.length || !all.every((x) => (p.discovered[x.id] || 0) > 0)) return _svFail('Discover every animal first');
+  p.indexClaimed[w.id] = true;
+  const gems = w.indexReward || 0;
+  p.gems += gems;
+  Bus.emit('index:claimed', { worldId: w.id, gems });
+  _svReward(0, gems, 0, 'index');
+  _svCurrency(); _svSave('index');
+  return { ok: true, gems };
+};
+_svH['daily:claim'] = () => {
+  const p = _svP();
+  const d = Services.dailyInfo();
+  if (!d.ready) return _svFail('Come back in ' + fmtDur(d.secondsLeft));
+  p.daily.streak = d.streak;
+  p.daily.last = Date.now();
+  p.gems += d.gems;
+  p.coins += d.coins;
+  Bus.emit('daily:claimed', { gems: d.gems, coins: d.coins });
+  _svReward(d.coins, d.gems, 0, 'daily');
+  _svCurrency(); _svSave('daily');
+  return { ok: true, gems: d.gems, coins: d.coins };
+};
+_svH['settings:set'] = (a) => {
+  const p = _svP();
+  let v = a.value;
+  if (a.key === 'quality') { if (!['auto', 'low', 'medium', 'high'].includes(v)) return _svFail('Bad value'); }
+  else if (a.key === 'sound' || a.key === 'music') { if (typeof v !== 'boolean') return _svFail('Bad value'); }
+  else if (a.key === 'volume') { if (!isNum(v)) return _svFail('Bad value'); v = clamp(v, 0, 1); }
+  else return _svFail('Unknown setting');
+  p.settings[a.key] = v;
+  Bus.emit('settings:changed', { key: a.key, value: v });
+  _svSave('settings');
+  return { ok: true };
+};
+
+/* ---------- Services ---------- */
+const Services = {
+  stats() {
+    const p = _svP();
+    const F = FORMULAS;
+    const lv = (id) => p.upgrades[id] || 0;
+    const uv = (id) => F.upgradeValue(id, lv(id));
+    const now = Date.now();
+    const w = _svWorld() || WORLDS[0];
+    const eqPets = [];
+    for (const u of p.equipped) { const pet = _svPet(u); if (pet) eqPets.push(_svMultOfPet(pet)); }
+    const petMult = F.petMultiplier(eqPets);
+    const lb = _svBoostItem('boostLuck'), cb = _svBoostItem('boostCoins');
+    const luckBoost = p.boosts.luck > now && lb ? (lb.mult || 1) : 1;
+    const coinBoost = p.boosts.coins > now && cb ? (cb.mult || 1) : 1;
+    return {
+      gripPower: uv('strength') + F.strengthGripBonus(p.strength),
+      protection: uv('protection'),
+      clawSpeed: uv('speed'),
+      capacity: Math.min(uv('capacity'), ECONOMY.pitMax),
+      luck: uv('luck') * luckBoost,
+      special: uv('special'),
+      gemFinder: uv('gemFinder'),
+      petMult,
+      coinMult: petMult * uv('coinMagnet') * uv('cosmic') * F.strengthCoinBonus(p.strength) * w.rewardMult * coinBoost,
+      trainMult: petMult * uv('trainer') * uv('cosmic') * w.trainMult,
+      equipSlots: _svEquipSlots(),
+      invSlots: _svInvSlots(),
+    };
+  },
+  petMultOf(pet) { return pet ? _svMultOfPet(pet) : 1; },
+  petsSorted(mode) {
+    const arr = _svP().pets.slice();
+    const m = (x) => _svMultOfPet(x);
+    const ro = (x) => { const a = ANIMAL_BY_ID[x.id]; return a ? _svRarityOrder(a.rarity) : 0; };
+    if (mode === 'rarity') arr.sort((a, b) => ro(b) - ro(a) || m(b) - m(a));
+    else if (mode === 'new') arr.sort((a, b) => b.t - a.t);
+    else arr.sort((a, b) => m(b) - m(a) || b.t - a.t);
+    return arr;
+  },
+  ensurePit(worldId) {
+    const p = _svP();
+    const w = WORLD_BY_ID[worldId];
+    const out = [];
+    if (!w) return out;
+    const st = Services.stats();
+    const cap = Math.min(Math.floor(st.capacity), ECONOMY.pitMax);
+    const m = _svMachine(w.id);
+    const isLow = (e) => { const a = ANIMAL_BY_ID[e.id]; return a && _svRarityOrder(a.rarity) <= 1; };
+    while (m.pit.length < cap) {
+      const remaining = cap - m.pit.length;
+      const lowNow = m.pit.filter(isLow).length;
+      const forceLow = cap >= 6 && lowNow + remaining <= 2;
+      let rid = weightedPick(FORMULAS.rarityWeights(w.id, st.luck, st.special)) || 'common';
+      if (forceLow && _svRarityOrder(rid) > 1) rid = Math.random() < 0.7 ? 'common' : 'uncommon';
+      const animal = _svPickAnimal(w.id, rid, forceLow);
+      if (!animal) break;
+      const entry = { pid: uid('a'), id: animal.id, variant: _svRollVariant(st.special) };
+      m.pit.push(entry);
+      out.push(entry);
+      Bus.emit('pit:spawn', { worldId: w.id, entry });
+    }
+    return out;
+  },
+  previewGrip(pid, alignment) {
+    const p = _svP();
+    const m = p.machines[p.worlds.current];
+    const entry = m && m.pit.find((e) => e.pid === pid);
+    if (!entry) return 0;
+    return FORMULAS.gripChance({ power: Services.stats().gripPower, weight: FORMULAS.animalWeight(entry.id, entry.variant), alignment: clamp(isNum(alignment) ? alignment : 0, 0, 1) });
+  },
+  canUnlockWorld(id) {
+    const p = _svP();
+    const w = WORLD_BY_ID[id];
+    if (!w) return { ok: false, needStrength: 0, needCoins: 0, prevUnlocked: false };
+    const idx = WORLDS.indexOf(w);
+    const prevUnlocked = idx <= 0 || p.worlds.unlocked.includes(WORLDS[idx - 1].id);
+    const needStrength = w.unlock.strength || 0, needCoins = w.unlock.coins || 0;
+    const already = p.worlds.unlocked.includes(w.id);
+    return { ok: !already && prevUnlocked && p.strength >= needStrength && p.coins >= needCoins, needStrength, needCoins, prevUnlocked, unlocked: already };
+  },
+  evolveInfo(uid) {
+    const p = _svP();
+    const need = ECONOMY.evolveCount;
+    const pet = _svPet(uid);
+    if (!pet) return { can: false, have: 0, need, next: null };
+    const next = pet.variant === 'normal' ? 'golden' : pet.variant === 'golden' ? 'rainbow' : null;
+    const have = p.pets.filter((x) => x.id === pet.id && x.variant === pet.variant && !x.locked).length;
+    return { can: !!next && !pet.locked && have >= need, have, need, next };
+  },
+  nextGoal() {
+    const p = _svP();
+    const next = WORLDS.find((w) => !p.worlds.unlocked.includes(w.id));
+    if (next) {
+      const s = next.unlock.strength || 0, c = next.unlock.coins || 0;
+      const parts = [], ratios = [];
+      if (s > 0) { parts.push('💪 ' + fmt(p.strength) + ' / ' + fmt(s)); ratios.push(Math.min(1, p.strength / s)); }
+      if (c > 0) { parts.push('🪙 ' + fmt(p.coins) + ' / ' + fmt(c)); ratios.push(Math.min(1, p.coins / c)); }
+      const progress = ratios.length ? ratios.reduce((x, y) => x + y, 0) / ratios.length : 1;
+      return { text: 'Unlock ' + next.name + (parts.length ? ': ' + parts.join(' · ') : ''), progress: clamp(progress, 0, 1) };
+    }
+    const total = ANIMALS.length;
+    const got = ANIMALS.filter((a) => (p.discovered[a.id] || 0) > 0).length;
+    return { text: 'Complete the Animal Index: ' + got + ' / ' + total, progress: total ? got / total : 1 };
+  },
+  dailyInfo() {
+    const p = _svP();
+    const D = ECONOMY.daily;
+    const cd = D.cooldownHours * 3600 * 1000;
+    const now = Date.now();
+    const since = now - p.daily.last;
+    const ready = p.daily.last <= 0 || since >= cd;
+    const secondsLeft = ready ? 0 : Math.ceil((cd - since) / 1000);
+    let streak = p.daily.streak || 0;
+    if (ready) streak = p.daily.last > 0 && since <= cd * 2 ? streak + 1 : 1;
+    const day = Math.max(0, Math.min(streak - 1, D.gems.length - 1));
+    return { ready, secondsLeft, streak, gems: D.gems[day], coins: D.coins * (_svHighestOrder() + 1) };
+  },
+  tick(dt) {
+    const p = _svP();
+    if (!p || !isNum(dt) || dt <= 0) return;
+    p.stats.playTime += dt;
+    if (p.training.auto && p.shop.autoTrain) {
+      _svAutoT += dt;
+      let guard = 0;
+      while (_svAutoT >= ECONOMY.autoTrainInterval && guard++ < 5) { _svAutoT -= ECONOMY.autoTrainInterval; _svRep(true); }
+      if (_svAutoT > ECONOMY.autoTrainInterval) _svAutoT = 0;
+    } else _svAutoT = 0;
+    const now = Date.now();
+    for (const [key, label] of [['luck', 'Luck boost ended'], ['coins', 'Coin boost ended']]) {
+      const exp = p.boosts[key] || 0;
+      if (exp > now) _svBoostLive[key] = true;
+      else if (_svBoostLive[key] || exp > 0) {
+        _svBoostLive[key] = false;
+        if (exp > 0) p.boosts[key] = 0;
+        _svToast(label, 'info');
+      }
+    }
+  },
+  debugGrant(g) {
+    const p = _svP();
+    g = isObj(g) ? g : {};
+    if (isNum(g.coins)) p.coins = _svFloor(p.coins + g.coins);
+    if (isNum(g.gems)) p.gems = _svFloor(p.gems + g.gems);
+    if (isNum(g.strength)) p.strength = _svFloor(p.strength + g.strength);
+    _svCurrency();
+  },
+};
+
+/* ==== 08_fx.js ==== */
+/* =====================================================================
+   08_fx.js — 3D + screen effects (particles, rings, confetti, float text,
+   fly-to-HUD icons, flash, camera shake). Public: FX. Private prefix: _fx.
+   ===================================================================== */
+
+const _fxCap = 1500;
+const _fxVert = `
+attribute vec3 aColor;
+attribute float aSize;
+attribute float aAlpha;
+uniform float uScale;
+varying vec3 vColor;
+varying float vAlpha;
+void main() {
+  vColor = aColor;
+  vAlpha = aAlpha;
+  vec4 mv = modelViewMatrix * vec4(position, 1.0);
+  float d = max(0.1, -mv.z);
+  gl_PointSize = clamp(aSize * uScale / d, 0.0, 192.0);
+  gl_Position = projectionMatrix * mv;
+}`;
+const _fxFrag = `
+varying vec3 vColor;
+varying float vAlpha;
+void main() {
+  vec2 p = gl_PointCoord - 0.5;
+  float d = length(p) * 2.0;
+  float a = smoothstep(1.0, 0.15, d);
+  float core = smoothstep(0.45, 0.0, d);
+  gl_FragColor = vec4(vColor + core * 0.6, a * vAlpha);
+  #include <tonemapping_fragment>
+  #include <colorspace_fragment>
+}`;
+
+const _fxIcons = { coins: '🪙', gems: '💎', strength: '💪' };
+const _fxTargets = { coins: '#hud-coins', gems: '#hud-gems', strength: '#hud-strength' };
+const _fxConfettiColors = ['#ff4d6d', '#ffd23f', '#3fd0ff', '#6bff6b', '#c77dff', '#ff9f1c', '#ffffff', '#ff6bd6'];
+
+/* internal state (plain data, no side effects) */
+const _fxS = {
+  ready: false,
+  layer: null, flashEl: null,
+  // particles
+  points: null, geo: null, mat: null,
+  pos: null, col: null, size: null, alpha: null,
+  vel: new Float32Array(_fxCap * 3),
+  grav: new Float32Array(_fxCap),
+  drag: new Float32Array(_fxCap),
+  ttl: new Float32Array(_fxCap),
+  maxLife: new Float32Array(_fxCap),
+  baseSize: new Float32Array(_fxCap),
+  baseAlpha: new Float32Array(_fxCap),
+  kind: new Uint8Array(_fxCap),
+  phase: new Float32Array(_fxCap),
+  next: 0, alive: 0, dirty: false,
+  time: 0,
+  // rings
+  rings: [], ringNext: 0,
+  // float texts
+  texts: [],
+  // icons
+  icons: [],
+  bumpTimers: new Map(),
+  lastCoinSfx: 0,
+  // confetti
+  cCanvas: null, cCtx: null, pieces: [], cW: 0, cH: 0,
+  // flash
+  flashT: 0, flashDur: 0.35, flashStr: 0,
+  // shake
+  shakeAmt: 0,
+  // misc
+  trainN: 0, repN: 0,
+  col3: null, v3: null, v3b: null, v2: null,
+};
+
+function _fxRand(a, b) { return a + Math.random() * (b - a); }
+
+function _fxCamOk() {
+  return _fxS.ready && typeof Scene3D !== 'undefined' && Scene3D && Scene3D.camera;
+}
+function _fxPresetScale() {
+  const p = (typeof Scene3D !== 'undefined' && Scene3D && Scene3D.preset) ? Scene3D.preset.particles : 1;
+  return isNum(p) ? clamp(p, 0, 1) : 1;
+}
+function _fxCount(n) {
+  const p = _fxPresetScale();
+  if (p <= 0) return 0;
+  return Math.max(1, Math.round(n * p));
+}
+function _fxToScreen(v3) {
+  if (typeof Scene3D === 'undefined' || !Scene3D.toScreen) return null;
+  return Scene3D.toScreen(v3);
+}
+
+function _fxEmit(x, y, z, vx, vy, vz, c, size, life, grav, drag, kind, alpha) {
+  const s = _fxS;
+  const i = s.next;
+  s.next = (i + 1) % _fxCap;
+  const k = i * 3;
+  s.pos[k] = x; s.pos[k + 1] = y; s.pos[k + 2] = z;
+  s.vel[k] = vx; s.vel[k + 1] = vy; s.vel[k + 2] = vz;
+  s.col[k] = c.r; s.col[k + 1] = c.g; s.col[k + 2] = c.b;
+  s.grav[i] = grav; s.drag[i] = drag;
+  s.ttl[i] = life; s.maxLife[i] = life;
+  s.baseSize[i] = size; s.size[i] = size;
+  s.baseAlpha[i] = alpha; s.alpha[i] = alpha;
+  s.kind[i] = kind;
+  s.phase[i] = Math.random() * TAU;
+  s.dirty = true;
+}
+
+function _fxParseColor(color) {
+  const c = _fxS.col3;
+  try { c.set(color == null ? '#ffffff' : color); } catch (e) { c.set('#ffffff'); }
+  return c;
+}
+
+function _fxPosXYZ(pos) {
+  return pos && isNum(pos.x) ? pos : _fxS.v3.set(0, 1, 0);
+}
+
+function _fxAcquireRingMesh() {
+  const geo = new THREE.RingGeometry(0.82, 1, 48, 1);
+  geo.rotateX(-Math.PI / 2);
+  const mat = new THREE.MeshBasicMaterial({
+    color: 0xffffff, transparent: true, opacity: 0, side: THREE.DoubleSide,
+    blending: THREE.AdditiveBlending, depthWrite: false, toneMapped: false,
+  });
+  const mesh = new THREE.Mesh(geo, mat);
+  mesh.visible = false;
+  mesh.frustumCulled = false;
+  mesh.renderOrder = 20;
+  return mesh;
+}
+
+function _fxBump(el) {
+  if (!el) return;
+  const t = _fxS.bumpTimers.get(el);
+  if (t) clearTimeout(t);
+  el.classList.remove('bump');
+  void el.offsetWidth;
+  el.classList.add('bump');
+  _fxS.bumpTimers.set(el, setTimeout(() => { el.classList.remove('bump'); _fxS.bumpTimers.delete(el); }, 250));
+}
+
+function _fxHeadPos(out) {
+  if (typeof Player !== 'undefined' && Player && Player.getHeadWorldPos) {
+    try { return Player.getHeadWorldPos(out); } catch (e) { /* ignore */ }
+  }
+  return null;
+}
+function _fxChutePos(out) {
+  if (typeof Machines !== 'undefined' && Machines && Machines.active && Machines.active.getChuteWorldPos) {
+    try { const p = Machines.active.getChuteWorldPos(); if (p) return out.copy(p); } catch (e) { /* ignore */ }
+  }
+  return null;
+}
+function _fxMachineTop(out) {
+  return toWorldMachine(out.set(0, MACHINE_DIMS.glassTop, 0), out);
+}
+function _fxCenter() {
+  return { x: window.innerWidth / 2, y: window.innerHeight * 0.5 };
+}
+
+/* ------------------------------------------------------------------ */
+
+const FX = {
+  shakeOffset: new THREE.Vector3(),
+
+  init() {
+    const s = _fxS;
+    if (s.ready) return;
+    s.col3 = new THREE.Color();
+    s.v3 = new THREE.Vector3();
+    s.v3b = new THREE.Vector3();
+    s.v2 = new THREE.Vector2();
+
+    /* (a) particle system */
+    s.pos = new Float32Array(_fxCap * 3);
+    s.col = new Float32Array(_fxCap * 3);
+    s.size = new Float32Array(_fxCap);
+    s.alpha = new Float32Array(_fxCap);
+    const geo = new THREE.BufferGeometry();
+    geo.setAttribute('position', new THREE.BufferAttribute(s.pos, 3).setUsage(THREE.DynamicDrawUsage));
+    geo.setAttribute('aColor', new THREE.BufferAttribute(s.col, 3).setUsage(THREE.DynamicDrawUsage));
+    geo.setAttribute('aSize', new THREE.BufferAttribute(s.size, 1).setUsage(THREE.DynamicDrawUsage));
+    geo.setAttribute('aAlpha', new THREE.BufferAttribute(s.alpha, 1).setUsage(THREE.DynamicDrawUsage));
+    geo.boundingSphere = new THREE.Sphere(new THREE.Vector3(), 1e6);
+    const mat = new THREE.ShaderMaterial({
+      uniforms: { uScale: { value: 600 } },
+      vertexShader: _fxVert, fragmentShader: _fxFrag,
+      transparent: true, depthWrite: false, depthTest: true,
+      blending: THREE.AdditiveBlending,
+    });
+    const pts = new THREE.Points(geo, mat);
+    pts.frustumCulled = false;
+    pts.renderOrder = 30;
+    s.geo = geo; s.mat = mat; s.points = pts;
+    if (typeof Scene3D !== 'undefined' && Scene3D && Scene3D.scene) Scene3D.scene.add(pts);
+
+    /* (c) ring pool */
+    for (let i = 0; i < 6; i++) {
+      const mesh = _fxAcquireRingMesh();
+      if (typeof Scene3D !== 'undefined' && Scene3D && Scene3D.scene) Scene3D.scene.add(mesh);
+      s.rings.push({ mesh, t: 0, dur: 0.7, active: false, delay: 0, size: 1.6 });
+    }
+
+    /* (b) DOM layer */
+    let layer = document.getElementById('fx-layer');
+    if (!layer) {
+      layer = document.createElement('div');
+      layer.id = 'fx-layer';
+      document.body.appendChild(layer);
+    }
+    layer.style.cssText = 'position:fixed;left:0;top:0;right:0;bottom:0;pointer-events:none;z-index:40;overflow:hidden;';
+    s.layer = layer;
+    const fl = document.createElement('div');
+    fl.style.cssText = 'position:absolute;inset:0;opacity:0;pointer-events:none;';
+    layer.appendChild(fl);
+    s.flashEl = fl;
+
+    s.ready = true;
+    FX._subscribe();
+  },
+
+  /* ---------------- 3D particles ---------------- */
+  burst(pos, color, count = 24, opts) {
+    if (!_fxS.ready) return;
+    const n = _fxCount(count);
+    if (!n) return;
+    const o = opts || {};
+    const speed = o.speed != null ? o.speed : 3.5;
+    const size = o.size != null ? o.size : 0.18;
+    const grav = o.gravity != null ? o.gravity : 6;
+    const life = o.life != null ? o.life : 0.9;
+    const up = !!o.up || (isNum(o.spread) && o.spread < 0);
+    const p = _fxPosXYZ(pos);
+    const c = _fxParseColor(color);
+    const br = c.r, bg = c.g, bb = c.b;
+    for (let i = 0; i < n; i++) {
+      // random direction on a sphere
+      const u = Math.random() * 2 - 1, a = Math.random() * TAU, r = Math.sqrt(1 - u * u);
+      const sp = speed * _fxRand(0.35, 1);
+      let vx = r * Math.cos(a) * sp, vy = u * sp, vz = r * Math.sin(a) * sp;
+      if (up) vy = Math.abs(vy) + speed * 0.45;
+      const j = _fxRand(0.8, 1.25);
+      c.setRGB(Math.min(1.6, br * j), Math.min(1.6, bg * j), Math.min(1.6, bb * j));
+      _fxEmit(p.x, p.y, p.z, vx, vy, vz, c, size * _fxRand(0.6, 1.3), life * _fxRand(0.6, 1.1), grav, 1.6, 0, 1);
+    }
+  },
+
+  sparkle(pos, color, count = 12) {
+    if (!_fxS.ready) return;
+    const n = _fxCount(count);
+    if (!n) return;
+    const p = _fxPosXYZ(pos);
+    const c = _fxParseColor(color);
+    const br = c.r, bg = c.g, bb = c.b;
+    for (let i = 0; i < n; i++) {
+      const a = Math.random() * TAU, rad = Math.sqrt(Math.random()) * 0.45;
+      const m = _fxRand(0.9, 1.4);
+      c.setRGB(Math.min(1.8, br * m + 0.25), Math.min(1.8, bg * m + 0.25), Math.min(1.8, bb * m + 0.25));
+      _fxEmit(p.x + Math.cos(a) * rad, p.y + _fxRand(-0.15, 0.3), p.z + Math.sin(a) * rad,
+        _fxRand(-0.15, 0.15), _fxRand(0.35, 1.0), _fxRand(-0.15, 0.15),
+        c, _fxRand(0.1, 0.22), _fxRand(0.9, 1.7), -0.05, 0.4, 1, 1);
+    }
+  },
+
+  ring(pos, color, delay) {
+    const s = _fxS;
+    if (!s.ready || !s.rings.length) return;
+    const p = _fxPosXYZ(pos);
+    const r = s.rings[s.ringNext];
+    s.ringNext = (s.ringNext + 1) % s.rings.length;
+    r.mesh.position.set(p.x, p.y, p.z);
+    r.mesh.material.color.set(color == null ? '#ffffff' : color);
+    r.t = 0; r.dur = 0.7; r.delay = delay || 0; r.active = true; r.size = 1.7;
+    r.mesh.scale.setScalar(0.01);
+    r.mesh.material.opacity = 0;
+    r.mesh.visible = r.delay <= 0;
+  },
+
+  /* ---------------- screen effects ---------------- */
+  flash(color, strength = 0.6) {
+    const s = _fxS;
+    if (!s.ready) return;
+    s.flashEl.style.background = color || '#ffffff';
+    s.flashStr = clamp(strength, 0, 1);
+    s.flashT = s.flashDur;
+    s.flashEl.style.opacity = String(s.flashStr);
+  },
+
+  shake(amount) {
+    if (!isNum(amount)) return;
+    _fxS.shakeAmt = Math.min(1.5, Math.max(_fxS.shakeAmt, amount));
+  },
+
+  confetti(intensity = 1) {
+    const s = _fxS;
+    if (!s.ready) return;
+    const W = window.innerWidth, H = window.innerHeight;
+    if (!s.cCanvas) {
+      const cv = document.createElement('canvas');
+      cv.style.cssText = 'position:absolute;left:0;top:0;width:100%;height:100%;pointer-events:none;';
+      s.cCanvas = cv;
+      s.cCtx = cv.getContext('2d');
+    }
+    if (!s.cCanvas.parentNode) s.layer.insertBefore(s.cCanvas, s.layer.firstChild);
+    FX._sizeConfetti();
+    const n = Math.min(Math.round(120 * intensity), Math.max(0, 600 - s.pieces.length));
+    for (let i = 0; i < n; i++) {
+      const cannon = i % 5 < 2; // 40% shot from the bottom corners
+      const pc = {
+        x: 0, y: 0, vx: 0, vy: 0, rot: Math.random() * TAU, vr: _fxRand(-8, 8),
+        flip: Math.random() * TAU, vf: _fxRand(4, 11),
+        w: _fxRand(7, 13), h: _fxRand(11, 19),
+        color: _fxConfettiColors[(Math.random() * _fxConfettiColors.length) | 0],
+        sway: Math.random() * TAU, swayF: _fxRand(2, 4.5), swayA: _fxRand(30, 90),
+        t: 0, life: _fxRand(2.6, 3.4), delay: 0, drag: 0.9, term: _fxRand(190, 300),
+      };
+      if (cannon) {
+        const left = i % 2 === 0;
+        pc.x = left ? W * 0.02 : W * 0.98; pc.y = H * 0.92;
+        const ang = _fxRand(-1.45, -0.95) ; // up-ish
+        const sp = _fxRand(700, 1250) * Math.min(1.4, Math.max(0.7, H / 800));
+        pc.vx = Math.cos(ang) * sp * (left ? -1 : 1) * -1;
+        pc.vx = (left ? 1 : -1) * Math.abs(Math.cos(ang)) * sp;
+        pc.vy = Math.sin(ang) * sp;
+        pc.drag = 2.2;
+      } else {
+        pc.x = _fxRand(0, W); pc.y = _fxRand(-40, -10);
+        pc.vx = _fxRand(-60, 60); pc.vy = _fxRand(40, 200);
+        pc.delay = _fxRand(0, 0.9);
+      }
+      s.pieces.push(pc);
+    }
+  },
+
+  _sizeConfetti() {
+    const s = _fxS;
+    if (!s.cCanvas) return;
+    const dpr = Math.min(window.devicePixelRatio || 1, 1.5);
+    const w = Math.round(window.innerWidth * dpr), hh = Math.round(window.innerHeight * dpr);
+    if (s.cCanvas.width !== w || s.cCanvas.height !== hh) {
+      s.cCanvas.width = w; s.cCanvas.height = hh;
+    }
+    s.cW = window.innerWidth; s.cH = window.innerHeight;
+  },
+
+  floatText(pos, text, color) {
+    const s = _fxS;
+    if (!s.ready) return;
+    let slot = null;
+    for (let i = 0; i < s.texts.length; i++) if (!s.texts[i].active) { slot = s.texts[i]; break; }
+    if (!slot) {
+      if (s.texts.length < 30) {
+        const el = document.createElement('div');
+        el.style.cssText = 'position:absolute;left:0;top:0;white-space:nowrap;font-weight:900;font-size:28px;' +
+          "font-family:var(--font-d,'Fredoka One','Baloo 2','Arial Rounded MT Bold',system-ui,sans-serif);" +
+          'letter-spacing:0.5px;will-change:transform,opacity;display:none;' +
+          '-webkit-text-stroke:7px #1d1230;paint-order:stroke fill;' +
+          'text-shadow:0 3px 0 #1d1230,0 0 14px rgba(0,0,0,0.35);';
+        s.layer.appendChild(el);
+        slot = { el, active: false, pos: new THREE.Vector3(), t: 0, dur: 1.1, ox: 0 };
+        s.texts.push(slot);
+      } else { // reuse the oldest
+        slot = s.texts[0];
+        for (let i = 1; i < s.texts.length; i++) if (s.texts[i].t > slot.t) slot = s.texts[i];
+      }
+    }
+    const p = _fxPosXYZ(pos);
+    slot.pos.set(p.x, p.y, p.z);
+    slot.t = 0; slot.dur = 1.1; slot.active = true; slot.ox = _fxRand(-14, 14);
+    slot.el.textContent = String(text);
+    slot.el.style.color = color || '#ffffff';
+    slot.el.style.display = 'block';
+    slot.el.style.opacity = '0';
+  },
+
+  flyToHud(kind, from, amount) {
+    const s = _fxS;
+    if (!s.ready) return;
+    const icon = _fxIcons[kind];
+    if (!icon) return;
+    // origin on screen
+    let sx, sy;
+    if (from && from.isVector3 && _fxCamOk()) {
+      const sc = _fxToScreen(from);
+      if (sc && sc.visible) { sx = sc.x; sy = sc.y; }
+    } else if (from && isNum(from.x) && isNum(from.y) && !from.isVector3) { sx = from.x; sy = from.y; }
+    if (sx === undefined) { const c = _fxCenter(); sx = c.x; sy = c.y; }
+    // target
+    let ex = 40, ey = 40;
+    const tEl = document.querySelector(_fxTargets[kind]);
+    if (tEl) {
+      const r = tEl.getBoundingClientRect();
+      if (r.width > 0 || r.height > 0) { ex = r.left + r.width / 2; ey = r.top + r.height / 2; }
+    }
+    const amt = isNum(amount) ? Math.max(0, amount) : 1;
+    const n = Math.min(10, Math.round(3 + Math.log2(amt + 1)));
+    for (let i = 0; i < n; i++) {
+      const el = document.createElement('div');
+      el.textContent = icon;
+      el.style.cssText = 'position:absolute;left:0;top:0;font-size:30px;line-height:1;will-change:transform,opacity;opacity:0;' +
+        'filter:drop-shadow(0 2px 0 rgba(20,10,40,0.6)) drop-shadow(0 0 8px rgba(255,230,120,0.7));';
+      s.layer.appendChild(el);
+      const ang = Math.random() * TAU, dist = _fxRand(40, 120);
+      const bx = sx + Math.cos(ang) * dist, by = sy + Math.sin(ang) * dist * 0.8 - 30;
+      const mx = (bx + ex) / 2, my = (by + ey) / 2;
+      const dx = ex - bx, dy = ey - by, len = Math.hypot(dx, dy) || 1;
+      const side = (Math.random() < 0.5 ? -1 : 1) * _fxRand(0.15, 0.45) * len;
+      s.icons.push({
+        el, kind, sx, sy, bx, by, ex, ey,
+        cx: mx + (-dy / len) * side, cy: my + (dx / len) * side,
+        t: 0, delay: i * 0.06 + Math.random() * 0.03, burstDur: 0.28, flyDur: _fxRand(0.55, 0.75), done: false,
+      });
+    }
+  },
+
+  /* ---------------- per-frame ---------------- */
+  update(dt) {
+    const s = _fxS;
+    if (!s.ready) return;
+    if (!(dt > 0)) dt = 0;
+    if (dt > 0.1) dt = 0.1;
+    s.time += dt;
+    FX._updateParticles(dt);
+    FX._updateRings(dt);
+    FX._updateTexts(dt);
+    FX._updateIcons(dt);
+    FX._updateConfetti(dt);
+    FX._updateFlash(dt);
+    FX._updateShake(dt);
+  },
+
+  _updateParticles(dt) {
+    const s = _fxS;
+    if (s.alive === 0 && !s.dirty) return;
+    // keep the point-size scale in sync with the render target
+    const cam = (typeof Scene3D !== 'undefined' && Scene3D) ? Scene3D.camera : null;
+    if (cam && Scene3D.renderer) {
+      Scene3D.renderer.getDrawingBufferSize(s.v2);
+      s.mat.uniforms.uScale.value = s.v2.y / (2 * Math.tan(THREE.MathUtils.degToRad(cam.fov) * 0.5));
+    }
+    const pos = s.pos, vel = s.vel, ttl = s.ttl, ml = s.maxLife, grav = s.grav, drag = s.drag;
+    const size = s.size, alpha = s.alpha, bs = s.baseSize, ba = s.baseAlpha, kind = s.kind, ph = s.phase;
+    const T = s.time;
+    let alive = 0;
+    for (let i = 0; i < _fxCap; i++) {
+      const life = ttl[i];
+      if (life <= 0) continue;
+      const nl = life - dt;
+      const k = i * 3;
+      if (nl <= 0) {
+        ttl[i] = 0; alpha[i] = 0; size[i] = 0;
+        continue;
+      }
+      ttl[i] = nl;
+      alive++;
+      const dr = Math.max(0, 1 - drag[i] * dt);
+      vel[k] *= dr; vel[k + 1] = (vel[k + 1] - grav[i] * dt) * dr; vel[k + 2] *= dr;
+      pos[k] += vel[k] * dt; pos[k + 1] += vel[k + 1] * dt; pos[k + 2] += vel[k + 2] * dt;
+      const t = 1 - nl / ml[i];
+      if (kind[i] === 0) {
+        const fade = 1 - t;
+        alpha[i] = ba[i] * (t < 0.08 ? t / 0.08 : fade * (0.5 + 0.5 * fade) + 0.0);
+        size[i] = bs[i] * (1 - 0.55 * t);
+      } else {
+        const tw = 0.5 + 0.5 * Math.sin(T * 16 + ph[i] * 3);
+        const env = Math.sin(Math.PI * t);
+        alpha[i] = ba[i] * env * (0.45 + 0.55 * tw);
+        size[i] = bs[i] * (0.6 + 0.7 * tw) * (0.5 + 0.5 * env);
+      }
+    }
+    const was = s.alive;
+    s.alive = alive;
+    if (alive > 0 || was > 0 || s.dirty) {
+      s.geo.attributes.position.needsUpdate = true;
+      s.geo.attributes.aColor.needsUpdate = true;
+      s.geo.attributes.aSize.needsUpdate = true;
+      s.geo.attributes.aAlpha.needsUpdate = true;
+    }
+    s.dirty = false;
+    // count freshly emitted particles on the next frame: emit() sets dirty, which keeps us running
+    if (alive === 0 && was === 0) s.dirty = false;
+  },
+
+  _updateRings(dt) {
+    const rs = _fxS.rings;
+    for (let i = 0; i < rs.length; i++) {
+      const r = rs[i];
+      if (!r.active) continue;
+      if (r.delay > 0) { r.delay -= dt; if (r.delay > 0) continue; r.mesh.visible = true; }
+      r.t += dt;
+      const k = r.t / r.dur;
+      if (k >= 1) { r.active = false; r.mesh.visible = false; continue; }
+      const e = Ease.outCubic(k);
+      r.mesh.scale.setScalar(0.25 + e * r.size);
+      r.mesh.material.opacity = 0.95 * (1 - k) * (1 - k * 0.4);
+    }
+  },
+
+  _updateTexts(dt) {
+    const s = _fxS;
+    const texts = s.texts;
+    if (!_fxCamOk()) return;
+    for (let i = 0; i < texts.length; i++) {
+      const tx = texts[i];
+      if (!tx.active) continue;
+      tx.t += dt;
+      const k = tx.t / tx.dur;
+      if (k >= 1) { tx.active = false; tx.el.style.display = 'none'; continue; }
+      const sc = _fxToScreen(tx.pos);
+      if (!sc || !sc.visible) { tx.el.style.opacity = '0'; continue; }
+      const rise = Ease.outQuad(k) * 70;
+      const pop = k < 0.15 ? Ease.outBack(k / 0.15) : 1;
+      const op = k < 0.1 ? k / 0.1 : k > 0.6 ? 1 - (k - 0.6) / 0.4 : 1;
+      tx.el.style.opacity = op.toFixed(3);
+      tx.el.style.transform = 'translate3d(' + (sc.x + tx.ox).toFixed(1) + 'px,' + (sc.y - rise).toFixed(1) +
+        'px,0) translate(-50%,-100%) scale(' + (0.4 + 0.6 * pop).toFixed(3) + ')';
+    }
+  },
+
+  _updateIcons(dt) {
+    const s = _fxS;
+    const icons = s.icons;
+    for (let i = icons.length - 1; i >= 0; i--) {
+      const ic = icons[i];
+      ic.t += dt;
+      const local = ic.t - ic.delay;
+      let x, y, sc, op = 1;
+      if (local < 0) { continue; }
+      if (local < ic.burstDur) {
+        const u = local / ic.burstDur;
+        const e = Ease.outCubic(u);
+        x = ic.sx + (ic.bx - ic.sx) * e; y = ic.sy + (ic.by - ic.sy) * e;
+        sc = 0.3 + 0.9 * Ease.outBack(u);
+      } else {
+        const v = (local - ic.burstDur) / ic.flyDur;
+        if (v >= 1) {
+          // arrival
+          ic.el.remove();
+          icons[i] = icons[icons.length - 1]; icons.pop();
+          const tEl = document.querySelector(_fxTargets[ic.kind]);
+          if (tEl) _fxBump(tEl.parentElement);
+          const now = performance.now();
+          if (now - s.lastCoinSfx >= 70) {
+            s.lastCoinSfx = now;
+            if (typeof Sfx !== 'undefined' && Sfx && Sfx.play) {
+              try { Sfx.play(ic.kind === 'coins' ? 'coin' : ic.kind === 'gems' ? 'gem' : 'strength'); } catch (e) { /* ignore */ }
+            }
+          }
+          continue;
+        }
+        const k = Math.pow(v, 1.7), m = 1 - k;
+        x = m * m * ic.bx + 2 * m * k * ic.cx + k * k * ic.ex;
+        y = m * m * ic.by + 2 * m * k * ic.cy + k * k * ic.ey;
+        sc = lerp(1.2, 0.7, k);
+        op = v > 0.9 ? (1 - v) / 0.1 * 0.5 + 0.5 : 1;
+      }
+      ic.el.style.opacity = op.toFixed(2);
+      ic.el.style.transform = 'translate3d(' + x.toFixed(1) + 'px,' + y.toFixed(1) + 'px,0) translate(-50%,-50%) scale(' + sc.toFixed(2) + ')';
+    }
+  },
+
+  _updateConfetti(dt) {
+    const s = _fxS;
+    const ps = s.pieces;
+    if (!s.cCanvas || !s.cCtx) return;
+    if (ps.length === 0) {
+      if (s.cCanvas.parentNode) s.cCanvas.parentNode.removeChild(s.cCanvas);
+      return;
+    }
+    if (s.cW !== window.innerWidth || s.cH !== window.innerHeight) FX._sizeConfetti();
+    const ctx = s.cCtx;
+    const dpr = s.cCanvas.width / Math.max(1, s.cW);
+    ctx.setTransform(1, 0, 0, 1, 0, 0);
+    ctx.clearRect(0, 0, s.cCanvas.width, s.cCanvas.height);
+    const H = s.cH;
+    for (let i = ps.length - 1; i >= 0; i--) {
+      const p = ps[i];
+      if (p.delay > 0) { p.delay -= dt; continue; }
+      p.t += dt;
+      if (p.t >= p.life || p.y > H + 40) { ps[i] = ps[ps.length - 1]; ps.pop(); continue; }
+      const dr = Math.max(0, 1 - p.drag * dt);
+      p.vx *= dr; p.vy = p.vy * dr + 520 * dt;
+      if (p.vy > p.term) p.vy += (p.term - p.vy) * Math.min(1, 6 * dt);
+      p.sway += p.swayF * dt;
+      p.x += (p.vx + Math.sin(p.sway) * p.swayA) * dt;
+      p.y += p.vy * dt;
+      p.rot += p.vr * dt; p.flip += p.vf * dt;
+      const f = Math.cos(p.flip);
+      const c = Math.cos(p.rot), sn = Math.sin(p.rot);
+      const rem = p.life - p.t;
+      ctx.globalAlpha = rem < 0.6 ? rem / 0.6 : 1;
+      ctx.setTransform(c * dpr, sn * dpr, -sn * f * dpr, c * f * dpr, p.x * dpr, p.y * dpr);
+      ctx.fillStyle = p.color;
+      ctx.fillRect(-p.w / 2, -p.h / 2, p.w, p.h);
+    }
+    ctx.setTransform(1, 0, 0, 1, 0, 0);
+    ctx.globalAlpha = 1;
+  },
+
+  _updateFlash(dt) {
+    const s = _fxS;
+    if (s.flashT <= 0) return;
+    s.flashT -= dt;
+    if (s.flashT <= 0) { s.flashT = 0; s.flashEl.style.opacity = '0'; return; }
+    const k = s.flashT / s.flashDur;
+    s.flashEl.style.opacity = (s.flashStr * k * k).toFixed(3);
+  },
+
+  _updateShake(dt) {
+    const s = _fxS;
+    const o = FX.shakeOffset;
+    if (s.shakeAmt <= 0.001) {
+      s.shakeAmt = 0;
+      if (o.x !== 0 || o.y !== 0 || o.z !== 0) o.set(0, 0, 0);
+      return;
+    }
+    const a = s.shakeAmt;
+    o.set((Math.random() * 2 - 1) * a * 0.3, (Math.random() * 2 - 1) * a * 0.22, (Math.random() * 2 - 1) * a * 0.12);
+    s.shakeAmt *= Math.exp(-7 * dt);
+  },
+
+  /* ---------------- Bus wiring ---------------- */
+  _subscribe() {
+    const s = _fxS;
+    const v = s.v3b;
+
+    Bus.on('reward', (d) => {
+      if (!_fxCamOk() || !d) return;
+      const src = d.source;
+      let origin = null;
+      if (src === 'catch') origin = _fxChutePos(v);
+      else if (src === 'train') origin = _fxHeadPos(v);
+      if (!origin) origin = _fxCenter();
+      if (d.coins > 0) FX.flyToHud('coins', origin, d.coins);
+      if (d.gems > 0) FX.flyToHud('gems', origin, d.gems);
+      if (d.strength > 0 && src === 'train') {
+        s.trainN++;
+        const auto = !!(Game.player && Game.player.training && Game.player.training.auto);
+        if (!auto || s.trainN % 4 === 0) FX.flyToHud('strength', origin, 1);
+      } else if (d.strength > 0) {
+        FX.flyToHud('strength', origin, Math.min(d.strength, 5));
+      }
+    });
+
+    Bus.on('claw:result', (d) => {
+      if (!_fxCamOk() || !d) return;
+      const type = d.type;
+      if (type === 'win') {
+        const animal = (typeof ANIMAL_BY_ID !== 'undefined' && d.entry) ? ANIMAL_BY_ID[d.entry.id] : null;
+        const rar = (animal && typeof RARITY_BY_ID !== 'undefined') ? RARITY_BY_ID[animal.rarity] : null;
+        const color = rar ? rar.color : '#ffd23f';
+        const p = _fxChutePos(v) || _fxMachineTop(v);
+        FX.burst(p, color, 40, { speed: 4, up: true });
+        FX.sparkle(p, color, 20);
+        const id = rar ? rar.id : '';
+        if (id === 'legendary' || id === 'mythical' || id === 'secret') {
+          FX.confetti(1.5);
+          FX.flash(color, 0.5);
+          FX.shake(0.25);
+        }
+      } else {
+        const top = _fxMachineTop(v);
+        if (type === 'slip') FX.floatText(top, 'Slipped!', '#ff9a2e');
+        else if (type === 'miss') FX.floatText(top, 'Missed!', '#b8bcc8');
+        else if (type === 'empty') FX.floatText(top, 'Nothing!', '#b8bcc8');
+      }
+    });
+
+    Bus.on('upgrade:bought', () => {
+      if (!_fxCamOk()) return;
+      const p = _fxMachineTop(v);
+      FX.ring(p, '#ffe14d');
+      FX.ring(v.set(p.x, p.y - 0.7, p.z), '#7dfcff', 0.12);
+      FX.sparkle(p, '#fff07a', 22);
+      FX.shake(0.12);
+    });
+
+    Bus.on('world:unlocked', () => {
+      if (!_fxCamOk()) return;
+      FX.confetti(2);
+      FX.flash('#ffffff', 0.5);
+    });
+
+    Bus.on('train:rep', (d) => {
+      if (!_fxCamOk() || !d) return;
+      s.repN++;
+      if (d.auto && s.repN % 3 !== 0) return;
+      const hp = _fxHeadPos(v);
+      if (!hp) return;
+      hp.y += 0.45;
+      FX.floatText(hp, '+' + fmt(d.gain) + ' 💪', '#ffa63d');
+    });
+
+    Bus.on('pet:added', (d) => {
+      if (!_fxCamOk() || !d || !d.isNew) return;
+      const p = _fxChutePos(v);
+      if (p) FX.sparkle(p, '#ffffff', 18);
+    });
+  },
+};
+
+/* ==== 09_audio.js ==== */
+/* =====================================================================
+   CLAW MACHINE SIMULATOR — audio
+   Every sound is synthesised with WebAudio (oscillators, a noise buffer,
+   gain envelopes, filters). Public API: Sfx (see ARCHITECTURE.md section 6).
+   Private top-level names use the _au prefix. Nothing runs at load time.
+   ===================================================================== */
+
+const _auMaxVoices = 24;
+const _auGestureEvents = ['pointerdown', 'keydown', 'touchstart'];
+
+/** MIDI note number -> Hz. */
+const _auHz = (m) => 440 * Math.pow(2, (m - 69) / 12);
+
+/* Generative background music per world. Degrees index into `scale`;
+   `prog` gives one scale degree per bar (16 sixteenth-note steps). */
+const _auWorldMusic = {
+  starter: { bpm: 124, root: 60, scale: [0, 2, 4, 5, 7, 9, 11], prog: [0, 4, 5, 3], offs: [0, 2, 4, 2, 5], density: 0.45, lead: 'pluck', leadVol: 0.07, bass: 'triangle', bassVol: 0.11 },
+  jungle: { bpm: 104, root: 57, scale: [0, 2, 4, 7, 9], prog: [0, 3, 0, 4], offs: [0, 1, 2, 3, 4], density: 0.5, lead: 'marimba', leadVol: 0.12, bass: 'triangle', bassVol: 0.1 },
+  frozen: { bpm: 70, root: 62, scale: [0, 2, 4, 6, 7, 9, 11], prog: [0, 4, 3, 0], offs: [0, 2, 4, 6], density: 0.25, lead: 'bell', leadVol: 0.07, bass: 'sine', bassVol: 0.1 },
+  desert: { bpm: 96, root: 52, scale: [0, 1, 3, 5, 7, 8, 10], prog: [0, 1, 0, 6], offs: [0, 1, 3, 4], density: 0.4, lead: 'pluck', leadWave: 'sawtooth', leadLp: 1400, leadVol: 0.06, bass: 'triangle', bassVol: 0.1 },
+  space: { bpm: 80, root: 57, scale: [0, 2, 3, 5, 7, 9, 10], prog: [0, 5, 3, 6], offs: [0, 2, 4, 6], density: 0.3, lead: 'soft', leadVol: 0.05, pad: true, bass: 'sine', bassVol: 0.12 },
+};
+
+/* ---------- low-level synthesis helpers ---------- */
+
+/** Track a playing source so the voice cap works and nodes are released when it ends. */
+function _auTrack(src, nodes) {
+  Sfx._voices++;
+  src.onended = () => {
+    Sfx._voices--;
+    for (const n of nodes) { try { n.disconnect(); } catch (e) { /* already gone */ } }
+  };
+}
+
+/** One oscillator with a gain envelope. o: { type, f, to, dur, vol, att, lp } */
+function _auBeep(c, out, t, o) {
+  if (Sfx._voices > 40) return;
+  const att = o.att || 0.006;
+  const v = o.vol == null ? 0.2 : o.vol;
+  const src = c.createOscillator();
+  const g = c.createGain();
+  src.type = o.type || 'triangle';
+  src.frequency.setValueAtTime(o.f, t);
+  if (o.to) src.frequency.exponentialRampToValueAtTime(o.to, t + o.dur);
+  g.gain.setValueAtTime(0.0001, t);
+  g.gain.exponentialRampToValueAtTime(v, t + att);
+  g.gain.exponentialRampToValueAtTime(0.0001, t + o.dur);
+  const nodes = [src, g];
+  src.connect(g);
+  if (o.lp) {
+    const f = c.createBiquadFilter();
+    f.type = 'lowpass'; f.frequency.value = o.lp; f.Q.value = 0.7;
+    g.connect(f); f.connect(out); nodes.push(f);
+  } else {
+    g.connect(out);
+  }
+  src.start(t);
+  src.stop(t + o.dur + 0.03);
+  _auTrack(src, nodes);
+}
+
+/** Filtered noise burst. o: { type, f, to, q, dur, vol } */
+function _auNoise(c, out, t, o) {
+  if (Sfx._voices > 40 || !Sfx._nbuf) return;
+  const src = c.createBufferSource();
+  src.buffer = Sfx._nbuf;
+  src.loop = true;
+  const flt = c.createBiquadFilter();
+  flt.type = o.type || 'bandpass';
+  flt.frequency.setValueAtTime(o.f, t);
+  if (o.to) flt.frequency.exponentialRampToValueAtTime(o.to, t + o.dur);
+  flt.Q.value = o.q || 1;
+  const g = c.createGain();
+  const v = o.vol == null ? 0.1 : o.vol;
+  g.gain.setValueAtTime(0.0001, t);
+  g.gain.exponentialRampToValueAtTime(v, t + 0.004);
+  g.gain.exponentialRampToValueAtTime(0.0001, t + o.dur);
+  src.connect(flt); flt.connect(g); g.connect(out);
+  src.start(t, Math.random() * 0.8);
+  src.stop(t + o.dur + 0.03);
+  _auTrack(src, [src, flt, g]);
+}
+
+/** Notes in quick succession. */
+function _auArp(c, out, t, ms, step, o) {
+  ms.forEach((m, i) => _auBeep(c, out, t + i * step, Object.assign({ type: 'triangle', f: _auHz(m), dur: 0.2, vol: 0.15 }, o)));
+}
+
+/** Notes sounding together. */
+function _auChord(c, out, t, ms, dur, o) {
+  for (const m of ms) _auBeep(c, out, t, Object.assign({ type: 'triangle', f: _auHz(m), dur, vol: 0.1 }, o));
+}
+
+/** Bright little bell: triangle plus a quiet octave-up sine. */
+function _auDing(c, out, t, m, dur, vol) {
+  _auBeep(c, out, t, { type: 'triangle', f: _auHz(m), dur, vol });
+  _auBeep(c, out, t, { type: 'sine', f: _auHz(m) * 2, dur: dur * 0.6, vol: vol * 0.25 });
+}
+
+function _auNoiseBuffer(c) {
+  const len = c.sampleRate;
+  const b = c.createBuffer(1, len, c.sampleRate);
+  const d = b.getChannelData(0);
+  for (let i = 0; i < len; i++) d[i] = Math.random() * 2 - 1;
+  return b;
+}
+
+/** Smooth parameter change (avoids clicks). */
+function _auRamp(c, param, v) {
+  try { param.cancelScheduledValues(c.currentTime); param.setTargetAtTime(v, c.currentTime, 0.05); } catch (e) { /* ignore */ }
+}
+
+/* ---------- sound effects: (ctx, out, startTime) ---------- */
+const _auSounds = {
+  click: (c, o, t) => _auBeep(c, o, t, { type: 'square', f: 1800, to: 900, dur: 0.03, vol: 0.05, lp: 3000 }),
+  open: (c, o, t) => _auArp(c, o, t, [76, 83], 0.07, { dur: 0.12, vol: 0.16 }),
+  close: (c, o, t) => _auArp(c, o, t, [83, 76], 0.07, { dur: 0.12, vol: 0.16 }),
+  coin: (c, o, t) => {
+    _auDing(c, o, t, 88, 0.3, 0.2);
+    _auDing(c, o, t + 0.075, 93, 0.35, 0.2);
+  },
+  gem: (c, o, t) => {
+    _auArp(c, o, t, [84, 88, 91, 96, 100], 0.045, { type: 'sine', dur: 0.25, vol: 0.14 });
+    _auNoise(c, o, t, { type: 'highpass', f: 8000, dur: 0.2, vol: 0.02 });
+  },
+  strength: (c, o, t) => {
+    _auBeep(c, o, t, { type: 'sine', f: 280, to: 620, dur: 0.14, vol: 0.25 });
+    _auNoise(c, o, t, { type: 'bandpass', f: 900, q: 2, dur: 0.05, vol: 0.08 });
+  },
+  play: (c, o, t) => {
+    _auNoise(c, o, t, { type: 'highpass', f: 4000, dur: 0.02, vol: 0.12 });
+    _auBeep(c, o, t + 0.03, { type: 'sine', f: 2000, to: 1500, dur: 0.08, vol: 0.15 });
+    _auArp(c, o, t + 0.2, [72, 76, 79, 84], 0.1, { dur: 0.3, vol: 0.17 });
+  },
+  move: (c, o, t) => _auBeep(c, o, t, { type: 'sine', f: 1200, dur: 0.02, vol: 0.07 }),
+  drop: (c, o, t) => {
+    _auNoise(c, o, t, { type: 'bandpass', f: 2400, to: 250, q: 1.2, dur: 0.5, vol: 0.14 });
+    _auBeep(c, o, t, { type: 'sine', f: 520, to: 140, dur: 0.5, vol: 0.1 });
+  },
+  grab: (c, o, t) => {
+    _auNoise(c, o, t, { type: 'highpass', f: 1400, dur: 0.035, vol: 0.25 });
+    _auBeep(c, o, t, { type: 'square', f: 190, to: 95, dur: 0.06, vol: 0.08, lp: 900 });
+    _auBeep(c, o, t + 0.05, { type: 'square', f: 260, to: 130, dur: 0.05, vol: 0.06, lp: 900 });
+  },
+  slip: (c, o, t) => _auBeep(c, o, t, { type: 'triangle', f: 1300, to: 260, dur: 0.6, vol: 0.16 }),
+  miss: (c, o, t) => {
+    // sad "wah-wah"
+    _auBeep(c, o, t, { type: 'sawtooth', f: 392, dur: 0.28, vol: 0.1, lp: 900 });
+    _auBeep(c, o, t + 0.3, { type: 'sawtooth', f: 349, dur: 0.28, vol: 0.1, lp: 900 });
+    _auBeep(c, o, t + 0.6, { type: 'sawtooth', f: 330, to: 262, dur: 0.7, vol: 0.1, lp: 900 });
+  },
+  win: (c, o, t) => {
+    _auArp(c, o, t, [60, 64, 67, 72], 0.11, { dur: 0.2, vol: 0.2 });
+    _auChord(c, o, t + 0.44, [72, 76, 79, 84], 0.7, { vol: 0.14 });
+  },
+  rare: (c, o, t) => {
+    _auChord(c, o, t, [72, 76, 79], 0.9, { type: 'sine', att: 0.03, vol: 0.1 });
+    _auArp(c, o, t, [91, 96, 100, 103], 0.05, { type: 'sine', dur: 0.3, vol: 0.08 });
+    _auNoise(c, o, t, { type: 'highpass', f: 6000, dur: 0.8, vol: 0.03 });
+  },
+  epic: (c, o, t) => {
+    _auChord(c, o, t, [72, 76, 79, 84], 1.2, { type: 'sine', att: 0.03, vol: 0.11 });
+    _auArp(c, o, t, [84, 88, 91, 96, 100, 103], 0.06, { type: 'sine', dur: 0.3, vol: 0.09 });
+    _auNoise(c, o, t, { type: 'highpass', f: 6000, dur: 1.0, vol: 0.035 });
+  },
+  legendary: (c, o, t) => {
+    const br = { type: 'sawtooth', lp: 1700, vol: 0.11 };
+    _auBeep(c, o, t, Object.assign({ f: _auHz(67), dur: 0.12 }, br));
+    _auBeep(c, o, t + 0.12, Object.assign({ f: _auHz(67), dur: 0.12 }, br));
+    _auBeep(c, o, t + 0.24, Object.assign({ f: _auHz(67), dur: 0.12 }, br));
+    _auBeep(c, o, t + 0.36, Object.assign({ f: _auHz(72), dur: 0.45 }, br));
+    _auBeep(c, o, t + 0.36, { type: 'sawtooth', f: _auHz(48), dur: 1.8, vol: 0.1, lp: 500 });
+    _auBeep(c, o, t + 0.85, Object.assign({ f: _auHz(71), dur: 0.12 }, br));
+    _auBeep(c, o, t + 0.97, Object.assign({ f: _auHz(72), dur: 0.9 }, br));
+    _auChord(c, o, t + 0.97, [60, 64, 67, 72], 1.0, { type: 'sine', vol: 0.07 });
+    _auArp(c, o, t + 0.97, [84, 88, 91, 96], 0.07, { type: 'sine', dur: 0.3, vol: 0.09 });
+  },
+  mythical: (c, o, t) => {
+    // magical swelling chord with sparkles
+    _auChord(c, o, t, [60, 64, 67, 71, 74], 1.6, { type: 'sine', att: 0.6, vol: 0.12 });
+    _auChord(c, o, t, [48, 55], 1.6, { type: 'sawtooth', att: 0.6, vol: 0.05, lp: 800 });
+    _auArp(c, o, t + 0.5, [96, 100, 103, 107, 108, 103, 100], 0.12, { type: 'sine', dur: 0.2, vol: 0.1 });
+    _auNoise(c, o, t, { type: 'highpass', f: 7000, dur: 1.4, vol: 0.03 });
+  },
+  secret: (c, o, t) => {
+    // dark minor chord resolving to a bright major one
+    _auChord(c, o, t, [50, 53, 57], 0.55, { type: 'sawtooth', att: 0.08, vol: 0.07, lp: 700 });
+    _auChord(c, o, t + 0.55, [62, 66, 69, 74], 0.9, { type: 'triangle', att: 0.01, vol: 0.12 });
+    _auArp(c, o, t + 0.6, [86, 90, 93], 0.08, { type: 'sine', dur: 0.25, vol: 0.09 });
+  },
+  reveal: (c, o, t) => {
+    _auNoise(c, o, t, { type: 'bandpass', f: 400, to: 3000, q: 1.5, dur: 0.3, vol: 0.12 });
+    _auBeep(c, o, t + 0.27, { type: 'sine', f: 500, to: 1000, dur: 0.12, vol: 0.22 });
+  },
+  capsule: (c, o, t) => {
+    // rattle: a quick run of random clicks
+    for (let i = 0; i < 8; i++) {
+      const at = t + i * 0.045 + Math.random() * 0.01;
+      _auNoise(c, o, at, { type: 'bandpass', f: 2500 + Math.random() * 1500, q: 3, dur: 0.03, vol: 0.15 });
+    }
+  },
+  upgrade: (c, o, t) => {
+    _auBeep(c, o, t, { type: 'square', f: 300, to: 1200, dur: 0.35, vol: 0.1, lp: 2500 });
+    _auArp(c, o, t + 0.3, [72, 76, 79, 84, 88], 0.06, { dur: 0.2, vol: 0.16 });
+  },
+  train: (c, o, t) => {
+    // grunt-like thump plus a pop
+    _auBeep(c, o, t, { type: 'sawtooth', f: 180, to: 70, dur: 0.18, vol: 0.22, lp: 600 });
+    _auNoise(c, o, t, { type: 'bandpass', f: 700, q: 1, dur: 0.1, vol: 0.14 });
+    _auBeep(c, o, t + 0.12, { type: 'sine', f: 600, to: 1300, dur: 0.08, vol: 0.16 });
+  },
+  error: (c, o, t) => {
+    _auBeep(c, o, t, { type: 'sawtooth', f: 110, dur: 0.32, vol: 0.16, lp: 420 });
+    _auBeep(c, o, t, { type: 'square', f: 116.5, dur: 0.32, vol: 0.06, lp: 420 });
+    _auBeep(c, o, t + 0.36, { type: 'sawtooth', f: 98, dur: 0.25, vol: 0.12, lp: 420 });
+  },
+  unlock: (c, o, t) => {
+    _auArp(c, o, t, [60, 64, 67, 72, 76, 79, 84], 0.065, { dur: 0.18, vol: 0.16 });
+    _auChord(c, o, t + 0.5, [72, 76, 79, 84], 1.0, { vol: 0.1 });
+    _auArp(c, o, t + 0.5, [96, 100, 103, 108], 0.08, { type: 'sine', dur: 0.3, vol: 0.09 });
+    _auNoise(c, o, t + 0.5, { type: 'highpass', f: 7000, dur: 0.5, vol: 0.05 });
+  },
+  travel: (c, o, t) => {
+    // warp sweep
+    _auBeep(c, o, t, { type: 'sine', f: 80, to: 1600, dur: 0.75, vol: 0.22, att: 0.1 });
+    _auBeep(c, o, t, { type: 'triangle', f: 160, to: 3200, dur: 0.75, vol: 0.05 });
+    _auNoise(c, o, t, { type: 'bandpass', f: 500, to: 6000, q: 2, dur: 0.7, vol: 0.1 });
+  },
+  equip: (c, o, t) => {
+    _auBeep(c, o, t, { type: 'sine', f: 400, to: 800, dur: 0.12, vol: 0.2 });
+    _auNoise(c, o, t, { type: 'bandpass', f: 1200, dur: 0.04, vol: 0.06 });
+  },
+  sell: (c, o, t) => {
+    // cash register "ka-ching"
+    _auNoise(c, o, t, { type: 'highpass', f: 2500, dur: 0.02, vol: 0.12 });
+    _auDing(c, o, t + 0.04, 96, 0.5, 0.14);
+    _auDing(c, o, t + 0.1, 103, 0.45, 0.12);
+  },
+  evolve: (c, o, t) => {
+    // rising magical sweep
+    _auBeep(c, o, t, { type: 'sine', f: 200, to: 1600, dur: 0.9, vol: 0.16, att: 0.05 });
+    _auBeep(c, o, t, { type: 'triangle', f: 300, to: 2400, dur: 0.9, vol: 0.05 });
+    _auArp(c, o, t + 0.4, [84, 88, 91, 96, 100], 0.09, { type: 'sine', dur: 0.25, vol: 0.1 });
+    _auChord(c, o, t + 0.95, [72, 76, 79, 84], 0.8, { vol: 0.1 });
+  },
+  tick: (c, o, t) => _auBeep(c, o, t, { type: 'sine', f: 1000, dur: 0.05, vol: 0.12 }),
+};
+
+/* ---------- motor hum ---------- */
+function _auMotorStart() {
+  const c = Sfx._ctx;
+  if (!c || Sfx._mot) return;
+  const now = c.currentTime;
+  const out = c.createGain();
+  out.gain.setValueAtTime(0, now);
+  out.gain.linearRampToValueAtTime(0.08, now + 0.08);
+  const lp = c.createBiquadFilter();
+  lp.type = 'lowpass'; lp.frequency.value = 520; lp.Q.value = 2.5;
+  lp.connect(out); out.connect(Sfx._sfxG);
+  const saw = c.createOscillator(); saw.type = 'sawtooth'; saw.frequency.value = 92;
+  const tri = c.createOscillator(); tri.type = 'triangle'; tri.frequency.value = 46;
+  const tg = c.createGain(); tg.gain.value = 0.6;
+  const lfo = c.createOscillator(); lfo.type = 'sine'; lfo.frequency.value = 5.5;
+  const depth = c.createGain(); depth.gain.value = 5;
+  lfo.connect(depth); depth.connect(saw.frequency);
+  saw.connect(lp); tri.connect(tg); tg.connect(lp);
+  saw.start(now); tri.start(now); lfo.start(now);
+  Sfx._mot = { saw, tri, lfo, out, lp, depth, tg };
+}
+
+function _auMotorStop() {
+  const c = Sfx._ctx;
+  const m = Sfx._mot;
+  if (!c || !m) return;
+  Sfx._mot = null;
+  const now = c.currentTime;
+  m.out.gain.cancelScheduledValues(now);
+  m.out.gain.setValueAtTime(m.out.gain.value, now);
+  m.out.gain.linearRampToValueAtTime(0, now + 0.08);
+  const end = now + 0.1;
+  m.saw.stop(end); m.tri.stop(end); m.lfo.stop(end);
+  m.saw.onended = () => {
+    for (const k of ['saw', 'tri', 'lfo', 'depth', 'tg', 'lp', 'out']) { try { m[k].disconnect(); } catch (e) { /* ignore */ } }
+  };
+}
+
+/* ---------- generative music ---------- */
+function _auLead(c, out, t, cfg, f) {
+  if (cfg.lead === 'marimba') {
+    _auBeep(c, out, t, { type: 'sine', f, dur: 0.3, vol: cfg.leadVol, att: 0.004 });
+    _auBeep(c, out, t, { type: 'sine', f: f * 4, dur: 0.08, vol: cfg.leadVol * 0.25, att: 0.002 });
+  } else if (cfg.lead === 'bell') {
+    _auBeep(c, out, t, { type: 'sine', f, dur: 1.4, vol: cfg.leadVol });
+    _auBeep(c, out, t, { type: 'sine', f: f * 2.76, dur: 0.6, vol: cfg.leadVol * 0.3 });
+  } else if (cfg.lead === 'soft') {
+    _auBeep(c, out, t, { type: 'triangle', f, dur: 1.0, vol: cfg.leadVol, att: 0.08, lp: 1800 });
+  } else {
+    _auBeep(c, out, t, { type: cfg.leadWave || 'triangle', f, dur: 0.35, vol: cfg.leadVol, lp: cfg.leadLp || 3000 });
+  }
+}
+
+/** One sixteenth-note step of a world's tune. */
+function _auMusicStep(c, t, step, cfg, out) {
+  const n = cfg.scale.length;
+  const pitch = (idx) => cfg.root + cfg.scale[((idx % n) + n) % n] + 12 * Math.floor(idx / n);
+  const sd = Sfx._mStepDur;
+  const s16 = step % 16;
+  const deg = cfg.prog[Math.floor(step / 16) % cfg.prog.length];
+  if (s16 === 0 && cfg.pad) {
+    for (const k of [0, 2, 4]) _auBeep(c, out, t, { type: 'sawtooth', f: _auHz(pitch(deg + k)), dur: sd * 16, att: 0.5, vol: 0.03, lp: 900 });
+  }
+  if (s16 % 8 === 0) {
+    _auBeep(c, out, t, { type: cfg.bass, f: _auHz(pitch(deg) - 12), dur: sd * 6, vol: cfg.bassVol, att: 0.01 });
+  }
+  if (s16 % 2 === 0 && Sfx._voices < 16 && Math.random() < cfg.density) {
+    _auLead(c, out, t, cfg, _auHz(pitch(deg + pick(cfg.offs)) + 12));
+  }
+}
+
+function _auMusicTick() {
+  const c = Sfx._ctx;
+  if (!c || !Sfx._mLayer || !Sfx._mCfg) return;
+  if (c.currentTime > Sfx._mNext + 0.5) Sfx._mNext = c.currentTime + 0.05; // woke up late
+  while (Sfx._mNext < c.currentTime + 0.25) {
+    _auMusicStep(c, Sfx._mNext, Sfx._mStep, Sfx._mCfg, Sfx._mLayer);
+    Sfx._mNext += Sfx._mStepDur;
+    Sfx._mStep++;
+  }
+}
+
+/** Starts or stops the lookahead scheduler to match the current state. */
+function _auMusicRun() {
+  const c = Sfx._ctx;
+  const want = !!(c && Sfx._music && Sfx._mLayer);
+  if (want && !Sfx._mTimer) {
+    Sfx._mNext = c.currentTime + 0.1;
+    Sfx._mTimer = setInterval(_auMusicTick, 100);
+  } else if (!want && Sfx._mTimer) {
+    clearInterval(Sfx._mTimer);
+    Sfx._mTimer = null;
+  }
+}
+
+/** Starts a world's layer and crossfades from the previous one. */
+function _auMusicBegin(key) {
+  const c = Sfx._ctx;
+  if (!c) return;
+  const cfg = _auWorldMusic[key] || _auWorldMusic.starter;
+  const now = c.currentTime;
+  const old = Sfx._mLayer;
+  if (old) {
+    old.gain.cancelScheduledValues(now);
+    old.gain.setValueAtTime(old.gain.value, now);
+    old.gain.linearRampToValueAtTime(0, now + 1.2);
+    setTimeout(() => { try { old.disconnect(); } catch (e) { /* ignore */ } }, 1500);
+  }
+  const g = c.createGain();
+  g.gain.setValueAtTime(0, now);
+  g.gain.linearRampToValueAtTime(1, now + 1.2);
+  g.connect(Sfx._musicG);
+  Sfx._mLayer = g;
+  Sfx._mCfg = cfg;
+  Sfx._mKey = key;
+  Sfx._mStepDur = 60 / cfg.bpm / 4;
+  Sfx._mStep = 0;
+  Sfx._mNext = now + 0.12;
+  _auMusicRun();
+}
+
+/* ---------- context creation / visibility / gestures ---------- */
+function _auEnsureCtx() {
+  if (Sfx._ctx) {
+    if (Sfx._ctx.state === 'suspended' && !document.hidden) Sfx._ctx.resume().catch(() => {});
+    return true;
+  }
+  const AC = window.AudioContext || window.webkitAudioContext;
+  if (!AC) return false;
+  let c;
+  try { c = new AC(); } catch (e) { return false; }
+  Sfx._readSettings();
+  const master = c.createGain();
+  master.gain.value = Sfx._volume;
+  master.connect(c.destination);
+  const sfxG = c.createGain();
+  sfxG.gain.value = Sfx._sound ? 0.9 : 0;
+  sfxG.connect(master);
+  const musicG = c.createGain();
+  musicG.gain.value = Sfx._music ? 0.25 : 0;
+  musicG.connect(master);
+  Sfx._ctx = c;
+  Sfx._master = master;
+  Sfx._sfxG = sfxG;
+  Sfx._musicG = musicG;
+  Sfx._nbuf = _auNoiseBuffer(c);
+  if (document.hidden) c.suspend().catch(() => {});
+  if (Sfx._motorWant) _auMotorStart();
+  if (Sfx._mWorld) _auMusicBegin(Sfx._mWorld);
+  _auMusicRun();
+  return true;
+}
+
+function _auOnGesture() {
+  if (!_auEnsureCtx()) return;
+  for (const ev of _auGestureEvents) window.removeEventListener(ev, _auOnGesture);
+}
+
+function _auOnVisibility() {
+  const c = Sfx._ctx;
+  if (!c) return;
+  if (document.hidden) {
+    if (c.state === 'running') c.suspend().catch(() => {});
+  } else if (c.state === 'suspended') {
+    c.resume().catch(() => {});
+  }
+}
+
+const Sfx = {
+  _ctx: null, _master: null, _sfxG: null, _musicG: null, _nbuf: null,
+  _sound: true, _music: true, _volume: 0.8,
+  _inited: false, _entered: false,
+  _motorWant: false, _mot: null,
+  _mWorld: null, _mKey: null, _mLayer: null, _mCfg: null,
+  _mStepDur: 0.1, _mStep: 0, _mNext: 0, _mTimer: null,
+  _voices: 0, _last: {},
+
+  /** Reads settings, arms the first-gesture unlock and subscribes to Bus events. Safe to call once. */
+  init() {
+    if (this._inited) return;
+    this._inited = true;
+    this._readSettings();
+    for (const ev of _auGestureEvents) window.addEventListener(ev, _auOnGesture, { passive: true });
+    document.addEventListener('visibilitychange', _auOnVisibility);
+
+    Bus.on('claw:result', (d) => {
+      const t = d && d.type;
+      if (t === 'win') Sfx.play('win');
+      else if (t === 'miss' || t === 'empty') Sfx.play('miss');
+      else if (t === 'slip') Sfx.play('slip');
+    });
+    Bus.on('upgrade:bought', () => Sfx.play('upgrade'));
+    Bus.on('world:unlocked', () => Sfx.play('unlock'));
+    Bus.on('world:entered', (d) => {
+      if (Sfx._entered) Sfx.play('travel');
+      Sfx._entered = true;
+      Sfx.startMusic(d && d.id);
+    });
+    Bus.on('train:rep', (d) => { if (d && !d.auto) Sfx.play('train'); });
+    Bus.on('equip:changed', () => Sfx.play('equip'));
+    Bus.on('shop:bought', () => Sfx.play('gem'));
+    Bus.on('daily:claimed', () => Sfx.play('gem'));
+    Bus.on('index:claimed', () => Sfx.play('gem'));
+    Bus.on('toast', (d) => { if (d && d.kind === 'bad') Sfx.play('error'); });
+    Bus.on('settings:changed', (d) => {
+      if (!d) return;
+      if (d.key === 'sound') Sfx.setSound(d.value);
+      else if (d.key === 'music') Sfx.setMusic(d.value);
+      else if (d.key === 'volume') Sfx.setVolume(d.value);
+    });
+  },
+
+  /** Copies sound/music/volume from Game.player.settings (no-op when not loaded yet). */
+  _readSettings() {
+    try {
+      const s = Game.player && Game.player.settings;
+      if (!s) return;
+      if (typeof s.sound === 'boolean') this._sound = s.sound;
+      if (typeof s.music === 'boolean') this._music = s.music;
+      if (isNum(s.volume)) this._volume = clamp(s.volume, 0, 1);
+    } catch (e) { /* settings unreadable: keep defaults */ }
+  },
+
+  /** Plays a one-shot sound by name. Unknown names, sound off, no context yet: no-op. */
+  play(name) {
+    if (!Object.prototype.hasOwnProperty.call(_auSounds, name)) return;
+    const c = this._ctx;
+    if (!c || !this._sound || document.hidden || c.state !== 'running') return;
+    const now = performance.now();
+    const last = this._last[name];
+    if (last !== undefined && now - last < 40) return;
+    this._last[name] = now;
+    if (this._voices >= _auMaxVoices) return;
+    try { _auSounds[name](c, this._sfxG, c.currentTime + 0.01); } catch (e) { console.warn('[Sfx]', name, e); }
+  },
+
+  /** Claw motor hum loop. Idempotent; fades in/out over ~80 ms. */
+  motor(on) {
+    this._motorWant = !!on;
+    if (!this._ctx) return;
+    if (on) _auMotorStart(); else _auMotorStop();
+  },
+
+  /** Crossfades to the generative tune of a world. Remembered until the context exists. */
+  startMusic(worldId) {
+    const key = Object.prototype.hasOwnProperty.call(_auWorldMusic, worldId) ? worldId : 'starter';
+    if (this._mWorld === key && this._mLayer) return;
+    this._mWorld = key;
+    if (this._ctx) _auMusicBegin(key);
+  },
+
+  setSound(b) {
+    this._sound = !!b;
+    if (this._ctx) _auRamp(this._ctx, this._sfxG.gain, this._sound ? 0.9 : 0);
+  },
+
+  setMusic(b) {
+    this._music = !!b;
+    if (!this._ctx) return;
+    _auRamp(this._ctx, this._musicG.gain, this._music ? 0.25 : 0);
+    if (this._music && this._mWorld && !this._mLayer) _auMusicBegin(this._mWorld);
+    _auMusicRun();
+  },
+
+  /** Master volume 0..1 (smooth ramp). */
+  setVolume(v) {
+    this._volume = clamp(isNum(v) ? v : 0.8, 0, 1);
+    if (this._ctx) _auRamp(this._ctx, this._master.gain, this._volume);
+  },
+};
+
+/* ==== 11_ui_panels.js ==== */
+/* =====================================================================
+   11_ui_panels.js — contents of the 6 game panels (frontend – panels).
+   Private helpers are prefixed `_up`. Only side effects: UI.registerPanel.
+   ===================================================================== */
+
+/* ---------- shared private state (keeps the user's place across re-renders) ---------- */
+const _upS = {
+  petSel: null, petSort: 'mult', petFilter: 'all', petSheet: false, sellMenu: false,
+  idxWorld: null,
+  pulse: null,
+  volDrag: false, volT: 0, importText: '', exportOpen: false,
+  live: [], timer: 0,
+};
+const _upVariantInfo = {
+  normal: { badge: '', label: 'Normal' },
+  golden: { badge: '★ Golden', label: '★ Golden' },
+  rainbow: { badge: '🌈 Rainbow', label: '🌈 Rainbow' },
+};
+const _upDecor = { arcade: '🕹️', jungle: '🌴', frozen: '❄️', desert: '🏜️', space: '🚀' };
+
+/* ---------- helpers ---------- */
+function _upCall(name, args) {
+  const res = Remote.invoke(name, args || {});
+  if (!res || !res.ok) {
+    UI.toast((res && res.err) || 'Something went wrong', 'bad');
+    try { Sfx.play('error'); } catch (e) { /* ignore */ }
+  }
+  return res || { ok: false };
+}
+function _upRar(id) { return RARITY_BY_ID[id] || RARITIES[0]; }
+function _upRc(id) { return _upRar(id).color; }
+function _upNum(n) { return fmt(n); }
+function _upClear(el) { el.innerHTML = ''; }
+function _upBtn(label, cls, onClick, disabled) {
+  const b = h('button', 'btn ' + (cls || ''), label);
+  b.type = 'button';
+  if (disabled) b.disabled = true;
+  else if (onClick) b.addEventListener('click', onClick);
+  return b;
+}
+function _upChip(html, cls) { return h('span', 'pn-chip ' + (cls || ''), html); }
+function _upCountOwned(pets, id) { return pets.filter((p) => p.id === id).length; }
+function _upWorldName(id) { const w = WORLD_BY_ID[id]; return w ? w.name : id; }
+function _upRefresh() { try { UI.refreshPanel(); } catch (e) { /* ignore */ } }
+function _upLiveAdd(el, fn) { el._upLive = fn; _upS.live.push(el); }
+function _upStartTick() {
+  _upStopTick();
+  _upS.timer = setInterval(() => {
+    _upS.live = _upS.live.filter((e) => e.isConnected);
+    for (const e of _upS.live) { try { e._upLive(e); } catch (err) { /* ignore */ } }
+  }, 1000);
+}
+function _upStopTick() { if (_upS.timer) clearInterval(_upS.timer); _upS.timer = 0; }
+function _upKeepScroll(bodyEl, fn) {
+  const sc = bodyEl.scrollTop;
+  fn();
+  bodyEl.scrollTop = sc;
+}
+function _upIsBadVariant(p) { return p.variant && p.variant !== 'normal'; }
+
+/* =====================================================================
+   1. PETS
+   ===================================================================== */
+function _upPetFilterList(pets) {
+  let list = Services.petsSorted(_upS.petSort).slice();
+  if (_upS.petFilter !== 'all') list = list.filter((p) => (ANIMAL_BY_ID[p.id] || {}).rarity === _upS.petFilter);
+  return list.filter((p) => ANIMAL_BY_ID[p.id]);
+}
+function _upPetCard(p) {
+  const a = ANIMAL_BY_ID[p.id];
+  const pl = Game.player;
+  const eq = pl.equipped.includes(p.uid);
+  const c = h('button', 'pn-pet r-' + a.rarity + ' v-' + p.variant + (_upS.petSel === p.uid ? ' sel' : '') + (eq ? ' eq' : ''));
+  c.type = 'button';
+  c.style.setProperty('--rc', _upRc(a.rarity));
+  c.setAttribute('aria-label', a.name);
+  const img = h('img'); img.alt = ''; img.draggable = false; img.src = AnimalFactory.thumbnail(p.id, p.variant);
+  c.appendChild(img);
+  if (_upIsBadVariant(p)) c.appendChild(h('span', 'pn-vbadge ' + p.variant, p.variant === 'golden' ? '★' : '🌈'));
+  if (eq) c.appendChild(h('span', 'pn-eqbadge', '✓'));
+  if (p.locked) c.appendChild(h('span', 'pn-lockbadge', '🔒'));
+  c.appendChild(h('span', 'pn-mult', fmtMult(Services.petMultOf(p))));
+  c.addEventListener('click', () => {
+    _upS.petSel = p.uid; _upS.petSheet = true;
+    try { Sfx.play('click'); } catch (e) { /* */ }
+    _upRefresh();
+  });
+  return c;
+}
+function _upSellMenu(pets, eqSet) {
+  const m = h('div', 'pn-sellmenu');
+  m.appendChild(h('div', 'pn-sellhead', 'Sell all unlocked, unequipped pets of a rarity'));
+  let any = false;
+  for (const r of RARITIES) {
+    const list = pets.filter((p) => ANIMAL_BY_ID[p.id] && ANIMAL_BY_ID[p.id].rarity === r.id && !p.locked && !eqSet.has(p.uid));
+    if (!list.length) continue;
+    any = true;
+    const coins = list.reduce((s, p) => s + FORMULAS.sellValue(p.id, p.variant), 0);
+    const row = h('button', 'pn-sellrow r-' + r.id);
+    row.type = 'button';
+    row.style.setProperty('--rc', r.color);
+    row.innerHTML = '<b>' + esc(r.name) + '</b><span>' + list.length + ' pets</span><em>🪙 ' + _upNum(coins) + '</em>';
+    row.addEventListener('click', () => {
+      const risky = r.order >= 3 || list.some((p) => _upIsBadVariant(p));
+      UI.confirm('Sell ' + list.length + ' ' + r.name + ' pet' + (list.length > 1 ? 's' : '') + ' for 🪙 ' + _upNum(coins) + '?' + (risky ? ' This includes valuable pets!' : ''), () => {
+        const res = _upCall('pet:sellBulk', { rarity: r.id });
+        if (res.ok) { try { Sfx.play('sell'); } catch (e) { /* */ } UI.toast('Sold ' + (res.count != null ? res.count : list.length) + ' pets for 🪙 ' + _upNum(res.coins != null ? res.coins : coins), 'good'); }
+        _upS.sellMenu = false; _upRefresh();
+      });
+    });
+    m.appendChild(row);
+  }
+  if (!any) m.appendChild(h('div', 'muted pn-pad', 'Nothing to sell right now.'));
+  return m;
+}
+function _upPetDetail(pet, wrap) {
+  const pl = Game.player;
+  const a = ANIMAL_BY_ID[pet.id];
+  const r = _upRar(a.rarity);
+  wrap.style.setProperty('--rc', r.color);
+  const close = _upBtn('✕', 'btn-gray btn-sm pn-sheetclose', () => { _upS.petSheet = false; _upRefresh(); });
+  wrap.appendChild(close);
+  const view = h('div', 'pn-viewer r-' + a.rarity);
+  view.id = 'pn-viewer';
+  wrap.appendChild(view);
+  wrap.appendChild(h('div', 'pn-dname', esc(a.name)));
+  const tags = h('div', 'pn-tags');
+  tags.appendChild(h('span', 'tag pn-rtag', esc(r.name)));
+  const vd = VARIANTS[pet.variant];
+  tags.appendChild(h('span', 'tag pn-vtag v-' + pet.variant, esc(_upVariantInfo[pet.variant] ? _upVariantInfo[pet.variant].label : (vd ? vd.name : pet.variant))));
+  tags.appendChild(h('span', 'tag', '🌍 ' + esc(_upWorldName(a.world))));
+  wrap.appendChild(tags);
+  const mult = Services.petMultOf(pet);
+  const sell = FORMULAS.sellValue(pet.id, pet.variant);
+  const stats = h('div', 'pn-dstats');
+  stats.innerHTML = '<div><small>Multiplier</small><b class="pn-big">' + fmtMult(mult) + '</b></div><div><small>Sell value</small><b>🪙 ' + _upNum(sell) + '</b></div>';
+  wrap.appendChild(stats);
+  wrap.appendChild(h('p', 'pn-desc muted', esc(a.desc || '')));
+  const eq = pl.equipped.includes(pet.uid);
+  const acts = h('div', 'pn-acts');
+  acts.appendChild(_upBtn(eq ? 'Unequip' : 'Equip', eq ? 'btn-gray' : 'btn-green', () => {
+    const res = _upCall(eq ? 'pet:unequip' : 'pet:equip', { uid: pet.uid });
+    if (res.ok) { try { Sfx.play('equip'); } catch (e) { /* */ } }
+    _upRefresh();
+  }));
+  acts.appendChild(_upBtn(pet.locked ? '🔓 Unlock' : '🔒 Lock', 'btn-blue', () => { _upCall('pet:lock', { uid: pet.uid, locked: !pet.locked }); _upRefresh(); }));
+  const ev = Services.evolveInfo(pet.uid) || {};
+  if (ev.next) {
+    const nm = ev.next === 'golden' ? 'Golden' : ev.next === 'rainbow' ? 'Rainbow' : ev.next;
+    const b = _upBtn('✨ Evolve ' + ev.have + '/' + ev.need + ' → ' + nm, 'btn-purple pn-wide', () => {
+      const res = _upCall('pet:evolve', { uid: pet.uid });
+      if (res.ok) {
+        try { Sfx.play('evolve'); } catch (e) { /* */ }
+        if (res.pet) _upS.petSel = res.pet.uid;
+        UI.toast('Evolved into a ' + nm + ' ' + a.name + '!', 'rare');
+      }
+      _upRefresh();
+    }, !ev.can);
+    acts.appendChild(b);
+  } else {
+    acts.appendChild(h('div', 'muted pn-wide pn-maxev', '🌈 Max evolution reached'));
+  }
+  const canSell = !pet.locked && !eq;
+  const sb = _upBtn('Sell 🪙 ' + _upNum(sell), 'btn-red pn-wide', () => {
+    const doSell = () => {
+      const res = _upCall('pet:sell', { uid: pet.uid });
+      if (res.ok) { try { Sfx.play('sell'); } catch (e) { /* */ } UI.toast('Sold for 🪙 ' + _upNum(res.coins != null ? res.coins : sell), 'good'); _upS.petSel = null; _upS.petSheet = false; }
+      _upRefresh();
+    };
+    if (r.order >= 3 || pet.variant !== 'normal') UI.confirm('Sell your ' + (pet.variant !== 'normal' ? pet.variant + ' ' : '') + a.name + ' (' + r.name + ') for 🪙 ' + _upNum(sell) + '?', doSell);
+    else doSell();
+  }, !canSell);
+  acts.appendChild(sb);
+  if (!canSell) acts.appendChild(h('div', 'muted pn-wide pn-hint', pet.locked ? 'Unlock this pet to sell it.' : 'Unequip this pet to sell it.'));
+  wrap.appendChild(acts);
+}
+function _upRenderPets(body) {
+  try { PetViewer.unmount(); } catch (e) { /* */ }
+  const pl = Game.player;
+  const st = Services.stats();
+  const eqSet = new Set(pl.equipped);
+  _upKeepScroll(body, () => {
+    _upClear(body);
+    if (_upS.petSel && !pl.pets.some((p) => p.uid === _upS.petSel)) { _upS.petSel = null; _upS.petSheet = false; }
+    const root = h('div', 'pn-pets');
+    const main = h('div', 'pn-pets-main');
+    const chips = h('div', 'pn-chips');
+    chips.appendChild(_upChip('🐾 <b>' + pl.pets.length + '/' + st.invSlots + '</b> pets', pl.pets.length >= st.invSlots ? 'warn' : ''));
+    chips.appendChild(_upChip('✓ <b>' + pl.equipped.length + '/' + st.equipSlots + '</b> equipped'));
+    chips.appendChild(_upChip('⚡ Pet multiplier <b>' + fmtMult(st.petMult) + '</b>', 'hi'));
+    main.appendChild(chips);
+
+    const bar = h('div', 'pn-toolbar');
+    const sort = h('div', 'pn-seg');
+    [['mult', 'Best ×'], ['rarity', 'Rarity'], ['new', 'Newest']].forEach(([k, l]) => {
+      const b = h('button', 'pn-segb' + (_upS.petSort === k ? ' on' : ''), l); b.type = 'button';
+      b.addEventListener('click', () => { _upS.petSort = k; _upRefresh(); });
+      sort.appendChild(b);
+    });
+    bar.appendChild(sort);
+    const acts = h('div', 'pn-toolacts');
+    acts.appendChild(_upBtn('Equip Best', 'btn-green btn-sm', () => { const r = _upCall('pet:equipBest'); if (r.ok) { try { Sfx.play('equip'); } catch (e) { /* */ } } _upRefresh(); }));
+    acts.appendChild(_upBtn('Unequip All', 'btn-gray btn-sm', () => { _upCall('pet:unequipAll'); _upRefresh(); }));
+    acts.appendChild(_upBtn('Sell… ▾', 'btn-red btn-sm', () => { _upS.sellMenu = !_upS.sellMenu; _upRefresh(); }));
+    bar.appendChild(acts);
+    main.appendChild(bar);
+
+    const fl = h('div', 'pn-filters');
+    const mk = (id, label, color) => {
+      const b = h('button', 'pn-fchip' + (_upS.petFilter === id ? ' on' : ''), label); b.type = 'button';
+      if (color) b.style.setProperty('--rc', color);
+      b.addEventListener('click', () => { _upS.petFilter = id; _upRefresh(); });
+      fl.appendChild(b);
+    };
+    mk('all', 'All');
+    for (const r of RARITIES) if (pl.pets.some((p) => (ANIMAL_BY_ID[p.id] || {}).rarity === r.id)) mk(r.id, esc(r.name), r.color);
+    main.appendChild(fl);
+    if (_upS.sellMenu) main.appendChild(_upSellMenu(pl.pets, eqSet));
+
+    if (!pl.pets.length) {
+      const e = h('div', 'pn-empty');
+      e.innerHTML = '<div class="pn-empty-ico">🧸</div><b>No pets yet!</b><p>Catch animals in the claw machine to fill your collection!</p><div class="pn-arrow">⬇ Walk to the Claw Machine</div>';
+      main.appendChild(e);
+    } else {
+      const list = _upPetFilterList(pl.pets);
+      const grid = h('div', 'pn-petgrid');
+      for (const p of list) grid.appendChild(_upPetCard(p));
+      if (!list.length) grid.appendChild(h('div', 'muted pn-pad', 'No pets match this filter.'));
+      main.appendChild(grid);
+    }
+    root.appendChild(main);
+
+    const side = h('div', 'pn-pets-side' + (_upS.petSel && _upS.petSheet ? ' open' : ''));
+    const pet = _upS.petSel && pl.pets.find((p) => p.uid === _upS.petSel);
+    if (pet && ANIMAL_BY_ID[pet.id]) _upPetDetail(pet, side);
+    else side.appendChild(h('div', 'pn-detail-empty muted', '<div>👈</div>Select a pet to see its details'));
+    root.appendChild(side);
+    body.appendChild(root);
+    if (pet && ANIMAL_BY_ID[pet.id]) {
+      const v = side.querySelector('#pn-viewer');
+      try { PetViewer.mount(v, pet.id, pet.variant); } catch (e) { /* */ }
+    }
+  });
+}
+
+/* =====================================================================
+   2. UPGRADES
+   ===================================================================== */
+function _upUpgradeCard(u, unlockedCount) {
+  const pl = Game.player;
+  const lvl = pl.upgrades[u.id] || 0;
+  const worldOk = pl.worlds.unlocked.includes(u.world);
+  const cap = Math.min(FORMULAS.upgradeCap(u.id, unlockedCount), u.maxLevel);
+  const atMax = lvl >= u.maxLevel;
+  const atCap = !atMax && lvl >= cap;
+  const c = h('div', 'card pn-up' + (worldOk ? '' : ' locked') + (_upS.pulse === u.id ? ' pulse' : ''));
+  c.dataset.up = u.id;
+  const ico = h('div', 'pn-up-ico', u.icon || '⬆️');
+  c.appendChild(ico);
+  const mid = h('div', 'pn-up-mid');
+  mid.innerHTML = '<div class="pn-up-name">' + esc(u.name) + '</div><div class="muted pn-up-desc">' + esc(u.desc) + '</div>';
+  const cur = FORMULAS.formatUpgrade(u.id, FORMULAS.upgradeValue(u.id, lvl));
+  if (worldOk) {
+    const lv = h('div', 'pn-up-lv');
+    lv.innerHTML = '<span class="pill">Lv ' + lvl + ' / ' + cap + '</span><span class="muted"> (max ' + u.maxLevel + ')</span>';
+    mid.appendChild(lv);
+    const bar = h('div', 'bar pn-up-bar'); bar.innerHTML = '<i style="width:' + Math.round(100 * lvl / u.maxLevel) + '%"></i>';
+    mid.appendChild(bar);
+    const val = h('div', 'pn-up-val');
+    if (atMax) val.innerHTML = '<b>' + esc(cur) + '</b>';
+    else val.innerHTML = '<span>' + esc(cur) + '</span> <em>→</em> <b>' + esc(FORMULAS.formatUpgrade(u.id, FORMULAS.upgradeValue(u.id, lvl + 1))) + '</b>';
+    mid.appendChild(val);
+  }
+  c.appendChild(mid);
+  const act = h('div', 'pn-up-act');
+  if (!worldOk) {
+    act.appendChild(h('div', 'pn-lockmsg', '🔒 Unlocks in<br><b>' + esc(_upWorldName(u.world)) + '</b>'));
+  } else if (atMax) {
+    act.appendChild(h('div', 'pn-maxtag', 'MAX'));
+  } else if (atCap) {
+    act.appendChild(h('div', 'pn-capmsg', 'Unlock the next world to raise the cap'));
+  } else {
+    const cost = FORMULAS.upgradeCost(u.id, lvl);
+    const bal = u.currency === 'gems' ? pl.gems : pl.coins;
+    const ok = bal >= cost;
+    const sym = u.currency === 'gems' ? '💎' : '🪙';
+    act.appendChild(_upBtn('Upgrade<br><span class="pn-cost">' + sym + ' ' + _upNum(cost) + '</span>', ok ? 'btn-green' : 'btn-gray', () => {
+      const res = _upCall('upgrade:buy', { id: u.id });
+      if (res.ok) { _upS.pulse = u.id; try { Sfx.play('upgrade'); } catch (e) { /* */ } }
+      _upRefresh();
+    }, !ok));
+  }
+  c.appendChild(act);
+  return c;
+}
+function _upRenderUpgrades(body) {
+  const pl = Game.player;
+  const st = Services.stats();
+  const world = WORLD_BY_ID[pl.worlds.current] || WORLDS[0];
+  const n = pl.worlds.unlocked.length;
+  const total = UPGRADES.reduce((s, u) => s + (pl.upgrades[u.id] || 0), 0);
+  _upKeepScroll(body, () => {
+    _upClear(body);
+    const root = h('div', 'pn-upgrades');
+    const head = h('div', 'pn-uphead');
+    head.innerHTML = '<div class="pn-uplevel"><small>Machine level</small><b>' + total + '</b></div>' +
+      '<div class="pn-upname"><small>Current machine</small><b>' + esc(world.machineName || 'Claw Machine') + '</b></div>';
+    root.appendChild(head);
+    const stats = h('div', 'pn-statrow');
+    const S = (ico, lab, v) => '<div class="pn-stat"><span>' + ico + '</span><small>' + lab + '</small><b>' + v + '</b></div>';
+    stats.innerHTML = S('💪', 'Grip', st.gripPower.toFixed(2)) + S('🏃', 'Speed', st.clawSpeed.toFixed(2) + ' m/s') +
+      S('🛡️', 'Protect', Math.round(st.protection * 100) + '%') + S('📦', 'Capacity', Math.round(st.capacity)) +
+      S('🍀', 'Luck', fmtMult(st.luck)) + S('✨', 'Special', fmtMult(st.special));
+    root.appendChild(stats);
+    const list = h('div', 'pn-uplist');
+    for (const u of UPGRADES) list.appendChild(_upUpgradeCard(u, n));
+    root.appendChild(list);
+    body.appendChild(root);
+  });
+  _upS.pulse = null;
+}
+
+/* =====================================================================
+   3. WORLDS
+   ===================================================================== */
+function _upReqBar(icon, cur, need, label) {
+  const p = need <= 0 ? 1 : clamp(cur / need, 0, 1);
+  const r = h('div', 'pn-req' + (p >= 1 ? ' ok' : ''));
+  r.innerHTML = '<div class="pn-reqtxt"><span>' + icon + ' ' + label + '</span><b>' + _upNum(cur) + ' / ' + _upNum(need) + (p >= 1 ? ' ✓' : '') + '</b></div><div class="bar"><i style="width:' + Math.round(p * 100) + '%"></i></div>';
+  return r;
+}
+function _upWorldCard(w, idx) {
+  const pl = Game.player;
+  const th = w.theme || {};
+  const unlocked = pl.worlds.unlocked.includes(w.id);
+  const current = pl.worlds.current === w.id;
+  const c = h('div', 'pn-world' + (current ? ' current' : '') + (unlocked ? '' : ' locked'));
+  c.style.setProperty('--wa', th.accent || '#4ea1ff');
+  c.style.setProperty('--wb', th.neon || '#a06bff');
+  c.style.setProperty('--wc', th.floorA || '#223');
+  const emo = h('div', 'pn-world-emoji', _upDecor[th.decor] || '🌍');
+  c.appendChild(emo);
+  if (current) c.appendChild(h('div', 'pn-curbadge', 'CURRENT'));
+  const info = h('div', 'pn-world-info');
+  info.appendChild(h('div', 'pn-world-name', esc(w.name)));
+  info.appendChild(h('div', 'pn-world-desc', esc(w.desc || '')));
+  const facts = h('div', 'pn-facts');
+  facts.innerHTML = '<span>🎟️ Play <b>🪙 ' + _upNum(w.playCost) + '</b></span><span>⭐ Rewards <b>' + fmtMult(w.rewardMult) + '</b></span>';
+  info.appendChild(facts);
+  const rc = h('div', 'pn-rchips');
+  for (const rid of w.rarities || []) {
+    const r = _upRar(rid);
+    const t = h('span', 'pn-rchip', esc(r.name)); t.style.setProperty('--rc', r.color);
+    rc.appendChild(t);
+  }
+  info.appendChild(rc);
+  const animals = ANIMALS.filter((a) => a.world === w.id);
+  const got = animals.filter((a) => (pl.discovered[a.id] || 0) > 0).length;
+  info.appendChild(h('div', 'pn-disc', '📖 Discovered <b>' + got + '/' + animals.length + '</b>'));
+  c.appendChild(info);
+  const act = h('div', 'pn-world-act');
+  if (unlocked) {
+    if (current) act.appendChild(h('div', 'pn-here', '📍 You are here'));
+    else act.appendChild(_upBtn('Travel ✈️', 'btn-blue btn-lg', () => {
+      const res = _upCall('world:travel', { id: w.id });
+      if (res.ok) { try { Sfx.play('travel'); } catch (e) { /* */ } UI.closePanel(); }
+    }));
+  } else {
+    const chk = Services.canUnlockWorld(w.id) || {};
+    const prev = WORLDS[idx - 1];
+    if (!chk.prevUnlocked && prev) {
+      act.appendChild(h('div', 'pn-lockmsg', '🔒 Unlock <b>' + esc(prev.name) + '</b> first'));
+    } else {
+      act.appendChild(_upReqBar('💪', pl.strength, w.unlock.strength, 'Strength'));
+      act.appendChild(_upReqBar('🪙', pl.coins, w.unlock.coins, 'Coins'));
+      act.appendChild(_upBtn('Unlock 🔓', 'btn-yellow', () => {
+        const res = _upCall('world:unlock', { id: w.id });
+        if (res.ok) { try { Sfx.play('unlock'); } catch (e) { /* */ } UI.toast(w.name + ' unlocked!', 'good'); }
+        _upRefresh();
+      }, !chk.ok));
+    }
+  }
+  c.appendChild(act);
+  return c;
+}
+function _upRenderWorlds(body) {
+  _upKeepScroll(body, () => {
+    _upClear(body);
+    const root = h('div', 'pn-worlds');
+    WORLDS.forEach((w, i) => root.appendChild(_upWorldCard(w, i)));
+    body.appendChild(root);
+  });
+}
+
+/* =====================================================================
+   4. INDEX
+   ===================================================================== */
+function _upRenderIndex(body) {
+  const pl = Game.player;
+  if (!_upS.idxWorld || !WORLD_BY_ID[_upS.idxWorld]) _upS.idxWorld = pl.worlds.current;
+  const all = ANIMALS.length;
+  const gotAll = ANIMALS.filter((a) => (pl.discovered[a.id] || 0) > 0).length;
+  _upKeepScroll(body, () => {
+    _upClear(body);
+    const root = h('div', 'pn-index');
+    const top = h('div', 'pn-idxtop');
+    const pct = all ? gotAll / all : 0;
+    top.innerHTML = '<div class="pn-idxpct"><b>' + Math.floor(pct * 100) + '%</b><small>complete</small></div>' +
+      '<div class="pn-idxbar"><div class="muted">Animals discovered <b>' + gotAll + '/' + all + '</b></div><div class="bar"><i style="width:' + Math.round(pct * 100) + '%"></i></div></div>';
+    root.appendChild(top);
+    const tabs = h('div', 'pn-tabs');
+    for (const w of WORLDS) {
+      const unl = pl.worlds.unlocked.includes(w.id);
+      const t = h('button', 'pn-tab' + (_upS.idxWorld === w.id ? ' on' : ''), (unl ? (_upDecor[(w.theme || {}).decor] || '🌍') : '🔒') + ' <span>' + esc(w.name) + '</span>');
+      t.type = 'button';
+      t.style.setProperty('--wa', (w.theme || {}).accent || '#4ea1ff');
+      t.addEventListener('click', () => { _upS.idxWorld = w.id; _upRefresh(); });
+      tabs.appendChild(t);
+    }
+    root.appendChild(tabs);
+    const w = WORLD_BY_ID[_upS.idxWorld];
+    const animals = ANIMALS.filter((a) => a.world === w.id).sort((a, b) => _upRar(a.rarity).order - _upRar(b.rarity).order || a.mult - b.mult);
+    const got = animals.filter((a) => (pl.discovered[a.id] || 0) > 0).length;
+    const complete = got === animals.length && animals.length > 0;
+    const wh = h('div', 'pn-idxworld');
+    wh.style.setProperty('--wa', (w.theme || {}).accent || '#4ea1ff');
+    const left = h('div', 'pn-idxw-l');
+    left.innerHTML = '<b>' + esc(w.name) + '</b> <span class="muted">' + got + '/' + animals.length + '</span><div class="bar"><i style="width:' + Math.round(100 * got / Math.max(1, animals.length)) + '%"></i></div>';
+    wh.appendChild(left);
+    if (complete) {
+      if (pl.indexClaimed[w.id]) wh.appendChild(h('div', 'pn-claimed', '✓ Reward claimed'));
+      else wh.appendChild(_upBtn('Claim 💎 ' + _upNum(w.indexReward), 'btn-green', () => {
+        const res = _upCall('index:claim', { worldId: w.id });
+        if (res.ok) { try { Sfx.play('gem'); } catch (e) { /* */ } UI.toast('Index reward: 💎 ' + _upNum(res.gems != null ? res.gems : w.indexReward), 'good'); }
+        _upRefresh();
+      }));
+    } else wh.appendChild(h('div', 'muted pn-idxreward', 'Complete for 💎 ' + _upNum(w.indexReward)));
+    root.appendChild(wh);
+    if (!pl.worlds.unlocked.includes(w.id)) root.appendChild(h('div', 'pn-note muted', '🔒 This world is still locked, but you can browse its animals.'));
+    const grid = h('div', 'pn-idxgrid');
+    for (const a of animals) {
+      const n = pl.discovered[a.id] || 0;
+      const r = _upRar(a.rarity);
+      const c = h('div', 'pn-idx r-' + a.rarity + (n > 0 ? ' got' : ' unk'));
+      c.style.setProperty('--rc', r.color);
+      const img = h('img'); img.alt = ''; img.draggable = false; img.src = AnimalFactory.thumbnail(a.id, 'normal');
+      c.appendChild(img);
+      c.appendChild(h('div', 'pn-idx-name', n > 0 ? esc(a.name) : '???'));
+      c.appendChild(h('div', 'pn-idx-rar', esc(r.name)));
+      if (n > 0) c.appendChild(h('div', 'pn-idx-cnt', '×' + n + ' caught'));
+      grid.appendChild(c);
+    }
+    root.appendChild(grid);
+    body.appendChild(root);
+  });
+}
+
+/* =====================================================================
+   5. SHOP
+   ===================================================================== */
+function _upShopOwned(it) {
+  const s = Game.player.shop;
+  switch (it.kind) {
+    case 'equipSlot': return s.equipSlots || 0;
+    case 'invSlots': return s.invSlots || 0;
+    case 'autoTrain': return s.autoTrain ? 1 : 0;
+    default: return 0;
+  }
+}
+function _upBoostLeft(it) {
+  const b = Game.player.boosts || {};
+  const exp = it.kind === 'boostLuck' ? b.luck : it.kind === 'boostCoins' ? b.coins : 0;
+  return exp > Date.now() ? (exp - Date.now()) / 1000 : 0;
+}
+function _upRenderShop(body) {
+  const pl = Game.player;
+  _upS.live = [];
+  _upKeepScroll(body, () => {
+    _upClear(body);
+    const root = h('div', 'pn-shop');
+    const gem = h('div', 'pn-gembal');
+    gem.innerHTML = '<span>💎</span><div><small>Your gems</small><b>' + _upNum(pl.gems) + '</b></div>';
+    root.appendChild(gem);
+
+    const d = Services.dailyInfo() || {};
+    const dc = h('div', 'pn-daily' + (d.ready ? ' ready' : ''));
+    const dl = h('div', 'pn-daily-l');
+    dl.innerHTML = '<div class="pn-daily-t">🎁 Daily Reward</div><div class="muted">🔥 Streak: <b>' + (d.streak || 0) + '</b> day' + ((d.streak || 0) === 1 ? '' : 's') + '</div>' +
+      '<div class="pn-daily-r">💎 ' + _upNum(d.gems || 0) + (d.coins ? ' &nbsp;🪙 ' + _upNum(d.coins) : '') + '</div>';
+    dc.appendChild(dl);
+    if (d.ready) dc.appendChild(_upBtn('Claim!', 'btn-green btn-lg pn-claimbtn', () => {
+      const res = _upCall('daily:claim');
+      if (res.ok) { try { Sfx.play('gem'); } catch (e) { /* */ } UI.toast('Daily reward: 💎 ' + _upNum(res.gems || 0) + (res.coins ? ' + 🪙 ' + _upNum(res.coins) : ''), 'good'); }
+      _upRefresh();
+    }));
+    else {
+      const t = h('div', 'pn-timer');
+      t.innerHTML = '<small>Next reward in</small><b></b>';
+      const upd = (el) => { const i = Services.dailyInfo() || {}; if (i.ready) { _upRefresh(); return; } el.querySelector('b').textContent = fmtDur(i.secondsLeft || 0); };
+      t.querySelector('b').textContent = fmtDur(d.secondsLeft || 0);
+      _upLiveAdd(t, upd);
+      dc.appendChild(t);
+    }
+    root.appendChild(dc);
+
+    const list = h('div', 'pn-shoplist');
+    for (const it of GEM_SHOP) {
+      const owned = _upShopOwned(it);
+      const isBoost = it.kind === 'boostLuck' || it.kind === 'boostCoins';
+      const done = !isBoost && it.max != null && owned >= it.max;
+      const cost = Array.isArray(it.cost) ? it.cost[Math.min(owned, it.cost.length - 1)] : it.cost;
+      const can = pl.gems >= cost;
+      const c = h('div', 'card pn-item' + (done ? ' done' : ''));
+      c.appendChild(h('div', 'pn-item-ico', it.icon || '💎'));
+      const mid = h('div', 'pn-item-mid');
+      mid.innerHTML = '<div class="pn-item-name">' + esc(it.name) + '</div><div class="muted pn-item-desc">' + esc(it.desc) + '</div>';
+      if (!isBoost && it.max != null) mid.appendChild(h('div', 'pn-item-own', 'Owned <b>' + owned + '/' + it.max + '</b>'));
+      if (isBoost) {
+        const left = _upBoostLeft(it);
+        const a = h('div', 'pn-active' + (left > 0 ? '' : ' off'));
+        a.textContent = left > 0 ? '⏱ Active: ' + fmtDur(left) : '';
+        if (left > 0) _upLiveAdd(a, (el) => { const l = _upBoostLeft(it); if (l <= 0) _upRefresh(); else el.textContent = '⏱ Active: ' + fmtDur(l); });
+        mid.appendChild(a);
+      }
+      c.appendChild(mid);
+      const act = h('div', 'pn-item-act');
+      if (done) act.appendChild(h('div', 'pn-maxtag', it.max === 1 ? 'OWNED' : 'MAX'));
+      else act.appendChild(_upBtn('Buy<br><span class="pn-cost">💎 ' + _upNum(cost) + '</span>', can ? 'btn-green' : 'btn-gray', () => {
+        const res = _upCall('shop:buy', { id: it.id });
+        if (res.ok) { try { Sfx.play('upgrade'); } catch (e) { /* */ } UI.toast(it.name + ' purchased!', 'good'); }
+        _upRefresh();
+      }, !can));
+      c.appendChild(act);
+      list.appendChild(c);
+    }
+    root.appendChild(list);
+    const info = h('div', 'pn-info');
+    info.innerHTML = '<b>💡 How to get gems</b><ul><li>Rare catches in the claw machine</li><li>Discovering new animals</li><li>Completing a world in the Index</li><li>Daily rewards</li></ul>';
+    root.appendChild(info);
+    body.appendChild(root);
+  });
+}
+
+/* =====================================================================
+   6. SETTINGS
+   ===================================================================== */
+function _upCopy(ta) {
+  const done = () => UI.toast('Copied to clipboard', 'good');
+  ta.focus(); ta.select();
+  try {
+    if (navigator.clipboard && navigator.clipboard.writeText) { navigator.clipboard.writeText(ta.value).then(done, () => { try { document.execCommand('copy'); done(); } catch (e) { UI.toast('Select the text and copy it', 'info'); } }); return; }
+  } catch (e) { /* fall through */ }
+  try { document.execCommand('copy'); done(); } catch (e) { UI.toast('Select the text and copy it', 'info'); }
+}
+function _upToggle(label, ico, on, key) {
+  const row = h('button', 'pn-toggle' + (on ? ' on' : ''));
+  row.type = 'button';
+  row.innerHTML = '<span class="pn-tg-l">' + ico + ' ' + label + '</span><span class="pn-sw"><i></i></span>';
+  row.addEventListener('click', () => { _upCall('settings:set', { key, value: !on }); _upRefresh(); });
+  return row;
+}
+function _upSection(title) { const s = h('div', 'card pn-sec'); s.appendChild(h('h3', 'pn-sec-t', title)); return s; }
+function _upRenderSettings(body) {
+  if (_upS.volDrag) return;
+  const pl = Game.player;
+  const set = pl.settings;
+  _upS.live = [];
+  _upKeepScroll(body, () => {
+    _upClear(body);
+    const root = h('div', 'pn-settings');
+
+    const g = _upSection('🎨 Graphics');
+    const seg = h('div', 'pn-seg pn-seg-full');
+    ['auto', 'low', 'medium', 'high'].forEach((q) => {
+      const b = h('button', 'pn-segb' + (set.quality === q ? ' on' : ''), q[0].toUpperCase() + q.slice(1)); b.type = 'button';
+      b.addEventListener('click', () => { _upCall('settings:set', { key: 'quality', value: q }); _upRefresh(); });
+      seg.appendChild(b);
+    });
+    g.appendChild(seg);
+    g.appendChild(h('div', 'muted pn-small', 'Auto picks the best quality for your device. Choose Low if the game feels slow.'));
+    root.appendChild(g);
+
+    const a = _upSection('🔊 Audio');
+    a.appendChild(_upToggle('Sound effects', '🔔', !!set.sound, 'sound'));
+    a.appendChild(_upToggle('Music', '🎵', !!set.music, 'music'));
+    const vol = h('div', 'pn-vol');
+    const pctEl = h('b', '', Math.round((set.volume != null ? set.volume : 0.8) * 100) + '%');
+    const rng = h('input'); rng.type = 'range'; rng.min = '0'; rng.max = '100'; rng.step = '1'; rng.value = String(Math.round((set.volume != null ? set.volume : 0.8) * 100));
+    rng.setAttribute('aria-label', 'Volume');
+    const send = (final) => {
+      const now = performance.now();
+      pctEl.textContent = rng.value + '%';
+      if (final || now - _upS.volT > 120) { _upS.volT = now; Remote.invoke('settings:set', { key: 'volume', value: Number(rng.value) / 100 }); }
+    };
+    rng.addEventListener('pointerdown', () => { _upS.volDrag = true; });
+    rng.addEventListener('input', () => { _upS.volDrag = true; send(false); });
+    rng.addEventListener('change', () => { send(true); _upS.volDrag = false; });
+    rng.addEventListener('pointerup', () => { send(true); _upS.volDrag = false; });
+    vol.appendChild(h('span', '', '🔉 Volume'));
+    vol.appendChild(rng); vol.appendChild(pctEl);
+    a.appendChild(vol);
+    root.appendChild(a);
+
+    const sv = _upSection('💾 Save');
+    const srow = h('div', 'pn-saverow');
+    srow.appendChild(_upBtn('Save now', 'btn-green', () => { const ok = SaveService.save('manual'); UI.toast(ok === false ? 'Could not save' : 'Game saved', ok === false ? 'bad' : 'good'); _upRefresh(); }));
+    const ls = h('div', 'muted pn-lastsaved');
+    const agoTxt = () => { const t = Game.player.lastSaved; return t ? 'Last saved: ' + fmtDur((Date.now() - t) / 1000) + ' ago' : 'Not saved yet'; };
+    ls.textContent = agoTxt();
+    _upLiveAdd(ls, (el) => { el.textContent = agoTxt(); });
+    srow.appendChild(ls);
+    sv.appendChild(srow);
+
+    sv.appendChild(h('div', 'pn-sub', 'Export save'));
+    const ex = h('textarea', 'pn-ta'); ex.readOnly = true; ex.rows = 3; ex.spellcheck = false;
+    try { ex.value = SaveService.exportCode(); } catch (e) { ex.value = ''; }
+    ex.addEventListener('focus', () => ex.select());
+    sv.appendChild(ex);
+    sv.appendChild(_upBtn('📋 Copy', 'btn-blue btn-sm', () => _upCopy(ex)));
+
+    sv.appendChild(h('div', 'pn-sub', 'Import save'));
+    const im = h('textarea', 'pn-ta'); im.rows = 3; im.spellcheck = false; im.placeholder = 'Paste a save code here…'; im.value = _upS.importText;
+    im.addEventListener('input', () => { _upS.importText = im.value; });
+    sv.appendChild(im);
+    sv.appendChild(_upBtn('Import', 'btn-yellow btn-sm', () => {
+      const text = im.value.trim();
+      if (!text) { UI.toast('Paste a save code first', 'bad'); return; }
+      UI.confirm('Importing replaces your current progress. Continue?', () => {
+        const res = SaveService.importCode(text);
+        if (res && res.ok) location.reload();
+        else UI.toast((res && res.err) || 'Invalid save code', 'bad');
+      });
+    }));
+    root.appendChild(sv);
+
+    const dz = _upSection('⚠️ Danger zone');
+    dz.appendChild(_upBtn('Reset progress', 'btn-red', () => {
+      UI.confirm('Reset ALL progress? This cannot be undone!', () => {
+        UI.confirm('Are you really sure? Everything will be deleted.', () => { SaveService.reset(); location.reload(); });
+      });
+    }));
+    root.appendChild(dz);
+
+    const ct = _upSection('🎮 Controls');
+    const rows = Game.isTouch
+      ? [['Move', 'Joystick / D-pad'], ['Action button', 'Interact / drop / train'], ['Aim claw', 'Tap or drag in the machine'], ['Menu buttons', 'Open panels']]
+      : [['Move', 'W A S D / Arrow keys'], ['Interact', 'E'], ['Drop claw / Train', 'Space'], ['Back / close', 'Esc'], ['Pets', 'I'], ['Upgrades', 'U'], ['Worlds', 'G'], ['Index', 'X'], ['Shop', 'B'], ['Settings', 'O']];
+    const tb = h('div', 'pn-keys');
+    const all = Game.isTouch ? rows.concat([['Keyboard', 'WASD / E / Space / Esc / I U G X B O']]) : rows.concat([['Touch', 'Joystick, action button, D-pad, tap/drag in machine']]);
+    for (const [k, v] of all) tb.appendChild(h('div', 'pn-keyrow', '<span>' + esc(k) + '</span><b>' + esc(v) + '</b>'));
+    ct.appendChild(tb);
+    root.appendChild(ct);
+
+    const s = pl.stats || {};
+    const best = s.bestRarity ? _upRar(s.bestRarity).name : '—';
+    const stc = _upSection('📊 Stats');
+    const sg = h('div', 'pn-statgrid');
+    const SI = (l, v) => '<div><small>' + l + '</small><b>' + v + '</b></div>';
+    sg.innerHTML = SI('Plays', _upNum(s.plays || 0)) + SI('Wins', _upNum(s.wins || 0)) + SI('Slips', _upNum(s.slips || 0)) + SI('Misses', _upNum(s.misses || 0)) +
+      SI('Reps', _upNum(s.reps || 0)) + SI('Best rarity', esc(best)) + SI('Play time', fmtDur(s.playTime || 0));
+    stc.appendChild(sg);
+    root.appendChild(stc);
+    body.appendChild(root);
+  });
+}
+
+/* =====================================================================
+   registration
+   ===================================================================== */
+UI.registerPanel('pets', {
+  title: 'Pets', icon: '🐾', wide: true,
+  render: _upRenderPets,
+  onOpen() { _upS.petSheet = false; },
+  onClose() { try { PetViewer.unmount(); } catch (e) { /* */ } _upS.sellMenu = false; },
+});
+UI.registerPanel('upgrades', { title: 'Machine Upgrades', icon: '⬆️', render: _upRenderUpgrades });
+UI.registerPanel('worlds', { title: 'Worlds', icon: '🌍', wide: true, render: _upRenderWorlds });
+UI.registerPanel('index', {
+  title: 'Index', icon: '📖', wide: true, render: _upRenderIndex,
+  onOpen() { _upS.idxWorld = Game.player ? Game.player.worlds.current : null; },
+});
+UI.registerPanel('shop', { title: 'Shop', icon: '💎', render: _upRenderShop, onOpen: _upStartTick, onClose: _upStopTick });
+UI.registerPanel('settings', { title: 'Settings', icon: '⚙️', render: _upRenderSettings, onOpen: _upStartTick, onClose() { _upStopTick(); _upS.volDrag = false; } });
+
+/* ==== 12_main.js ==== */
+/* =====================================================================
+   12_main.js — boot, mode switching, world switching and the render loop.
+   Integration layer: wires the modules together exactly as described in
+   ARCHITECTURE.md sections 7 and 8. Contains no game rules itself.
+   ===================================================================== */
+
+const _mnState = { last: 0, booted: false, errors: {}, zero: { x: 0, y: 0 } };
+
+/** Run fn, log only the first few errors per subsystem so one bug never freezes the loop. */
+function _mnSafe(name, fn) {
+  try { return fn(); } catch (e) {
+    const n = (_mnState.errors[name] = (_mnState.errors[name] || 0) + 1);
+    if (n <= 3) console.error('[' + name + ']', e);
+    return undefined;
+  }
+}
+
+function _mnShowError(msg) {
+  const el = document.getElementById('loading-msg');
+  if (el) el.textContent = msg;
+  const ld = document.getElementById('loading');
+  if (ld) ld.classList.remove('hidden');
+  console.error(msg);
+}
+
+/* ---------- modes ---------- */
+function _mnSetMode(mode) {
+  if (Game.mode === mode) return;
+  const prev = Game.mode;
+  Game.mode = mode;
+  if (prev === 'train') _mnSafe('player', () => Player.setTraining(false));
+  if (prev === 'machine') _mnSafe('sfx', () => Sfx.motor(false));
+  Input.virtual.x = 0; Input.virtual.y = 0;
+
+  if (mode === 'machine') {
+    // stand beside the machine so the avatar never blocks the view into the glass
+    const st = ROOM.stations.machine;
+    const px = st.x + 1.75, pz = st.iz - 0.2;
+    _mnSafe('player', () => Player.setPosition(px, pz, Math.atan2(st.x - px, st.z - pz)));
+    _mnSafe('camera', () => CameraRig.setMode('machine'));
+  } else if (mode === 'train') {
+    _mnSafe('player', () => Player.setTraining(true));
+    _mnSafe('camera', () => CameraRig.setMode('train'));
+  } else {
+    _mnSafe('camera', () => CameraRig.setMode('follow'));
+  }
+  Bus.emit('mode:changed', { mode });
+}
+
+/* ---------- worlds ---------- */
+function _mnEnterWorld(id) {
+  if (!WORLD_BY_ID[id]) id = 'starter';
+  if (Game.mode !== 'walk') _mnSetMode('walk');
+  _mnSafe('scene', () => Scene3D.buildWorld(id));
+  // fill the pit BEFORE the machine exists, so syncPit builds every body once (no duplicate spawns)
+  _mnSafe('services', () => Services.ensurePit(id));
+  _mnSafe('machine', () => { const m = Machines.create(id); m.syncPit(); m.applyUpgradeVisuals(); });
+  _mnSafe('scene', () => Scene3D.refreshPetDisplay());
+  const sp = ROOM.spawn;
+  _mnSafe('player', () => Player.setPosition(sp.x, sp.z, sp.rotY));
+  Bus.emit('world:entered', { id });
+}
+
+/* ---------- input routing ---------- */
+function _mnOnAction(data) {
+  const name = data && data.name;
+  if (!name) return;
+  // panels / reveal / confirm handle their own keys; this handler is registered before UI.init
+  // so it runs first and never acts on the key press that closes an overlay
+  if (UI.isBlocking()) return;
+  const m = Machines.active;
+  switch (name) {
+    case 'interact':
+      if (Game.mode === 'walk') Interact.use();
+      break;
+    case 'primary':
+      if (Game.mode === 'machine' && m) {
+        if (m.state === 'idle') m.startPlay();
+        else if (m.state === 'aim') m.drop();
+      } else if (Game.mode === 'train') {
+        Remote.invoke('train:rep', {});
+      } else if (Game.mode === 'walk') {
+        Interact.use();
+      }
+      break;
+    case 'back':
+      if (Game.mode === 'machine') {
+        if (!m || !m.isBusy()) _mnSetMode('walk');
+        else Bus.emit('toast', { text: 'Wait until the claw is done!', kind: 'info' });
+      } else if (Game.mode === 'train') {
+        _mnSetMode('walk');
+      }
+      break;
+    default:
+      break;
+  }
+}
+
+function _mnOnStation(data) {
+  const key = data && data.key;
+  if (Game.mode !== 'walk' || UI.isBlocking()) return;
+  switch (key) {
+    case 'machine': _mnSetMode('machine'); break;
+    case 'training': _mnSetMode('train'); break;
+    case 'upgrades': UI.openPanel('upgrades'); break;
+    case 'pets': UI.openPanel('pets'); break;
+    case 'portal': UI.openPanel('worlds'); break;
+    default: break;
+  }
+}
+
+/* ---------- render loop ---------- */
+function _mnFrame(nowMs) {
+  requestAnimationFrame(_mnFrame);
+  let dt = (nowMs - _mnState.last) / 1000;
+  _mnState.last = nowMs;
+  if (!(dt > 0)) dt = 0;
+  if (dt > 0.1) dt = 0.1;
+  Game.time += dt;
+  U.uTime.value = Game.time;
+
+  _mnSafe('tweens', () => Tweens.update(dt));
+  _mnSafe('services', () => Services.tick(dt));
+  const m = Machines.active;
+  const move = _mnSafe('input', () => Input.getMove()) || _mnState.zero;
+  if (Game.mode === 'machine' && m) _mnSafe('machine', () => m.setMoveInput(move.x, move.y));
+  if (m) _mnSafe('machine', () => m.update(dt));
+  _mnSafe('player', () => Player.update(dt, Game.mode === 'walk' ? move : _mnState.zero));
+  _mnSafe('interact', () => Interact.update());
+  _mnSafe('camera', () => CameraRig.update(dt));
+  _mnSafe('scene', () => Scene3D.update(dt));
+  _mnSafe('fx', () => FX.update(dt));
+  _mnSafe('ui', () => UI.update(dt));
+  _mnSafe('render', () => Scene3D.render());
+}
+
+/* ---------- boot ---------- */
+function _mnBoot() {
+  try {
+    try { Game.player = SaveService.load(); } catch (e) { console.error('[save] load failed', e); Game.player = PlayerData.create(); }
+    const fresh = !(Game.player.stats && Game.player.stats.plays > 0);
+
+    // main's handlers first (see _mnOnAction)
+    Bus.on('input:action', _mnOnAction);
+    Bus.on('station:use', _mnOnStation);
+    Bus.on('world:changed', (d) => _mnEnterWorld(d && d.id));
+
+    const canvas = document.getElementById('game-canvas');
+    Scene3D.init(canvas);
+    _mnSafe('sfx', () => Sfx.init());
+    _mnSafe('fx', () => FX.init());
+    UI.init();
+    Input.init(canvas);
+    Player.init();
+    CameraRig.init();
+    Interact.init();
+    Bus.emit('mode:changed', { mode: Game.mode });
+
+    _mnEnterWorld(Game.player.worlds.current);
+    SaveService.startAutosave();
+
+    if (Game.debug) {
+      window.CMS = {
+        THREE, Game, Bus, Remote, Services, SaveService, PlayerData, Scene3D, AnimalFactory, PetViewer,
+        Machines, Input, Player, CameraRig, Interact, FX, Sfx, UI, ROOM, MACHINE_DIMS,
+        RARITIES, VARIANTS, ANIMALS, ANIMAL_BY_ID, WORLDS, WORLD_BY_ID, UPGRADES, TRAINING_EQUIPMENT, GEM_SHOP, ECONOMY, FORMULAS,
+        setMode: _mnSetMode, enterWorld: _mnEnterWorld, errors: _mnState.errors,
+      };
+    }
+
+    _mnState.last = performance.now();
+    requestAnimationFrame(_mnFrame);
+    _mnState.booted = true;
+    window.__cmsBooted = true;
+    // hide the loading screen once a couple of frames are on screen
+    requestAnimationFrame(() => requestAnimationFrame(() => {
+      const ld = document.getElementById('loading');
+      if (ld) ld.classList.add('hidden');
+      if (SaveService.recovered) Bus.emit('toast', { text: 'Your save was restored from a backup', kind: 'info' });
+      if (fresh) Bus.emit('toast', { text: 'Walk to the claw machine and press E to play!', kind: 'info' });
+      else Bus.emit('toast', { text: 'Welcome back!', kind: 'good' });
+      _mnSafe('services', () => { if (Services.dailyInfo().ready) Bus.emit('toast', { text: 'Your daily reward is ready in the Shop 💎', kind: 'rare' }); });
+    }));
+  } catch (e) {
+    _mnShowError('Something went wrong while starting the game: ' + (e && e.message ? e.message : e));
+    console.error(e);
+  }
+}
+
+_mnBoot();
 
 </script>
 </body>
