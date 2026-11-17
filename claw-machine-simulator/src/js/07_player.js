@@ -461,7 +461,7 @@ function _plPose(dt) {
 
   const idle = breathe * 0.04;
   const walkA = -sw * 0.95 + idle, walkB = sw * 0.95 + idle;
-  const holdA = -1.25 + S.holdW * 0;
+  const holdA = -1.25;
   const rep = L * (S.repHeld ? -1.6 : -2.4);
   const hw = S.holdW;
   const aL = lerp(walkA, holdA, hw) + rep, aR = lerp(walkB, holdA, hw) + rep;
@@ -535,12 +535,12 @@ function _plSlot(i, n, out) {
   out.z = pos.z + (-bx * s + bz * c) * R;
 }
 const _plTmpSlot = { x: 0, z: 0 };
-function _plSnapPets() {
+function _plSnapPets(keepNear) {
   const S = _plS, n = S.pets.length;
   for (let i = 0; i < n; i++) {
     const p = S.pets[i];
     _plSlot(i, n, _plTmpSlot);
-    if (arguments[0] === true && (Math.hypot(p.x - _plTmpSlot.x, p.z - _plTmpSlot.z) < 12) && p.keep !== false) continue;
+    if (keepNear === true && Math.hypot(p.x - _plTmpSlot.x, p.z - _plTmpSlot.z) < 12) continue;
     p.x = _plTmpSlot.x; p.z = _plTmpSlot.z; p.vx = p.vz = 0;
     p.holder.position.set(p.x, p.y, p.z);
   }
