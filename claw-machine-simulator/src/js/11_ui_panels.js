@@ -99,7 +99,7 @@ function _upSellMenu(pets, eqSet) {
     const row = h('button', 'pn-sellrow r-' + r.id);
     row.type = 'button';
     row.style.setProperty('--rc', r.color);
-    row.innerHTML = '<b>' + esc(r.name) + '</b><span>' + list.length + ' pets</span><em>🪙 ' + _upNum(coins) + '</em>';
+    row.innerHTML = '<b>' + esc(r.name) + '</b><span>' + list.length + (list.length === 1 ? ' pet' : ' pets') + '</span><em>🪙 ' + _upNum(coins) + '</em>';
     row.addEventListener('click', () => {
       const risky = r.order >= 3 || list.some((p) => _upIsBadVariant(p));
       UI.confirm('Sell ' + list.length + ' ' + r.name + ' pet' + (list.length > 1 ? 's' : '') + ' for 🪙 ' + _upNum(coins) + '?' + (risky ? ' This includes valuable pets!' : ''), () => {
