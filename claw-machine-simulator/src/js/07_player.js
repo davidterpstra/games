@@ -412,7 +412,10 @@ const Player = {
 /* ---------- held equipment ---------- */
 function _plSetHeld(model) {
   const S = _plS;
-  if (S.heldModel) S.hold.remove(S.heldModel);
+  if (S.heldModel) {
+    S.hold.remove(S.heldModel);
+    try { Scene3D.disposeEquipmentModel(S.heldModel); } catch (e) { /* ignore */ }
+  }
   S.heldModel = model || null;
   if (model) S.hold.add(model);
   if (!model) S.heldId = null;
