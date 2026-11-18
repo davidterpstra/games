@@ -632,7 +632,7 @@ function _uiPollTrain(force) {
         `<span class="ti-sub">${locked ? '💪 requires ' + fmt(e.requires) : 'Power ' + fmt(e.power)}</span></span></button>`;
     }).join('');
     el.tAuto.className = 'btn btn-sm t-auto ' + (autoOwned ? (tr.auto ? 'btn-green' : 'btn-gray') : 'btn-gray');
-    el.tAuto.textContent = autoOwned ? (tr.auto ? '🔁 Auto Train: ON' : '🔁 Auto Train: OFF') : '🔒 Auto Train — buy it in the Shop';
+    el.tAuto.textContent = autoOwned ? (tr.auto ? '🔁 Auto Train: ON' : '🔁 Auto Train: OFF') : '🔒 Auto Train (Shop)';
   })) { const s = el.tList.querySelector('.sel'); if (s && s.scrollIntoView && !_ui.cache.t_scrolled) { _ui.cache.t_scrolled = 1; try { s.scrollIntoView({ block: 'nearest', inline: 'nearest' }); } catch (e) { /* ignore */ } } }
 
   let gain = 0;

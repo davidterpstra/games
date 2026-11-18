@@ -652,6 +652,7 @@ const CameraRig = {
     }
     if (view) {
       wp.copy(view.pos); wl.copy(view.target);
+      if (portrait > 0) wp.sub(wl).multiplyScalar(1 + portrait * 0.5).add(wl);   // keep the whole cabinet in a narrow view
     } else {
       const train = mode === 'train';
       const pf = train ? 1 + portrait * 0.5 : 1 + portrait * 0.9;
