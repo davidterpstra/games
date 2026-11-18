@@ -22,7 +22,7 @@ const _ui = {
   reveal: null,
   confirm: null,
   prompt: null,
-  refreshTimer: 0,
+  refreshTimer: 0, pendingRefresh: false,
   lastRefresh: 0,
   joy: { id: null, cx: 0, cy: 0 },
   dir: { u: false, d: false, l: false, r: false },
@@ -111,6 +111,7 @@ const UI = {
     close.addEventListener('click', () => UI.closePanel());
     head.appendChild(close);
     const body = h('div', 'panel-body');
+    body.addEventListener('focusout', () => { if (_ui.pendingRefresh) { _ui.pendingRefresh = false; setTimeout(_uiRefreshSoon, 0); } });
     win.appendChild(head); win.appendChild(body); back.appendChild(win);
     back.addEventListener('pointerdown', (e) => { back._down = e.target === back; });
     back.addEventListener('click', (e) => { if (e.target === back && back._down) UI.closePanel(); });
@@ -662,12 +663,16 @@ function _uiClosePanelNow(silent) {
   if (_ui.panelEl && _ui.panelEl.parentNode) _ui.panelEl.parentNode.removeChild(_ui.panelEl);
   _ui.panelEl = null; _ui.panelBody = null; _ui.panelDef = null;
   UI.currentPanel = null;
-  clearTimeout(_ui.refreshTimer); _ui.refreshTimer = 0;
+  clearTimeout(_ui.refreshTimer); _ui.refreshTimer = 0; _ui.pendingRefresh = false;
   if (!silent) _uiSfx('close');
 }
 
 function _uiRefreshSoon() {
   if (!UI.currentPanel) return;
+  if (_ui.reveal) return; // the reveal owns the single PetViewer; the panel is rebuilt when the reveal closes
+  // never rebuild the panel under a text field the player is typing in (focus + caret would be lost)
+  const ae = document.activeElement;
+  if (ae && (ae.tagName === 'TEXTAREA' || ae.tagName === 'INPUT') && _ui.panelBody && _ui.panelBody.contains(ae)) { _ui.pendingRefresh = true; return; }
   const now = performance.now();
   const wait = 250 - (now - _ui.lastRefresh);
   if (wait <= 0) { _ui.lastRefresh = now; UI.refreshPanel(); return; }
@@ -808,6 +813,8 @@ function _uiRevealClose(rv) {
   rv.ov.classList.add('closing');
   _ui.reveal = null;
   _uiSfx('close');
+  // the reveal's PetViewer replaced the one inside an open panel (only one viewer may exist): rebuild the panel so it remounts
+  if (UI.currentPanel) UI.refreshPanel();
   setTimeout(() => { if (rv.ov.parentNode) rv.ov.parentNode.removeChild(rv.ov); }, 260);
   setTimeout(() => { if (!_ui.reveal) _uiRevealNext(); }, 280);
 }

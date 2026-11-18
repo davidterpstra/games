@@ -178,7 +178,7 @@ function _mnBoot() {
       const ld = document.getElementById('loading');
       if (ld) ld.classList.add('hidden');
       if (SaveService.recovered) Bus.emit('toast', { text: 'Your save was restored from a backup', kind: 'info' });
-      if (fresh) Bus.emit('toast', { text: 'Walk to the claw machine and press E to play!', kind: 'info' });
+      if (fresh) Bus.emit('toast', { text: Game.isTouch ? 'Walk to the claw machine and tap the action button to play!' : 'Walk to the claw machine and press E to play!', kind: 'info' });
       else Bus.emit('toast', { text: 'Welcome back!', kind: 'good' });
       _mnSafe('services', () => { if (Services.dailyInfo().ready) Bus.emit('toast', { text: 'Your daily reward is ready in the Shop 💎', kind: 'rare' }); });
     }));

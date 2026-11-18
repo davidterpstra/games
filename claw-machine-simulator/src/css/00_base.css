@@ -502,14 +502,15 @@ kbd, .kbd {
   .cur-plus { width: 22px; height: 22px; font-size: 16px; }
   .hud-cur { top: calc(var(--safe-t) + 6px); left: calc(var(--safe-l) + 10px); flex-direction: row; gap: 8px; }
   .hud-tr { top: calc(var(--safe-t) + 6px); right: calc(var(--safe-r) + 10px); flex-direction: row-reverse; align-items: flex-start; gap: 8px; }
-  .boosts { flex-wrap: nowrap; padding-top: 4px; }
+  .boosts { flex-wrap: nowrap; padding-top: 4px; gap: 4px; }
+  .boost-chip { height: 22px; font-size: 11px; padding: 0 6px; border-width: 2px; }
   .world-badge { height: 32px; font-size: 14px; padding: 0 11px; }
   .tr-row .btn-icon { width: 40px; min-height: 38px; font-size: 19px; }
   .hud-goal { top: calc(var(--safe-t) + 44px); left: calc(var(--safe-l) + 10px); transform: none; width: 230px; min-width: 0; }
   .goal-text { font-size: 12px; margin-bottom: 2px; } .goal-box { padding: 4px 10px 6px; border-radius: 12px; } .goal-box .bar { height: 10px; }
   /* nav moves to the right edge so it cannot collide with the joystick */
-  .hud-nav { top: calc(var(--safe-t) + 46px); left: auto; right: calc(var(--safe-r) + 10px); gap: 4px; }
-  .nav-btn { width: 42px; height: 42px; border-radius: 11px; margin-bottom: 4px; }
+  .hud-nav { top: calc(var(--safe-t) + 60px); left: auto; right: calc(var(--safe-r) + 10px); gap: 4px; }
+  .nav-btn { width: 42px; height: 42px; border-radius: 11px; margin-bottom: 0; }
   .nav-btn .nb-ico { font-size: 20px; } .nav-btn .nb-lbl { display: none; }
   .nav-badge { min-width: 20px; height: 20px; font-size: 13px; right: -7px; top: -7px; }
   .hud-pets { bottom: calc(var(--safe-b) + 6px); padding: 4px 6px; }

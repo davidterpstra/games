@@ -515,14 +515,15 @@ kbd, .kbd {
   .cur-plus { width: 22px; height: 22px; font-size: 16px; }
   .hud-cur { top: calc(var(--safe-t) + 6px); left: calc(var(--safe-l) + 10px); flex-direction: row; gap: 8px; }
   .hud-tr { top: calc(var(--safe-t) + 6px); right: calc(var(--safe-r) + 10px); flex-direction: row-reverse; align-items: flex-start; gap: 8px; }
-  .boosts { flex-wrap: nowrap; padding-top: 4px; }
+  .boosts { flex-wrap: nowrap; padding-top: 4px; gap: 4px; }
+  .boost-chip { height: 22px; font-size: 11px; padding: 0 6px; border-width: 2px; }
   .world-badge { height: 32px; font-size: 14px; padding: 0 11px; }
   .tr-row .btn-icon { width: 40px; min-height: 38px; font-size: 19px; }
   .hud-goal { top: calc(var(--safe-t) + 44px); left: calc(var(--safe-l) + 10px); transform: none; width: 230px; min-width: 0; }
   .goal-text { font-size: 12px; margin-bottom: 2px; } .goal-box { padding: 4px 10px 6px; border-radius: 12px; } .goal-box .bar { height: 10px; }
   /* nav moves to the right edge so it cannot collide with the joystick */
-  .hud-nav { top: calc(var(--safe-t) + 46px); left: auto; right: calc(var(--safe-r) + 10px); gap: 4px; }
-  .nav-btn { width: 42px; height: 42px; border-radius: 11px; margin-bottom: 4px; }
+  .hud-nav { top: calc(var(--safe-t) + 60px); left: auto; right: calc(var(--safe-r) + 10px); gap: 4px; }
+  .nav-btn { width: 42px; height: 42px; border-radius: 11px; margin-bottom: 0; }
   .nav-btn .nb-ico { font-size: 20px; } .nav-btn .nb-lbl { display: none; }
   .nav-badge { min-width: 20px; height: 20px; font-size: 13px; right: -7px; top: -7px; }
   .hud-pets { bottom: calc(var(--safe-b) + 6px); padding: 4px 6px; }
@@ -7925,7 +7926,7 @@ const _ui = {
   reveal: null,
   confirm: null,
   prompt: null,
-  refreshTimer: 0,
+  refreshTimer: 0, pendingRefresh: false,
   lastRefresh: 0,
   joy: { id: null, cx: 0, cy: 0 },
   dir: { u: false, d: false, l: false, r: false },
@@ -8014,6 +8015,7 @@ const UI = {
     close.addEventListener('click', () => UI.closePanel());
     head.appendChild(close);
     const body = h('div', 'panel-body');
+    body.addEventListener('focusout', () => { if (_ui.pendingRefresh) { _ui.pendingRefresh = false; setTimeout(_uiRefreshSoon, 0); } });
     win.appendChild(head); win.appendChild(body); back.appendChild(win);
     back.addEventListener('pointerdown', (e) => { back._down = e.target === back; });
     back.addEventListener('click', (e) => { if (e.target === back && back._down) UI.closePanel(); });
@@ -8565,12 +8567,16 @@ function _uiClosePanelNow(silent) {
   if (_ui.panelEl && _ui.panelEl.parentNode) _ui.panelEl.parentNode.removeChild(_ui.panelEl);
   _ui.panelEl = null; _ui.panelBody = null; _ui.panelDef = null;
   UI.currentPanel = null;
-  clearTimeout(_ui.refreshTimer); _ui.refreshTimer = 0;
+  clearTimeout(_ui.refreshTimer); _ui.refreshTimer = 0; _ui.pendingRefresh = false;
   if (!silent) _uiSfx('close');
 }
 
 function _uiRefreshSoon() {
   if (!UI.currentPanel) return;
+  if (_ui.reveal) return; // the reveal owns the single PetViewer; the panel is rebuilt when the reveal closes
+  // never rebuild the panel under a text field the player is typing in (focus + caret would be lost)
+  const ae = document.activeElement;
+  if (ae && (ae.tagName === 'TEXTAREA' || ae.tagName === 'INPUT') && _ui.panelBody && _ui.panelBody.contains(ae)) { _ui.pendingRefresh = true; return; }
   const now = performance.now();
   const wait = 250 - (now - _ui.lastRefresh);
   if (wait <= 0) { _ui.lastRefresh = now; UI.refreshPanel(); return; }
@@ -8711,6 +8717,8 @@ function _uiRevealClose(rv) {
   rv.ov.classList.add('closing');
   _ui.reveal = null;
   _uiSfx('close');
+  // the reveal's PetViewer replaced the one inside an open panel (only one viewer may exist): rebuild the panel so it remounts
+  if (UI.currentPanel) UI.refreshPanel();
   setTimeout(() => { if (rv.ov.parentNode) rv.ov.parentNode.removeChild(rv.ov); }, 260);
   setTimeout(() => { if (!_ui.reveal) _uiRevealNext(); }, 280);
 }
@@ -8725,7 +8733,7 @@ function _uiRevealClose(rv) {
 const _upS = {
   petSel: null, petSort: 'mult', petFilter: 'all', petSheet: false, sellMenu: false,
   idxWorld: null,
-  pulse: null,
+  pulse: null, pulseT: 0,
   volDrag: false, volT: 0, importText: '', exportOpen: false,
   live: [], timer: 0,
 };
@@ -9035,7 +9043,7 @@ function _upRenderUpgrades(body) {
     root.appendChild(list);
     body.appendChild(root);
   });
-  _upS.pulse = null;
+  if (_upS.pulse) { clearTimeout(_upS.pulseT); _upS.pulseT = setTimeout(() => { _upS.pulse = null; }, 800); }
 }
 
 /* =====================================================================
@@ -9345,7 +9353,7 @@ function _upRenderSettings(body) {
       if (!text) { UI.toast('Paste a save code first', 'bad'); return; }
       UI.confirm('Importing replaces your current progress. Continue?', () => {
         const res = SaveService.importCode(text);
-        if (res && res.ok) location.reload();
+        if (res && res.ok) _upReload();
         else UI.toast((res && res.err) || 'Invalid save code', 'bad');
       });
     }));
@@ -9354,7 +9362,7 @@ function _upRenderSettings(body) {
     const dz = _upSection('⚠️ Danger zone');
     dz.appendChild(_upBtn('Reset progress', 'btn-red', () => {
       UI.confirm('Reset ALL progress? This cannot be undone!', () => {
-        UI.confirm('Are you really sure? Everything will be deleted.', () => { SaveService.reset(); location.reload(); });
+        UI.confirm('Are you really sure? Everything will be deleted.', () => { SaveService.reset(); _upReload(); });
       });
     }));
     root.appendChild(dz);
@@ -9385,6 +9393,12 @@ function _upRenderSettings(body) {
 /* =====================================================================
    registration
    ===================================================================== */
+/** Reload after import/reset; some embedded hosts block reloads, so tell the player if nothing happens. */
+function _upReload() {
+  try { location.reload(); } catch (e) { /* blocked */ }
+  setTimeout(() => UI.toast('Reload the page to continue', 'info'), 1500);
+}
+
 UI.registerPanel('pets', {
   title: 'Pets', icon: '🐾', wide: true,
   render: _upRenderPets,
@@ -9581,7 +9595,7 @@ function _mnBoot() {
       const ld = document.getElementById('loading');
       if (ld) ld.classList.add('hidden');
       if (SaveService.recovered) Bus.emit('toast', { text: 'Your save was restored from a backup', kind: 'info' });
-      if (fresh) Bus.emit('toast', { text: 'Walk to the claw machine and press E to play!', kind: 'info' });
+      if (fresh) Bus.emit('toast', { text: Game.isTouch ? 'Walk to the claw machine and tap the action button to play!' : 'Walk to the claw machine and press E to play!', kind: 'info' });
       else Bus.emit('toast', { text: 'Welcome back!', kind: 'good' });
       _mnSafe('services', () => { if (Services.dailyInfo().ready) Bus.emit('toast', { text: 'Your daily reward is ready in the Shop 💎', kind: 'rare' }); });
     }));

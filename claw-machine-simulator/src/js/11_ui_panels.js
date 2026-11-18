@@ -7,7 +7,7 @@
 const _upS = {
   petSel: null, petSort: 'mult', petFilter: 'all', petSheet: false, sellMenu: false,
   idxWorld: null,
-  pulse: null,
+  pulse: null, pulseT: 0,
   volDrag: false, volT: 0, importText: '', exportOpen: false,
   live: [], timer: 0,
 };
@@ -317,7 +317,7 @@ function _upRenderUpgrades(body) {
     root.appendChild(list);
     body.appendChild(root);
   });
-  _upS.pulse = null;
+  if (_upS.pulse) { clearTimeout(_upS.pulseT); _upS.pulseT = setTimeout(() => { _upS.pulse = null; }, 800); }
 }
 
 /* =====================================================================
@@ -627,7 +627,7 @@ function _upRenderSettings(body) {
       if (!text) { UI.toast('Paste a save code first', 'bad'); return; }
       UI.confirm('Importing replaces your current progress. Continue?', () => {
         const res = SaveService.importCode(text);
-        if (res && res.ok) location.reload();
+        if (res && res.ok) _upReload();
         else UI.toast((res && res.err) || 'Invalid save code', 'bad');
       });
     }));
@@ -636,7 +636,7 @@ function _upRenderSettings(body) {
     const dz = _upSection('⚠️ Danger zone');
     dz.appendChild(_upBtn('Reset progress', 'btn-red', () => {
       UI.confirm('Reset ALL progress? This cannot be undone!', () => {
-        UI.confirm('Are you really sure? Everything will be deleted.', () => { SaveService.reset(); location.reload(); });
+        UI.confirm('Are you really sure? Everything will be deleted.', () => { SaveService.reset(); _upReload(); });
       });
     }));
     root.appendChild(dz);
@@ -667,6 +667,12 @@ function _upRenderSettings(body) {
 /* =====================================================================
    registration
    ===================================================================== */
+/** Reload after import/reset; some embedded hosts block reloads, so tell the player if nothing happens. */
+function _upReload() {
+  try { location.reload(); } catch (e) { /* blocked */ }
+  setTimeout(() => UI.toast('Reload the page to continue', 'info'), 1500);
+}
+
 UI.registerPanel('pets', {
   title: 'Pets', icon: '🐾', wide: true,
   render: _upRenderPets,
