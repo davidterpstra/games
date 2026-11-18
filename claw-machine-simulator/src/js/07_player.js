@@ -658,6 +658,9 @@ const CameraRig = {
       wp.set(wl.x + Math.sin(this.yaw) * cp * d, wl.y + Math.sin(this.pitch) * d, wl.z + Math.cos(this.yaw) * cp * d);
       wp.x = clamp(wp.x, -(ROOM.halfX - 0.4), ROOM.halfX - 0.4);
       wp.z = Math.max(wp.z, -ROOM.halfZ + 0.4);
+      // walls shortened the orbit: lift the camera instead so it never ends up inside the player
+      const hh = Math.hypot(wp.x - wl.x, wp.z - wl.z), want = d * 0.75;
+      if (hh < want) wp.y = Math.max(wp.y, wl.y + Math.sqrt(want * want - hh * hh));
       wp.y = Math.max(wp.y, 1.5);
     }
 
